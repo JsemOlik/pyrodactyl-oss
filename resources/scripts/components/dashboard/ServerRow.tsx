@@ -92,8 +92,6 @@ const ServerRow = ({
     }, [stats?.isSuspended, server.status]);
 
     useEffect(() => {
-        // Don't waste a HTTP request if there is nothing important to show to the user because
-        // the server is suspended.
         if (isSuspended) return;
 
         getStats().then(() => {
@@ -119,7 +117,6 @@ const ServerRow = ({
         : '';
 
     const handleCopyAllocation = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        // Prevent the Link from navigating when clicking the copy button
         e.preventDefault();
         e.stopPropagation();
 
@@ -139,27 +136,28 @@ const ServerRow = ({
         (stats?.status && stats.status === 'offline') ||
         (!stats && (server.status === 'offline' || server.status === null));
 
-    const handleStart = (e: React.MouseEvent<HTMLButtonElement>) => {
-        // Prevent navigation
+    const handleStart = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         e.stopPropagation();
 
         if (isStarting) return;
-        if (!socketInstance) {
-            console.warn('No socket instance available; cannot start server.');
-            return;
-        }
+        if (!socketInstance) return;
 
-        setIsStarting(true);
-        // Match the dashboard power button behavior
-        toast.success('Your server is starting!');
-        socketInstance.send('set state', 'start');
+        try {
+            setIsStarting(true);
+            // Match the dashboard power button behavior
+            toast.success('Your server is starting!');
+            socketInstance.send('set state', 'start');
 
-        // Optimistic refresh after a small delay
-        setTimeout(() => {
-            getStats().catch(() => undefined);
+            // Optimistic refresh
+            setTimeout(() => {
+                getStats().catch(() => undefined);
+            }, 1000);
+        } catch (err) {
+            console.error('Failed to start server:', err);
+        } finally {
             setIsStarting(false);
-        }, 1000);
+        }
     };
 
     // Keep offline card width same as the stats card
