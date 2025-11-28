@@ -1,14 +1,28 @@
+import {
+    DndContext,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+    KeyboardSensor,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    arrayMove,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { useStoreState } from 'easy-peasy';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 
+import AnnouncementBanner from '@/components/dashboard/AnnouncementBanner';
 import ServerRow from '@/components/dashboard/ServerRow';
 import SortableServerRow from '@/components/dashboard/SortableServerRow';
-
-import getAnnouncements, { Announcement as AnnouncementType } from '@/api/getAnnouncements';
-import AnnouncementBanner from '@/components/dashboard/AnnouncementBanner';
-
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,33 +34,16 @@ import Pagination from '@/components/elements/Pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/elements/Tabs';
 import { PageListContainer } from '@/components/elements/pages/PageList';
 
+import getAnnouncements, { Announcement as AnnouncementType } from '@/api/getAnnouncements';
 import getServers from '@/api/getServers';
 import { PaginatedResult } from '@/api/http';
 import { Server } from '@/api/server/getServer';
-import { getServerPreferences, updateServerPreferences, SortOption } from '@/api/servers/serverOrder';
+import { SortOption, getServerPreferences, updateServerPreferences } from '@/api/servers/serverOrder';
 
 import useFlash from '@/plugins/useFlash';
 import { usePersistedState } from '@/plugins/usePersistedState';
 
 import { MainPageHeader } from '../elements/MainPageHeader';
-
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    DragEndEvent,
-    DragStartEvent,
-    DragOverlay,
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 
 const DashboardContainer = () => {
     const { search } = useLocation();
@@ -180,8 +177,37 @@ const DashboardContainer = () => {
     // Update sort option in backend when it changes
     const handleSortOptionChange = async (newSortOption: SortOption) => {
         setSortOption(newSortOption);
+
         try {
-            await updateServerPreferences({ sortOption: newSortOption });
+            // If switching to custom and customOrder is empty, initialize it with current server order
+            if (newSortOption === 'custom' && servers) {
+                const currentServerUuids = servers.items.map((s) => s.uuid);
+
+                // If customOrder is empty or doesn't match current servers, initialize it
+                if (customOrder.length === 0) {
+                    setCustomOrder(currentServerUuids);
+                    await updateServerPreferences({
+                        sortOption: newSortOption,
+                        order: currentServerUuids, // Save the initial order
+                    });
+                } else {
+                    // Add any new servers that aren't in the custom order
+                    const newServers = currentServerUuids.filter((uuid) => !customOrder.includes(uuid));
+                    const updatedOrder = newServers.length > 0 ? [...customOrder, ...newServers] : customOrder;
+
+                    if (newServers.length > 0) {
+                        setCustomOrder(updatedOrder);
+                    }
+
+                    await updateServerPreferences({
+                        sortOption: newSortOption,
+                        order: updatedOrder,
+                    });
+                }
+            } else {
+                // For other sort options, just save the sort option
+                await updateServerPreferences({ sortOption: newSortOption });
+            }
         } catch (err) {
             console.error('Failed to save sort option:', err);
         }
@@ -234,7 +260,7 @@ const DashboardContainer = () => {
     return (
         <PageContentBlock title={'Dashboard'} showFlashKey={'dashboard'}>
             <div className='w-full h-full min-h-full flex-1 flex flex-col px-2 sm:px-0'>
-              <AnnouncementBanner announcements={announcements || []} />
+                <AnnouncementBanner announcements={announcements || []} />
                 <Tabs
                     defaultValue={dashboardDisplayOption}
                     onValueChange={(value) => {
