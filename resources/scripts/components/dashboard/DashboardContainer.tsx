@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 
 import ServerRow from '@/components/dashboard/ServerRow';
+import SortableServerRow from '@/components/dashboard/SortableServerRow';
 import Separator from '@/components/elements/Separator';
 
 import {
@@ -20,13 +21,34 @@ import { PageListContainer } from '@/components/elements/pages/PageList';
 import getServers from '@/api/getServers';
 import { PaginatedResult } from '@/api/http';
 import { Server } from '@/api/server/getServer';
+import {
+  getServerPreferences,
+  updateServerPreferences,
+  SortOption,
+} from '@/api/servers/serverOrder';
 
 import useFlash from '@/plugins/useFlash';
 import { usePersistedState } from '@/plugins/usePersistedState';
 
 import { MainPageHeader } from '../elements/MainPageHeader';
 
-type SortOption = 'default' | 'name_asc';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 const DashboardContainer = () => {
   const { search } = useLocation();
@@ -46,11 +68,12 @@ const DashboardContainer = () => {
   const [dashboardDisplayOption, setDashboardDisplayOption] =
     usePersistedState(`${uuid}:dashboard_display_option`, 'list');
 
-  // NEW: persisted sort option
-  const [sortOption, setSortOption] = usePersistedState<SortOption>(
-    `${uuid}:dashboard_sort_option`,
-    'default',
-  );
+  // Server preferences state
+  const [sortOption, setSortOption] = useState<SortOption>('default');
+  const [customOrder, setCustomOrder] = useState<string[]>([]);
+  const [isEditingOrder, setIsEditingOrder] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const { data: servers, error } = useSWR<PaginatedResult<Server>>(
     ['/api/client/servers', showOnlyAdmin && rootAdmin, page],
@@ -84,9 +107,95 @@ const DashboardContainer = () => {
     if (!error) clearFlashes('dashboard');
   }, [error]);
 
+  // Fetch server preferences when component mounts
+  useEffect(() => {
+    getServerPreferences()
+      .then((prefs) => {
+        setCustomOrder(prefs.order);
+        setSortOption(prefs.sortOption);
+      })
+      .catch((err) =>
+        console.error('Failed to fetch server preferences:', err),
+      );
+  }, []);
+
+  // When entering edit mode, initialize customOrder if empty or sync with current servers
+  useEffect(() => {
+    if (isEditingOrder && servers) {
+      // If customOrder is empty or doesn't match current servers, initialize it
+      const currentServerUuids = servers.items.map((s) => s.uuid);
+
+      if (customOrder.length === 0) {
+        // Initialize with current server order
+        setCustomOrder(currentServerUuids);
+      } else {
+        // Add any new servers that aren't in the custom order
+        const newServers = currentServerUuids.filter(
+          (uuid) => !customOrder.includes(uuid),
+        );
+        if (newServers.length > 0) {
+          setCustomOrder([...customOrder, ...newServers]);
+        }
+      }
+    }
+  }, [isEditingOrder, servers]);
+
   // Helper: safely get server name (adjust if your Server type differs)
   const getServerName = (server: Server) =>
     (server as any).name?.toString?.() ?? '';
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  // Handle drag start
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setCustomOrder((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+
+    setActiveId(null);
+  };
+
+  // Save custom order to backend
+  const handleSaveOrder = async () => {
+    setIsSavingOrder(true);
+    try {
+      await updateServerPreferences({ order: customOrder });
+      setIsEditingOrder(false);
+      clearFlashes('dashboard');
+    } catch (err) {
+      console.error('Failed to save custom order:', err);
+      clearAndAddHttpError({ key: 'dashboard', error: err });
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  // Update sort option in backend when it changes
+  const handleSortOptionChange = async (newSortOption: SortOption) => {
+    setSortOption(newSortOption);
+    try {
+      await updateServerPreferences({ sortOption: newSortOption });
+    } catch (err) {
+      console.error('Failed to save sort option:', err);
+    }
+  };
 
   // Sorted items for the current page
   const sortedServers = useMemo(() => {
@@ -102,9 +211,35 @@ const DashboardContainer = () => {
       return { ...servers, items: copy };
     }
 
+    if (sortOption === 'custom') {
+      // When in edit mode, use customOrder state
+      // Otherwise apply saved custom order
+      const orderToUse = isEditingOrder ? customOrder : customOrder;
+
+      if (orderToUse.length === 0) {
+        // No custom order yet, use default order
+        return servers;
+      }
+
+      const copy = [...servers.items];
+      copy.sort((a, b) => {
+        const indexA = orderToUse.indexOf(a.uuid);
+        const indexB = orderToUse.indexOf(b.uuid);
+
+        // If server not in custom order, put it at the end
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+
+        return indexA - indexB;
+      });
+
+      return { ...servers, items: copy };
+    }
+
     // default order: no sorting, use API order
     return servers;
-  }, [servers, sortOption]);
+  }, [servers, sortOption, customOrder, isEditingOrder]);
 
   return (
     <PageContentBlock title={'Dashboard'} showFlashKey={'dashboard'}>
@@ -171,19 +306,105 @@ const DashboardContainer = () => {
                         More options coming soon!
                       </div>
 
-                       {/* New sort options */}
+                       {/* Sort options */}
                       <DropdownMenuItem
-                        onSelect={() => setSortOption('default')}
+                        onSelect={() => handleSortOptionChange('default')}
                       >
                         {sortOption === 'default' ? '• ' : ''}
                         Date of creation
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onSelect={() => setSortOption('name_asc')}
+                        onSelect={() => handleSortOptionChange('name_asc')}
                       >
                         {sortOption === 'name_asc' ? '• ' : ''}
                         Alphabetical
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => handleSortOptionChange('custom')}
+                      >
+                        {sortOption === 'custom' ? '• ' : ''}
+                        Custom
+                      </DropdownMenuItem>
+
+                      {/* Edit Order / Save Order button - shown when custom is selected */}
+                      {sortOption === 'custom' && (
+                        <>
+                          <div className="border-t border-[#ffffff12] my-1" />
+                          <DropdownMenuItem
+                            onSelect={() => {
+                              if (isEditingOrder) {
+                                handleSaveOrder();
+                              } else {
+                                setIsEditingOrder(true);
+                              }
+                            }}
+                            disabled={isSavingOrder}
+                          >
+                            {isSavingOrder ? (
+                              <>
+                                <svg
+                                  className="animate-spin h-4 w-4 mr-2"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  />
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  />
+                                </svg>
+                                Saving...
+                              </>
+                            ) : isEditingOrder ? (
+                              <>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="mr-2"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                Save Order
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="mr-2"
+                                >
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                                Edit Order
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <DropdownMenu>
@@ -296,25 +517,63 @@ const DashboardContainer = () => {
                 <Pagination data={sortedServers} onPageSelect={setPage}>
                   {({ items }) =>
                     items.length > 0 ? (
-                      <PageListContainer>
-                        {items.map((server, index) => (
-                          <div
-                            key={server.uuid}
-                            className="transform-gpu skeleton-anim-2"
-                            style={{
-                              animationDelay: `${index * 50 + 50}ms`,
-                              animationTimingFunction:
-                                'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
-                            }}
+                      isEditingOrder ? (
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragStart={handleDragStart}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext
+                            items={items.map((s) => s.uuid)}
+                            strategy={verticalListSortingStrategy}
                           >
-                            <ServerRow
-                              className="flex-row"
+                            <PageListContainer>
+                              {items.map((server, index) => (
+                                <SortableServerRow
+                                  key={server.uuid}
+                                  server={server}
+                                  className="flex-row"
+                                  index={index}
+                                />
+                              ))}
+                            </PageListContainer>
+                          </SortableContext>
+                          <DragOverlay>
+                            {activeId ? (
+                              <div className="opacity-90">
+                                <ServerRow
+                                  className="flex-row"
+                                  server={
+                                    items.find((s) => s.uuid === activeId)!
+                                  }
+                                  isEditMode={true}
+                                />
+                              </div>
+                            ) : null}
+                          </DragOverlay>
+                        </DndContext>
+                      ) : (
+                        <PageListContainer>
+                          {items.map((server, index) => (
+                            <div
                               key={server.uuid}
-                              server={server}
-                            />
-                          </div>
-                        ))}
-                      </PageListContainer>
+                              className="transform-gpu skeleton-anim-2"
+                              style={{
+                                animationDelay: `${index * 50 + 50}ms`,
+                                animationTimingFunction:
+                                  'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                              }}
+                            >
+                              <ServerRow
+                                className="flex-row"
+                                key={server.uuid}
+                                server={server}
+                              />
+                            </div>
+                          ))}
+                        </PageListContainer>
+                      )
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 px-4">
                         <div className="text-center">
@@ -352,25 +611,63 @@ const DashboardContainer = () => {
                 <Pagination data={sortedServers} onPageSelect={setPage}>
                   {({ items }) =>
                     items.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {items.map((server, index) => (
-                          <div
-                            key={server.uuid}
-                            className="transform-gpu skeleton-anim-2"
-                            style={{
-                              animationDelay: `${index * 50 + 50}ms`,
-                              animationTimingFunction:
-                                'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
-                            }}
+                      isEditingOrder ? (
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragStart={handleDragStart}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext
+                            items={items.map((s) => s.uuid)}
+                            strategy={verticalListSortingStrategy}
                           >
-                            <ServerRow
-                              className="items-start! flex-col w-full gap-4 [&>div~div]:w-full"
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {items.map((server, index) => (
+                                <SortableServerRow
+                                  key={server.uuid}
+                                  server={server}
+                                  className="items-start! flex-col w-full gap-4 [&>div~div]:w-full"
+                                  index={index}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
+                          <DragOverlay>
+                            {activeId ? (
+                              <div className="opacity-90 w-full max-w-md">
+                                <ServerRow
+                                  className="items-start! flex-col w-full gap-4 [&>div~div]:w-full"
+                                  server={
+                                    items.find((s) => s.uuid === activeId)!
+                                  }
+                                  isEditMode={true}
+                                />
+                              </div>
+                            ) : null}
+                          </DragOverlay>
+                        </DndContext>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {items.map((server, index) => (
+                            <div
                               key={server.uuid}
-                              server={server}
-                            />
-                          </div>
-                        ))}
-                      </div>
+                              className="transform-gpu skeleton-anim-2"
+                              style={{
+                                animationDelay: `${index * 50 + 50}ms`,
+                                animationTimingFunction:
+                                  'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                              }}
+                            >
+                              <ServerRow
+                                className="items-start! flex-col w-full gap-4 [&>div~div]:w-full"
+                                key={server.uuid}
+                                server={server}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 px-4">
                         <div className="text-center">

@@ -64,9 +64,11 @@ type Timer = ReturnType<typeof setInterval>;
 const ServerRow = ({
   server,
   className,
+  isEditMode = false,
 }: {
   server: Server;
   className?: string;
+  isEditMode?: boolean;
 }) => {
   const interval = useRef<Timer>(null) as React.MutableRefObject<Timer>;
   const [isSuspended, setIsSuspended] = useState(
@@ -148,6 +150,7 @@ const ServerRow = ({
       to={`/server/${server.id}`}
       className={className}
       $status={stats?.status}
+      style={isEditMode ? { pointerEvents: 'none' } : undefined}
     >
       <div className="flex items-center">
         <div className="flex flex-col">
