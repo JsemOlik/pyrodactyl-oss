@@ -23,6 +23,7 @@ import { NotFound } from '@/components/elements/ScreenBlock';
 import HugeIconsCashIcon from '@/components/elements/hugeicons/CashIcon';
 import HugeIconsDashboardSettings from '@/components/elements/hugeicons/DashboardSettings';
 import HugeIconsHome from '@/components/elements/hugeicons/Home';
+import HugeIconsQuestion from '@/components/elements/hugeicons/Question';
 
 // import HugeIconsSsh from '@/components/elements/hugeicons/Ssh';
 
@@ -173,7 +174,7 @@ const DashboardRouter = () => {
                             <p>Your Servers</p>
                         </NavLink>
                         <NavLink to={'/support'} end className='flex flex-row items-center' ref={NavigationSupport}>
-                            <HugeIconsHome fill='currentColor' />
+                            <HugeIconsQuestion fill='currentColor' />
                             <p>Support</p>
                         </NavLink>
 
