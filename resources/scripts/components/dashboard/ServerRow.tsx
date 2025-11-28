@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
 import styled from 'styled-components';
 
 import { bytesToString, ip } from '@/lib/formatters';
@@ -8,7 +7,21 @@ import { bytesToString, ip } from '@/lib/formatters';
 import { Server } from '@/api/server/getServer';
 import getServerResourceUsage, { ServerPowerState, ServerStats } from '@/api/server/getServerResourceUsage';
 
-import { ServerContext } from '@/state/server';
+// If you already have a power helper, import it and remove the fallback below:
+// import { sendPowerSignal } from '@/api/server/power';
+
+// Minimal fallback helper (replace with your real one)
+async function sendPowerSignal(uuid: string, signal: 'start' | 'stop' | 'restart' | 'kill') {
+    const res = await fetch(`/api/client/servers/${uuid}/power`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signal }),
+    });
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Power action failed: ${res.status} ${text}`);
+    }
+}
 
 // Determines if the current value is in an alarm threshold so we can show it in red rather
 // than the more faded default style.
@@ -73,14 +86,8 @@ const ServerRow = ({
     const [isSuspended, setIsSuspended] = useState(server.status === 'suspended');
     const [stats, setStats] = useState<ServerStats | null>(null);
 
-    // Copy feedback for IP button
     const [copied, setCopied] = useState(false);
-    // Local starting state to disable the Start button and show spinner
     const [isStarting, setIsStarting] = useState(false);
-
-    // Use the same socket instance and status that PowerButtons use
-    const socketInstance = ServerContext.useStoreState((state) => state.socket.instance);
-    const panelStatus = ServerContext.useStoreState((state) => state.status.value);
 
     const getStats = () =>
         getServerResourceUsage(server.uuid)
@@ -131,7 +138,7 @@ const ServerRow = ({
         }
     };
 
-    // Determine offline (prefer live stats status; fall back to known server.status)
+    // Determine offline
     const isOffline =
         (stats?.status && stats.status === 'offline') ||
         (!stats && (server.status === 'offline' || server.status === null));
@@ -139,16 +146,11 @@ const ServerRow = ({
     const handleStart = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         e.stopPropagation();
-
         if (isStarting) return;
-        if (!socketInstance) return;
 
         try {
             setIsStarting(true);
-            // Match the dashboard power button behavior
-            toast.success('Your server is starting!');
-            socketInstance.send('set state', 'start');
-
+            await sendPowerSignal(server.uuid, 'start');
             // Optimistic refresh
             setTimeout(() => {
                 getStats().catch(() => undefined);
@@ -160,12 +162,14 @@ const ServerRow = ({
         }
     };
 
-    // Keep offline card width same as the stats card
+    // Shared card styles: keep width consistent
+    // We emulate the width resources would take with a min-width.
+    // Adjust minWidth if your design differs.
     const cardClass =
         'h-full hidden sm:flex items-center justify-between border-[1px] border-[#ffffff12] shadow-md rounded-lg w-fit whitespace-nowrap px-4 py-2 text-sm gap-4';
     const cardStyle = {
         background: 'radial-gradient(124.75% 124.75% at 50.01% -10.55%, rgb(36, 36, 36) 0%, rgb(20, 20, 20) 100%)',
-        minWidth: '360px',
+        minWidth: '360px', // ensure same width as the three-metric layout
     } as const;
 
     return (
@@ -183,7 +187,6 @@ const ServerRow = ({
                         <div className='status-bar' />
                     </div>
 
-                    {/* IP + copy button */}
                     {defaultAllocation && (
                         <div className='mt-1 flex items-center gap-2 text-sm text-[#ffffff66]'>
                             <span>
@@ -195,7 +198,6 @@ const ServerRow = ({
                                 className='inline-flex items-center justify-center rounded-md text-[#ffffff66] hover:text-[#ffffffaa] hover:bg-white/5 transition-colors p-1'
                                 aria-label='Copy server address'
                             >
-                                {/* small copy icon */}
                                 <svg
                                     xmlns='http://www.w3.org/2000/svg'
                                     width='13'
@@ -220,14 +222,12 @@ const ServerRow = ({
                                 </svg>
                             </button>
 
-                            {/* tiny feedback text */}
                             {copied && <span className='text-[11px] text-[#ffffff88]'>Copied!</span>}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Right side card: offline message or stats */}
             <div style={cardStyle} className={cardClass}>
                 {isSuspended ? (
                     <div className='flex-1 text-center'>
@@ -235,7 +235,7 @@ const ServerRow = ({
                             {server.status === 'suspended' ? 'Suspended' : 'Connection Error'}
                         </span>
                     </div>
-                ) : isOffline || panelStatus === 'offline' ? (
+                ) : isOffline ? (
                     <div className='flex items-center justify-between w-full gap-4'>
                         <span className='text-xs text-zinc-300'>Server is offline</span>
                         <button
