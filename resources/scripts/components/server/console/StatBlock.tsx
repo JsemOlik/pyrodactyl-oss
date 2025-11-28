@@ -5,7 +5,7 @@ import CopyOnClick from '@/components/elements/CopyOnClick';
 import styles from './style.module.css';
 
 interface StatBlockProps {
-    title: string;
+    title?: string;
     copyOnClick?: string;
     children: React.ReactNode;
     className?: string;
