@@ -273,4 +273,9 @@ class User extends Model implements
             })
             ->groupBy('servers.id', 'servers.name', 'servers.owner_id');
     }
+
+    public function serverOrder()
+    {
+        return $this->hasOne(UserServerOrder::class);
+    }
 }

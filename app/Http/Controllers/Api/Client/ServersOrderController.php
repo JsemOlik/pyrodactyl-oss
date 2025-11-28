@@ -15,7 +15,12 @@ class ServersOrderController extends Controller
     public function show(Request $request)
     {
         $user = $request->user();
-        $preferences = $user->serverOrder;
+
+        // Use firstOrNew to get existing record or create a new instance (not saved)
+        $preferences = UserServerOrder::firstOrNew(
+            ['user_id' => $user->id],
+            ['order' => [], 'sort_option' => 'default']
+        );
 
         return response()->json([
             'order' => $preferences->order ?? [],
@@ -37,7 +42,13 @@ class ServersOrderController extends Controller
                 'sort_option' => ['sometimes', 'string', 'in:default,name_asc,custom'],
             ]);
 
-            // Prepare data for upsert, filtering out null values
+            // Log what we're receiving
+            Log::info('Updating server preferences', [
+                'user_id' => $user->id,
+                'data' => $data
+            ]);
+
+            // Prepare data for upsert
             $updateData = [];
             if (isset($data['order'])) {
                 $updateData['order'] = $data['order'];
@@ -51,6 +62,15 @@ class ServersOrderController extends Controller
                 ['user_id' => $user->id],
                 $updateData
             );
+
+            // Refresh to get the latest data from database
+            $record->refresh();
+
+            Log::info('Server preferences updated successfully', [
+                'user_id' => $user->id,
+                'order' => $record->order,
+                'sort_option' => $record->sort_option
+            ]);
 
             return response()->json([
                 'order' => $record->order ?? [],
