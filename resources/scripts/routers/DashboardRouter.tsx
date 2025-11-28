@@ -22,6 +22,7 @@ import { NotFound } from '@/components/elements/ScreenBlock';
 import HugeIconsDashboardSettings from '@/components/elements/hugeicons/DashboardSettings';
 import HugeIconsCashIcon from '@/components/elements/hugeicons/CashIcon';
 import HugeIconsHome from '@/components/elements/hugeicons/Home';
+import HugeIconsQuestion from '@/components/elements/hugeicons/Question';
 // import HugeIconsSsh from '@/components/elements/hugeicons/Ssh';
 
 import http from '@/api/http';
@@ -49,7 +50,8 @@ const DashboardRouter = () => {
   };
 
   const onSelectAdminPanel = () => {
-    window.open(`/admin`);
+    // open in same tab
+    window.location.href = '/admin';
   };
 
   // Define refs for navigation buttons.
@@ -58,6 +60,7 @@ const DashboardRouter = () => {
   const NavigationSettings = useRef<HTMLAnchorElement | null>(null);
   const NavigationApi = useRef<HTMLAnchorElement | null>(null);
   const NavigationSSH = useRef<HTMLAnchorElement | null>(null);
+  const NavigationFaq = useRef<HTMLAnchorElement | null>(null);
 
   const calculateTop = (pathname: string) => {
     // Get currents of navigation refs.
@@ -66,6 +69,8 @@ const DashboardRouter = () => {
     const ButtonSettings = NavigationSettings.current;
     const ButtonApi = NavigationApi.current;
     const ButtonSSH = NavigationSSH.current;
+    const ButtonFaq = NavigationFaq.current;
+
 
     // Perfectly center the page highlighter with simple math.
     // Height of navigation links (56) minus highlight height (40) equals 16. 16 divided by 2 is 8.
@@ -81,7 +86,8 @@ const DashboardRouter = () => {
       return (ButtonSSH as any).offsetTop + HighlightOffset;
     if (pathname.includes('/billing') && ButtonSettingsBilling != null)
       return (ButtonSettingsBilling as any).offsetTop + HighlightOffset;
-
+    if (pathname.endsWith('/faq') && ButtonFaq != null)
+      return (ButtonFaq as any).offsetTop + HighlightOffset;
     return '0';
   };
 
@@ -181,6 +187,15 @@ const DashboardRouter = () => {
             >
               <HugeIconsHome fill="currentColor" />
               <p>Your Servers</p>
+            </NavLink>
+            <NavLink
+              to={'/faq'}
+              end
+              className="flex flex-row items-center"
+              ref={NavigationFaq}
+            >
+              <HugeIconsQuestion fill="currentColor" />
+              <p>FAQ</p>
             </NavLink>
 
             {/* Optional future items
