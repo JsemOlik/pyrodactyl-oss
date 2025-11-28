@@ -14,17 +14,12 @@ import useWebsocketEvent from '@/plugins/useWebsocketEvent';
 
 type Stats = Record<'memory' | 'cpu' | 'disk' | 'uptime' | 'rx' | 'tx', number>;
 
+// @ts-expect-error - Unused parameter in component definition
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Limit = ({ limit, children }: { limit: string | null; children: React.ReactNode }) => <>{children}</>;
 
 const ServerDetailsBlock = ({ className }: { className?: string }) => {
-    const [stats, setStats] = useState<Stats>({
-        memory: 0,
-        cpu: 0,
-        disk: 0,
-        uptime: 0,
-        tx: 0,
-        rx: 0,
-    });
+    const [stats, setStats] = useState<Stats>({ memory: 0, cpu: 0, disk: 0, uptime: 0, tx: 0, rx: 0 });
     const [subdomainInfo, setSubdomainInfo] = useState<SubdomainInfo | null>(null);
 
     const status = ServerContext.useStoreState((state) => state.status.value);
@@ -49,6 +44,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
         return !match ? 'n/a' : `${match.alias || ip(match.ip)}:${match.port}`;
     });
 
+    // Get display address (subdomain if available and active, otherwise IP)
     const displayAddress = useMemo(() => {
         if (
             subdomainInfo?.current_subdomain?.attributes?.is_active &&
@@ -64,7 +60,8 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
             try {
                 const data = await getSubdomainInfo(uuid);
                 setSubdomainInfo(data);
-            } catch {
+            } catch (error) {
+                // Silently fail - subdomain feature might not be available
                 setSubdomainInfo(null);
             }
         };
@@ -73,7 +70,10 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
     }, [uuid]);
 
     useEffect(() => {
-        if (!connected || !instance) return;
+        if (!connected || !instance) {
+            return;
+        }
+
         instance.send(SocketRequest.SEND_STATS);
     }, [instance, connected]);
 
@@ -81,7 +81,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
         let parsed: any = {};
         try {
             parsed = JSON.parse(data);
-        } catch {
+        } catch (e) {
             return;
         }
 
@@ -109,7 +109,6 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                     {displayAddress}
                 </StatBlock>
             </div>
-
             <div
                 className='transform-gpu skeleton-anim-2'
                 style={{
@@ -122,15 +121,10 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
                     ) : (
-                        <Limit limit={textLimits.cpu}>
-                            {textLimits.cpu
-                                ? `${stats.cpu.toFixed(2)}% / ${textLimits.cpu}`
-                                : `${stats.cpu.toFixed(2)}%`}
-                        </Limit>
+                        <Limit limit={textLimits.cpu}>{`${stats.cpu.toFixed(2)}% / ${textLimits.cpu ?? '∞'}`}</Limit>
                     )}
                 </StatBlock>
             </div>
-
             <div
                 className='transform-gpu skeleton-anim-2'
                 style={{
@@ -144,14 +138,11 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                         <span className={'text-zinc-400'}>Offline</span>
                     ) : (
                         <Limit limit={textLimits.memory}>
-                            {textLimits.memory
-                                ? `${bytesToString(stats.memory)} / ${textLimits.memory}`
-                                : `${bytesToString(stats.memory)}`}
+                            {`${bytesToString(stats.memory)} / ${textLimits.memory ?? '∞'}`}
                         </Limit>
                     )}
                 </StatBlock>
             </div>
-
             <div
                 className='transform-gpu skeleton-anim-2'
                 style={{
@@ -161,11 +152,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                 }}
             >
                 <StatBlock title={'Storage'}>
-                    <Limit limit={textLimits.disk}>
-                        {textLimits.disk
-                            ? `${bytesToString(stats.disk)} / ${textLimits.disk}`
-                            : `${bytesToString(stats.disk)}`}
-                    </Limit>
+                    <Limit limit={textLimits.disk}>{`${bytesToString(stats.disk)} / ${textLimits.disk ?? '∞'}`}</Limit>
                 </StatBlock>
             </div>
         </div>
