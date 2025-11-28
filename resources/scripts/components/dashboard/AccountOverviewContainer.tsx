@@ -59,6 +59,9 @@ const AccountOverviewContainer = () => {
                             <ContentBox title={'Multi-Factor Authentication'}>
                                 <ConfigureTwoFactorForm />
                             </ContentBox>
+                            <ContentBox title={'Privacy Toggle'}>
+                                <ConfigureTwoFactorForm />
+                            </ContentBox>
                         </div>
                     </div>
 
