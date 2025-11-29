@@ -2,12 +2,13 @@ import styled from 'styled-components';
 
 const MainSidebar = styled.nav`
     width: 300px;
-    /* display: flex;  <-- remove this */
+    display: flex;
     flex-direction: column;
     flex-shrink: 0;
     border-radius: 8px;
     overflow-x: hidden;
     padding: 32px;
+    /* position: absolute; */
     margin-right: 8px;
     user-select: none;
     background: rgba(0, 0, 0, 0.6);
@@ -17,6 +18,7 @@ const MainSidebar = styled.nav`
         display: flex;
         flex-direction: column;
         font-size: 14px;
+        /* make the list stretch so the spacer can push bottom links */
         flex: 1 1 auto;
         min-height: 0;
 
@@ -30,6 +32,10 @@ const MainSidebar = styled.nav`
             min-height: 56px;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            user-drag: none;
+            -ms-user-drag: none;
+            -moz-user-drag: none;
+            -webkit-user-drag: none;
             transition: 200ms all ease-in-out;
 
             &.active {
@@ -38,6 +44,7 @@ const MainSidebar = styled.nav`
             }
         }
 
+        /* spacer consumes remaining vertical space */
         & > .pyro-subnav-spacer {
             flex: 1 1 auto;
         }
