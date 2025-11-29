@@ -228,7 +228,7 @@ export const ServerMobileMenu = ({
 
             <Can action={'startup.software'}>
                 <NavigationItem to={`/server/${serverId}/shell`} icon={HugeIconsController} end>
-                    Software
+                    Games
                 </NavigationItem>
             </Can>
         </MobileFullScreenMenu>
