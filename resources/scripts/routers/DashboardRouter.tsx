@@ -113,7 +113,7 @@ const DashboardRouter = () => {
 
             <div className='flex flex-row w-full lg:pt-0 pt-16'>
                 {/* Desktop Sidebar */}
-                <MainSidebar className='hidden lg:flex lg:relative lg:shrink-0 w-[300px] bg-[#1a1a1a] md:hidden sm:hidden'>
+                <MainSidebar className='hidden lg:flex lg:relative lg:shrink-0 w-[300px] bg-[#1a1a1a]'>
                     <div
                         className='absolute bg-brand w-[3px] h-10 left-0 rounded-full pointer-events-none '
                         style={{
