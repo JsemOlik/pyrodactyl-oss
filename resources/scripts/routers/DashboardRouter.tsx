@@ -4,6 +4,7 @@ import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
 import routes from '@/routers/routes';
 
+import BillingContainer from '@/components/dashboard/BillingContainer';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import SupportContainer from '@/components/dashboard/SupportContainer';
 import {
@@ -183,10 +184,15 @@ const DashboardRouter = () => {
                         {/* Spacer pushes the following links to the bottom */}
                         <div className='pyro-subnav-spacer' />
                         {/* Bottom links */}
-                        <a href={'/billing'} className='flex flex-row items-center' ref={NavigationSettingsBilling}>
+                        <NavLink
+                            to={'/billing'}
+                            end
+                            className='flex flex-row items-center'
+                            ref={NavigationSettingsBilling}
+                        >
                             <HugeIconsCashIcon fill='currentColor' />
                             <p>Billing</p>
-                        </a>
+                        </NavLink>
                         <NavLink to={'/support'} end className='flex flex-row items-center' ref={NavigationSupport}>
                             <HugeIconsQuestion fill='currentColor' />
                             <p>Support</p>
@@ -215,6 +221,8 @@ const DashboardRouter = () => {
                                         element={<Component />}
                                     />
                                 ))}
+
+                                <Route path='/billing' element={<BillingContainer />} />
 
                                 <Route path='/support' element={<SupportContainer />} />
 
