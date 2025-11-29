@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 const MainSidebar = styled.nav`
     width: 300px;
-    /* display: flex;  REMOVE THIS */
+    /* display: flex;  <-- remove this */
     flex-direction: column;
     flex-shrink: 0;
     border-radius: 8px;
