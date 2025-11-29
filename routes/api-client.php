@@ -8,6 +8,7 @@ use Pterodactyl\Http\Middleware\RequireTwoFactorAuthentication;
 use Pterodactyl\Http\Middleware\Api\Client\Server\ResourceBelongsToServer;
 use Pterodactyl\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
 use Pterodactyl\Http\Controllers\Api\Client\ServersOrderController;
+use Pterodactyl\Models\Announcement;
 
 /*
 |--------------------------------------------------------------------------
