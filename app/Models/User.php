@@ -9,6 +9,7 @@ use Illuminate\Validation\Rules\In;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Builder;
+use Laravel\Cashier\Billable;
 use Pterodactyl\Models\Traits\HasAccessTokens;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Pterodactyl\Traits\Helpers\AvailableLanguages;
@@ -54,7 +55,14 @@ use Pterodactyl\Notifications\SendPasswordReset as ResetPasswordNotification;
  * @property int|null $ssh_keys_count
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\ApiKey[] $tokens
  * @property int|null $tokens_count
+ * @property string|null $stripe_id
+ * @property string|null $pm_type
+ * @property string|null $pm_last_four
+ * @property \Illuminate\Support\Carbon|null $trial_ends_at
+ * @property \Illuminate\Database\Eloquent\Collection|\Laravel\Cashier\Subscription[] $subscriptions
+ * @property int|null $subscriptions_count
  *
+ * @uses \Laravel\Cashier\Billable
  * @method static \Database\Factories\UserFactory factory(...$parameters)
  * @method static Builder|User newModelQuery()
  * @method static Builder|User newQuery()
@@ -78,6 +86,7 @@ use Pterodactyl\Notifications\SendPasswordReset as ResetPasswordNotification;
  * @method static Builder|User whereUuid($value)
  *
  * @mixin \Eloquent
+ * @mixin \Laravel\Cashier\Billable
  */
 class User extends Model implements
     AuthenticatableContract,
@@ -87,6 +96,8 @@ class User extends Model implements
     use Authenticatable;
     use Authorizable;
     use AvailableLanguages;
+    /** @use \Laravel\Cashier\Billable */
+    use Billable;
     use CanResetPassword;
     use HasAccessTokens;
     use Notifiable;
@@ -138,6 +149,7 @@ class User extends Model implements
         'use_totp' => 'boolean',
         'gravatar' => 'boolean',
         'totp_authenticated_at' => 'datetime',
+        'trial_ends_at' => 'datetime',
     ];
 
     /**
@@ -277,5 +289,14 @@ class User extends Model implements
     public function serverOrder()
     {
         return $this->hasOne(UserServerOrder::class);
+    }
+
+    /**
+     * Get all servers that are associated with a subscription.
+     */
+    public function subscribedServers(): HasMany
+    {
+        return $this->hasMany(Server::class, 'owner_id')
+            ->whereNotNull('subscription_id');
     }
 }

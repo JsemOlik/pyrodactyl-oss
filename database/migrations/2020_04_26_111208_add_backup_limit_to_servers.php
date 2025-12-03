@@ -12,21 +12,22 @@ class AddBackupLimitToServers extends Migration
    */
   public function up(): void
   {
-    $db = config('database.default');
-    // Same as in the backups migration, we need to handle that plugin messing with the data structure
-    // here. If we find a result we'll actually keep the column around since we can maintain that backup
-    // limit, but we need to correct the column definition a bit.
-    $results = DB::select('SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = \'servers\' AND COLUMN_NAME = \'backup_limit\'', [
-      config("database.connections.{$db}.database"),
-    ]);
-
-    if (count($results) === 1) {
+    // Check if the column already exists using Laravel's cross-database method
+    if (Schema::hasColumn('servers', 'backup_limit')) {
+      // Column exists, just update it
       Schema::table('servers', function (Blueprint $table) {
         $table->unsignedInteger('backup_limit')->default(0)->change();
       });
     } else {
+      // Column doesn't exist, add it
       Schema::table('servers', function (Blueprint $table) {
-        $table->unsignedInteger('backup_limit')->default(0)->after('database_limit');
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+          // SQLite doesn't support 'after' clause
+          $table->unsignedInteger('backup_limit')->default(0);
+        } else {
+          $table->unsignedInteger('backup_limit')->default(0)->after('database_limit');
+        }
       });
     }
   }
