@@ -1,5 +1,6 @@
 // import React from 'react';
 import clsx from 'clsx';
+
 import { Announcement } from '@/api/getAnnouncements';
 
 type Props = { announcements: Announcement[] };

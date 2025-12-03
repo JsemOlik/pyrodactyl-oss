@@ -1,4 +1,5 @@
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/elements/Accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/elements/Accordion';
+
 import { cn } from '@/lib/utils';
 
 type Faq = {

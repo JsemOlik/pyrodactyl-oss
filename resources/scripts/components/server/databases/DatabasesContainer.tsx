@@ -103,9 +103,7 @@ const DatabasesContainer = () => {
                                 </p>
                             )}
                             {databaseLimit === 0 && (
-                                <p className='text-sm text-red-400 text-center sm:text-right'>
-                                    Databases disabled
-                                </p>
+                                <p className='text-sm text-red-400 text-center sm:text-right'>Databases disabled</p>
                             )}
                             {(databaseLimit === null || (databaseLimit > 0 && databaseLimit !== databases.length)) && (
                                 <ActionButton variant='primary' onClick={() => setCreateModalVisible(true)}>

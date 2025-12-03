@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import tsEslint from 'typescript-eslint';
 
 const gitignorePath = fileURLToPath(new URL('.gitignore', import.meta.url));
+const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig([
     includeIgnoreFile(gitignorePath),
@@ -65,7 +66,7 @@ export default defineConfig([
         languageOptions: {
             parserOptions: {
                 project: './tsconfig.json',
-                tsconfigRootDir: './',
+                tsconfigRootDir: rootDir,
             },
         },
     },

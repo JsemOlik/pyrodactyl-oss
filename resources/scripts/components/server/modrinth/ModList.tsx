@@ -127,10 +127,11 @@ export const ModList = ({ showInstalled = false, showDependencies = false }: Mod
                 <ActionButton
                     onClick={handleLoadMore}
                     disabled={isLoading}
-                    className={`${isLoading
+                    className={`${
+                        isLoading
                             ? 'bg-gray-700 cursor-not-allowed'
                             : 'bg-blue-600 hover:bg-blue-500 shadow-lg hover:shadow-blue-500/20'
-                        } text-white font-medium`}
+                    } text-white font-medium`}
                 >
                     {isLoading ? (
                         <span className='inline-flex items-center'>

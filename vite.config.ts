@@ -11,9 +11,11 @@ import manifestSRI from 'vite-plugin-manifest-sri';
 
 import packageJson from './package.json';
 
+const rootDir = dirname(fileURLToPath(import.meta.url));
+
 function getLaravelAppVersion() {
     try {
-        const configPath = path.resolve(__dirname, 'config/app.php');
+        const configPath = path.resolve(rootDir, 'config/app.php');
         const configContent = fs.readFileSync(configPath, 'utf8');
 
         const versionMatch = configContent.match(/'version'\s*=>\s*'(.*?)'/);
@@ -83,25 +85,25 @@ export default defineConfig({
     plugins: [
         laravel('resources/scripts/index.tsx'),
         manifestSRI(),
-        [
-            million.vite({
-                auto: {
-                    threshold: 0.01,
-                },
-                telemetry: false,
-            }),
-            react({
-                plugins: [
-                    [
-                        '@swc/plugin-styled-components',
-                        {
-                            pure: true,
-                            namespace: 'pyrodactyl',
-                        },
-                    ],
-                ],
-            }),
-        ],
+        million.vite({
+            auto: {
+                threshold: 0.01,
+            },
+            telemetry: false,
+        }),
+        react({
+            // Note: @swc/plugin-styled-components is currently disabled due to build errors
+            // styled-components will still work, just without SWC optimization
+            // plugins: [
+            //     [
+            //         '@swc/plugin-styled-components',
+            //         {
+            //             pure: true,
+            //             namespace: 'pyrodactyl',
+            //         },
+            //     ],
+            // ],
+        }),
     ],
 
     resolve: {

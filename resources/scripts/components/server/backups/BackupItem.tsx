@@ -3,9 +3,9 @@ import { format, formatDistanceToNow } from 'date-fns';
 import Can from '@/components/elements/Can';
 import { Checkbox } from '@/components/elements/CheckboxNew';
 import Spinner from '@/components/elements/Spinner';
+import HugeIconsRefresh from '@/components/elements/hugeicons/Refresh';
 import HugeIconsSquareLock from '@/components/elements/hugeicons/SquareLock';
 import HugeIconsStorage from '@/components/elements/hugeicons/Storage';
-import HugeIconsRefresh from '@/components/elements/hugeicons/Refresh';
 import { PageListItem } from '@/components/elements/pages/PageList';
 
 import { bytesToString } from '@/lib/formatters';
@@ -45,7 +45,6 @@ interface Props {
 
 const BackupItem = ({ backup, isSelected = false, onToggleSelect, isSelectable = false, retryBackup }: Props) => {
     const { addFlash, clearFlashes } = useFlash();
-
 
     const handleRetry = async () => {
         if (!backup.canRetry) return;
@@ -187,7 +186,6 @@ const BackupItem = ({ backup, isSelected = false, onToggleSelect, isSelectable =
                     )}
 
                     {backup.checksum && <p className='text-xs text-zinc-400 font-mono truncate'>{backup.checksum}</p>}
-
                 </div>
 
                 {/* Size info for completed backups */}
@@ -250,7 +248,7 @@ const BackupItem = ({ backup, isSelected = false, onToggleSelect, isSelectable =
                                     jobMessage: backup.message,
                                     jobId: '',
                                     jobError: null,
-                                    object: 'backup' as const
+                                    object: 'backup' as const,
                                 }}
                             />
                         )}
