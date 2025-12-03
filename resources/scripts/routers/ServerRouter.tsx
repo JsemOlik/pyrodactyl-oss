@@ -103,6 +103,7 @@ BackupsSidebarItem.displayName = 'BackupsSidebarItem';
 const NetworkingSidebarItem = React.forwardRef<HTMLAnchorElement, { id: string; onClick: () => void }>(
     ({ id, onClick }, ref) => {
         const [subdomainSupported, setSubdomainSupported] = useState(false);
+        const [isChecking, setIsChecking] = useState(true);
         const allocationLimit = ServerContext.useStoreState(
             (state) => state.server.data?.featureLimits.allocations ?? 0,
         );
@@ -110,21 +111,31 @@ const NetworkingSidebarItem = React.forwardRef<HTMLAnchorElement, { id: string; 
 
         useEffect(() => {
             const checkSubdomainSupport = async () => {
+                if (!uuid) {
+                    setIsChecking(false);
+                    return;
+                }
+
+                setIsChecking(true);
                 try {
-                    if (uuid) {
-                        const data = await getSubdomainInfo(uuid);
-                        setSubdomainSupported(data.supported);
-                    }
+                    const data = await getSubdomainInfo(uuid);
+                    setSubdomainSupported(data.supported);
                 } catch (error) {
                     setSubdomainSupported(false);
+                } finally {
+                    setIsChecking(false);
                 }
             };
 
             checkSubdomainSupport();
         }, [uuid]);
 
-        // Show if either allocations are available OR subdomains are supported
-        if (allocationLimit === 0 && !subdomainSupported) return null;
+        // Show if allocations are available (> 0) OR subdomains are supported
+        // While checking subdomain support, show optimistically to prevent flickering
+        // This matches the mobile menu logic: (allocationLimit > 0 || subdomainSupported)
+        const shouldShow = allocationLimit > 0 || subdomainSupported || (isChecking && uuid);
+
+        if (!shouldShow) return null;
 
         return (
             <Can action={'allocation.*'} matchAny>
