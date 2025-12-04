@@ -73,9 +73,9 @@ class StripePriceService
                 'recurring' => $recurring,
                 'product_data' => [
                     'name' => $plan->name,
-                    'description' => $plan->description ?? "Server hosting plan: {$plan->name}",
                     'metadata' => [
                         'plan_id' => (string) $plan->id,
+                        'plan_description' => $plan->description ?? "Server hosting plan: {$plan->name}",
                         'memory' => (string) ($plan->memory ?? ''),
                         'disk' => (string) ($plan->disk ?? ''),
                         'cpu' => (string) ($plan->cpu ?? ''),
@@ -116,9 +116,9 @@ class StripePriceService
                 'recurring' => $recurring,
                 'product_data' => [
                     'name' => "Custom Plan ({$memory}MB RAM)",
-                    'description' => "Custom server hosting plan with {$memory}MB RAM",
                     'metadata' => [
                         'custom' => 'true',
+                        'plan_description' => "Custom server hosting plan with {$memory}MB RAM",
                         'memory' => (string) $memory,
                         'interval' => $interval,
                     ],
