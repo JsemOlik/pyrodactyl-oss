@@ -299,4 +299,21 @@ class User extends Model implements
         return $this->hasMany(Server::class, 'owner_id')
             ->whereNotNull('subscription_id');
     }
+
+    /**
+     * Returns all VPSs that a user owns.
+     */
+    public function vpss(): HasMany
+    {
+        return $this->hasMany(Vps::class, 'owner_id');
+    }
+
+    /**
+     * Get all VPSs that are associated with a subscription.
+     */
+    public function subscribedVpss(): HasMany
+    {
+        return $this->hasMany(Vps::class, 'owner_id')
+            ->whereNotNull('subscription_id');
+    }
 }
