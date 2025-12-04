@@ -5,8 +5,9 @@ import useSWR from 'swr';
 import ActionButton from '@/components/elements/ActionButton';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import PageContentBlock from '@/components/elements/PageContentBlock';
-import HugeIconsCPU from '@/components/elements/hugeicons/CPU';
-import HugeIconsZap from '@/components/elements/hugeicons/Zap';
+
+// import HugeIconsCPU from '@/components/elements/hugeicons/CPU';
+// import HugeIconsZap from '@/components/elements/hugeicons/Zap';
 
 import {
     CustomPlanCalculation,
@@ -130,7 +131,7 @@ const HostingContainer = () => {
                                     >
                                         {/* Icon */}
                                         <div className='mb-4'>
-                                            <HugeIconsCPU fill='#ff6b35' className='w-8 h-8' />
+                                            {/* <HugeIconsCPU fill='#ff6b35' className='w-8 h-8' /> */}
                                         </div>
 
                                         {/* Most Popular Badge */}
@@ -220,7 +221,7 @@ const HostingContainer = () => {
                             <div className='flex-1'>
                                 {/* Icon and Title */}
                                 <div className='flex items-center gap-3 mb-6'>
-                                    <HugeIconsZap fill='#ff6b35' className='w-8 h-8' />
+                                    {/* <HugeIconsZap fill='#ff6b35' className='w-8 h-8' /> */}
                                     <h3 className='text-2xl font-bold text-white'>Custom</h3>
                                 </div>
 
