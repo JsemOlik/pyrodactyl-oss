@@ -72,6 +72,9 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('/api/remote')
                 ->scopeBindings()
                 ->group(base_path('routes/api-remote.php'));
+
+            // Stripe webhook route (public, no auth required, CSRF exempt)
+            Route::post('/webhook/stripe', [\Pterodactyl\Http\Controllers\Webhook\StripeWebhookController::class, 'handleWebhook']);
         });
     }
 

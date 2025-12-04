@@ -34,6 +34,19 @@ Route::prefix('/nests')->group(function () {
     Route::get('/{nest}', [Client\Nests\NestController::class, 'view'])->name('api:client.nests.view');
 });
 
+Route::prefix('/hosting')->group(function () {
+    Route::post('/checkout', [Client\Hosting\CheckoutController::class, 'store']);
+    Route::get('/verify-payment', [Client\Hosting\PaymentVerificationController::class, 'check']);
+});
+
+Route::prefix('/billing')->group(function () {
+    Route::get('/subscriptions', [Client\Billing\SubscriptionController::class, 'index']);
+    Route::get('/subscriptions/{subscription}', [Client\Billing\SubscriptionController::class, 'view']);
+    Route::post('/subscriptions/{subscription}/cancel', [Client\Billing\SubscriptionController::class, 'cancel']);
+    Route::post('/subscriptions/{subscription}/resume', [Client\Billing\SubscriptionController::class, 'resume']);
+    Route::get('/subscriptions/{subscription}/billing-portal', [Client\Billing\SubscriptionController::class, 'billingPortal']);
+    Route::get('/invoices', [Client\Billing\InvoiceController::class, 'index']);
+});
 
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {
     Route::prefix('/')->withoutMiddleware(RequireTwoFactorAuthentication::class)->group(function () {
@@ -80,6 +93,7 @@ Route::group([
     Route::get('/websocket', Client\Servers\WebsocketController::class)->name('api:client:server.ws');
     Route::get('/resources', Client\Servers\ResourceUtilizationController::class)->name('api:client:server.resources');
     Route::get('/activity', Client\Servers\ActivityLogController::class)->name('api:client:server.activity');
+    Route::get('/billing-portal', [Client\Servers\ServerController::class, 'billingPortal'])->name('api:client:server.billing-portal');
 
     Route::post('/command', [Client\Servers\CommandController::class, 'index']);
     Route::post('/power', [Client\Servers\PowerController::class, 'index']);

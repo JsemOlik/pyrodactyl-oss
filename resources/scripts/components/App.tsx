@@ -25,6 +25,8 @@ const ServerRouter = lazy(() => import('@/routers/ServerRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
 const HostingContainer = lazy(() => import('@/components/hosting/HostingContainer'));
 const HostingConfigureContainer = lazy(() => import('@/components/hosting/HostingConfigureContainer'));
+const HostingCheckoutContainer = lazy(() => import('@/components/hosting/HostingCheckoutContainer'));
+const HostingPaymentVerifyingContainer = lazy(() => import('@/components/hosting/HostingPaymentVerifyingContainer'));
 
 interface ExtendedWindow extends Window {
     SiteConfiguration?: SiteSettings;
@@ -117,6 +119,39 @@ const App = () => {
                                         <AuthenticatedRoute>
                                             <Spinner.Suspense>
                                                 <HostingConfigureContainer />
+                                            </Spinner.Suspense>
+                                        </AuthenticatedRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path='/hosting/checkout'
+                                    element={
+                                        <AuthenticatedRoute>
+                                            <Spinner.Suspense>
+                                                <HostingCheckoutContainer />
+                                            </Spinner.Suspense>
+                                        </AuthenticatedRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path='/hosting/verifying'
+                                    element={
+                                        <AuthenticatedRoute>
+                                            <Spinner.Suspense>
+                                                <HostingPaymentVerifyingContainer />
+                                            </Spinner.Suspense>
+                                        </AuthenticatedRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path='/hosting/verifying'
+                                    element={
+                                        <AuthenticatedRoute>
+                                            <Spinner.Suspense>
+                                                <HostingPaymentVerifyingContainer />
                                             </Spinner.Suspense>
                                         </AuthenticatedRoute>
                                     }

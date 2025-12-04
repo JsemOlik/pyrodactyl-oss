@@ -2,7 +2,7 @@ import { useStoreState } from 'easy-peasy';
 import type { FormikHelpers } from 'formik';
 import { Formik } from 'formik';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { object, string } from 'yup';
 
 import LoginFormContainer from '@/components/auth/LoginFormContainer';
@@ -25,6 +25,8 @@ interface Values {
 function LoginContainer() {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
+    const location = useLocation();
+    const intendedUrl = (location.state as { from?: string })?.from || '/';
 
     useEffect(() => {
         clearFlashes();
@@ -60,10 +62,12 @@ function LoginContainer() {
         login(loginData)
             .then((response) => {
                 if (response.complete) {
-                    window.location.href = response.intended || '/';
+                    window.location.href = intendedUrl;
                     return;
                 }
-                navigate('/auth/login/checkpoint', { state: { token: response.confirmationToken } });
+                navigate('/auth/login/checkpoint', {
+                    state: { token: response.confirmationToken, from: intendedUrl },
+                });
             })
             .catch((error: any) => {
                 setSubmitting(false);

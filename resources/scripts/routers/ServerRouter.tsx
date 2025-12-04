@@ -47,8 +47,10 @@ import StatBlock from '@/components/server/console/StatBlock';
 import { httpErrorToHuman } from '@/api/http';
 import http from '@/api/http';
 import { SubdomainInfo, getSubdomainInfo } from '@/api/server/network/subdomain';
+import getBillingPortalUrl from '@/api/server/getBillingPortalUrl';
 
 import { ServerContext } from '@/state/server';
+import { toast } from 'sonner';
 
 // Sidebar item components that check both permissions and feature limits
 const DatabasesSidebarItem = React.forwardRef<HTMLAnchorElement, { id: string; onClick: () => void }>(
@@ -203,6 +205,17 @@ const ServerRouter = () => {
 
     const onSelectManageServer = () => {
         window.open(`/admin/servers/view/${serverId}`);
+    };
+
+    const onOpenBilling = async () => {
+        if (!uuid) return;
+        
+        try {
+            const response = await getBillingPortalUrl(uuid);
+            window.location.href = response.url;
+        } catch (error: any) {
+            toast.error(httpErrorToHuman(error) || 'Failed to open billing portal.');
+        }
     };
 
     useEffect(
@@ -520,9 +533,12 @@ const ServerRouter = () => {
                                 >
                                     {serverName}
                                 </StatBlock>
-                                <StatBlock className='p-4 bg-[#ffffff09] border-[1px] border-[#ffffff11] shadow-xs rounded-xl text-center hover:cursor-pointer mt-2'>
-                                    Open in Billing
-                                </StatBlock>
+                                <button
+                                    onClick={onOpenBilling}
+                                    className='p-4 bg-[#ffffff09] border-[1px] border-[#ffffff11] shadow-xs rounded-xl text-center hover:cursor-pointer hover:bg-[#ffffff12] hover:border-[#ffffff20] transition-colors mt-2 w-full'
+                                >
+                                    <div className='text-sm font-semibold text-white'>Open in Billing</div>
+                                </button>
                             </div>
                         </MainSidebar>
 
