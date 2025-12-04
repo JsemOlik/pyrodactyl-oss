@@ -41,12 +41,19 @@ class VariableValidatorService
         $data = $rules = $customAttributes = [];
         foreach ($variables as $variable) {
             $value = Arr::get($fields, $variable->env_variable);
+            // Use default value if no value provided
+            if ($value === null || $value === '') {
+                $value = $variable->default_value ?? '';
+            }
             $data['environment'][$variable->env_variable] = $value;
             
             // Make rules nullable to handle empty environment variables, but don't duplicate if already nullable
             $rules_string = $variable->rules;
             if (!str_starts_with($rules_string, 'nullable')) {
-                $rules_string = 'nullable|' . $rules_string;
+                // Remove "required" from rules when adding nullable to avoid conflicts
+                $rules_array = explode('|', $rules_string);
+                $rules_array = array_filter($rules_array, fn($rule) => trim($rule) !== 'required');
+                $rules_string = 'nullable|' . implode('|', $rules_array);
             }
             $rules['environment.' . $variable->env_variable] = $rules_string;
             $customAttributes['environment.' . $variable->env_variable] = trans('validation.internal.variable_value', ['env' => $variable->name]);
@@ -57,11 +64,13 @@ class VariableValidatorService
             throw new ValidationException($validator);
         }
 
-        return Collection::make($variables)->map(function ($item) use ($fields) {
+        return Collection::make($variables)->map(function ($item) use ($fields, $data) {
+            // Get the value that was validated (which includes default value handling)
+            $value = $data['environment'][$item->env_variable] ?? null;
             return (object) [
                 'id' => $item->id,
                 'key' => $item->env_variable,
-                'value' => $fields[$item->env_variable] ?? null,
+                'value' => $value,
             ];
         });
     }

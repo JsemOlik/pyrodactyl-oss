@@ -67,6 +67,9 @@ class ServerProvisioningService
             throw new \Exception('No default docker image available for this egg');
         }
 
+        // Get default values for egg variables
+        $environment = $this->getDefaultEggVariableValues($egg);
+
         // Build server creation data
         $serverData = [
             'owner_id' => $user->id,
@@ -81,7 +84,7 @@ class ServerProvisioningService
             'cpu' => $resources['cpu'] ?? 0,
             'image' => $dockerImage,
             'startup' => $startup,
-            'environment' => [], // Use default egg variable values
+            'environment' => $environment,
             'start_on_completion' => false,
             'skip_scripts' => false,
             'database_limit' => 0,
@@ -216,6 +219,27 @@ class ServerProvisioningService
 
         // Return the first docker image (usually the default)
         return reset($dockerImages);
+    }
+
+    /**
+     * Get default values for egg variables.
+     * This ensures all variables have values, using their default_value if available.
+     */
+    private function getDefaultEggVariableValues(Egg $egg): array
+    {
+        $environment = [];
+        
+        // Get all variables for this egg (at admin level, so we get all variables)
+        $variables = $egg->variables()->get();
+        
+        foreach ($variables as $variable) {
+            // Use default_value if available, otherwise use empty string
+            // The VariableValidatorService will validate these values
+            $defaultValue = $variable->default_value ?? '';
+            $environment[$variable->env_variable] = $defaultValue;
+        }
+        
+        return $environment;
     }
 
     /**

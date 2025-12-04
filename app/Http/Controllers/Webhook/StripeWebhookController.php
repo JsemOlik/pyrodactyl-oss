@@ -200,11 +200,12 @@ class StripeWebhookController extends Controller
         }
 
         // Fallback: Try to use subscription metadata
-        $metadata = $subscription->metadata ?? [];
+        $rawMetadata = $subscription->metadata ?? [];
+        $metadata = $this->convertMetadataToArray($rawMetadata);
         
         Log::info('Subscription metadata retrieved', [
             'subscription_id' => $subscription->id,
-            'metadata_keys' => array_keys($metadata),
+            'metadata_keys' => is_array($metadata) ? array_keys($metadata) : 'not_array',
             'has_user_id' => !empty($metadata['user_id']),
             'has_nest_id' => !empty($metadata['nest_id']),
             'has_egg_id' => !empty($metadata['egg_id']),
@@ -337,5 +338,27 @@ class StripeWebhookController extends Controller
                 'ends_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * Convert Stripe metadata to array format.
+     */
+    private function convertMetadataToArray($metadata): array
+    {
+        if (is_array($metadata)) {
+            return $metadata;
+        }
+
+        if (is_object($metadata)) {
+            // Handle Stripe\StripeObject
+            if (method_exists($metadata, 'toArray')) {
+                return $metadata->toArray();
+            }
+            
+            // Fallback: convert object to array
+            return json_decode(json_encode($metadata), true) ?? [];
+        }
+
+        return [];
     }
 }
