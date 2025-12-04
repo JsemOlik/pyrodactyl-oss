@@ -63,6 +63,8 @@ class CloudflareProvider implements DnsProviderInterface
     {
         $zoneId = $this->getZoneId($domain);
 
+        // Normalize name to be relative to the zone (Cloudflare prefers relative names)
+        $name = $this->normalizeRecordName($name, $domain);
 
         try {
             $payload = [
@@ -73,10 +75,23 @@ class CloudflareProvider implements DnsProviderInterface
 
             // Handle different content types
             if (is_array($content)) {
-                // For SRV records and other structured data
-                $payload['data'] = $content;
-                if (isset($content['content'])) {
-                    $payload['content'] = $content['content'];
+                // For SRV records, Cloudflare expects specific format in 'data' field
+                if (strtoupper($type) === 'SRV') {
+                    $payload['data'] = [
+                        'service' => $content['service'] ?? '',
+                        'proto' => $content['proto'] ?? '',
+                        'name' => $content['target'] ?? $name,
+                        'priority' => $content['priority'] ?? 0,
+                        'weight' => $content['weight'] ?? 5,
+                        'port' => $content['port'] ?? 0,
+                        'target' => $content['target'] ?? $name,
+                    ];
+                } else {
+                    // For other structured data types
+                    $payload['data'] = $content;
+                    if (isset($content['content'])) {
+                        $payload['content'] = $content['content'];
+                    }
                 }
             } else {
                 // For simple records like A, CNAME
@@ -90,20 +105,66 @@ class CloudflareProvider implements DnsProviderInterface
             $data = json_decode($response->getBody()->getContents(), true);
 
             if (!$data['success']) {
-                throw new \Exception('DNS provider rejected the record creation request.');
+                // Extract error messages from Cloudflare API response
+                $errors = $data['errors'] ?? [];
+                $errorMessages = array_map(fn($err) => $err['message'] ?? 'Unknown error', $errors);
+                $errorMessage = !empty($errorMessages) 
+                    ? implode('; ', $errorMessages) 
+                    : 'DNS provider rejected the record creation request.';
+                
+                Log::error('Cloudflare API rejected record creation', [
+                    'domain' => $domain,
+                    'name' => $name,
+                    'type' => $type,
+                    'payload' => $payload,
+                    'errors' => $errors,
+                ]);
+                
+                throw new \Exception($errorMessage);
             }
-
-            /* Log::debug("Create Record", [ */
-            /*     "Domain" => $domain, */
-            /*     "Name" => $name, */
-            /*     "Payload" => $payload, */
-            /*     "Response" => $response, */
-            /*     "Data" => $data */
-            /* ]); */
 
             return $data['result']['id'];
         } catch (GuzzleException $e) {
-            throw DnsProviderException::recordCreationFailed($domain, $name, 'DNS service temporarily unavailable.');
+            // Extract actual error message from Guzzle response if available
+            $errorMessage = 'DNS service temporarily unavailable.';
+            
+            if ($e->hasResponse()) {
+                try {
+                    $response = $e->getResponse();
+                    $body = json_decode($response->getBody()->getContents(), true);
+                    
+                    if (isset($body['errors']) && is_array($body['errors'])) {
+                        $errorMessages = array_map(fn($err) => $err['message'] ?? 'Unknown error', $body['errors']);
+                        $errorMessage = implode('; ', $errorMessages);
+                    } elseif (isset($body['error'])) {
+                        $errorMessage = $body['error'];
+                    }
+                    
+                    Log::error('Cloudflare API error during record creation', [
+                        'domain' => $domain,
+                        'name' => $name,
+                        'type' => $type,
+                        'status_code' => $response->getStatusCode(),
+                        'error' => $errorMessage,
+                        'response_body' => $body,
+                    ]);
+                } catch (\Exception $parseException) {
+                    Log::error('Failed to parse Cloudflare API error response', [
+                        'domain' => $domain,
+                        'name' => $name,
+                        'guzzle_message' => $e->getMessage(),
+                        'parse_error' => $parseException->getMessage(),
+                    ]);
+                }
+            } else {
+                Log::error('Cloudflare API connection error', [
+                    'domain' => $domain,
+                    'name' => $name,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            
+            throw DnsProviderException::recordCreationFailed($domain, $name, $errorMessage);
         }
     }
 
@@ -115,14 +176,31 @@ class CloudflareProvider implements DnsProviderInterface
         $zoneId = $this->getZoneId($domain);
 
         try {
+            // Get existing record to determine type
+            $existingRecord = $this->getRecord($domain, $recordId);
+            $recordType = strtoupper($existingRecord['type'] ?? 'A');
+            
             $payload = [];
 
             // Handle different content types
             if (is_array($content)) {
-                // For SRV records and other structured data
-                $payload['data'] = $content;
-                if (isset($content['content'])) {
-                    $payload['content'] = $content['content'];
+                // For SRV records, Cloudflare expects specific format in 'data' field
+                if ($recordType === 'SRV') {
+                    $payload['data'] = [
+                        'service' => $content['service'] ?? '',
+                        'proto' => $content['proto'] ?? '',
+                        'name' => $content['target'] ?? $existingRecord['name'] ?? '',
+                        'priority' => $content['priority'] ?? 0,
+                        'weight' => $content['weight'] ?? 5,
+                        'port' => $content['port'] ?? 0,
+                        'target' => $content['target'] ?? $existingRecord['name'] ?? '',
+                    ];
+                } else {
+                    // For other structured data types
+                    $payload['data'] = $content;
+                    if (isset($content['content'])) {
+                        $payload['content'] = $content['content'];
+                    }
                 }
             } else {
                 // For simple records like A, CNAME
@@ -140,12 +218,64 @@ class CloudflareProvider implements DnsProviderInterface
             $data = json_decode($response->getBody()->getContents(), true);
 
             if (!$data['success']) {
-                throw new \Exception('DNS provider rejected the record update request.');
+                // Extract error messages from Cloudflare API response
+                $errors = $data['errors'] ?? [];
+                $errorMessages = array_map(fn($err) => $err['message'] ?? 'Unknown error', $errors);
+                $errorMessage = !empty($errorMessages) 
+                    ? implode('; ', $errorMessages) 
+                    : 'DNS provider rejected the record update request.';
+                
+                Log::error('Cloudflare API rejected record update', [
+                    'domain' => $domain,
+                    'record_id' => $recordId,
+                    'payload' => $payload,
+                    'errors' => $errors,
+                ]);
+                
+                throw new \Exception($errorMessage);
             }
 
             return true;
         } catch (GuzzleException $e) {
-            throw DnsProviderException::recordUpdateFailed($domain, [$recordId], 'DNS service temporarily unavailable.');
+            // Extract actual error message from Guzzle response if available
+            $errorMessage = 'DNS service temporarily unavailable.';
+            
+            if ($e->hasResponse()) {
+                try {
+                    $response = $e->getResponse();
+                    $body = json_decode($response->getBody()->getContents(), true);
+                    
+                    if (isset($body['errors']) && is_array($body['errors'])) {
+                        $errorMessages = array_map(fn($err) => $err['message'] ?? 'Unknown error', $body['errors']);
+                        $errorMessage = implode('; ', $errorMessages);
+                    } elseif (isset($body['error'])) {
+                        $errorMessage = $body['error'];
+                    }
+                    
+                    Log::error('Cloudflare API error during record update', [
+                        'domain' => $domain,
+                        'record_id' => $recordId,
+                        'status_code' => $response->getStatusCode(),
+                        'error' => $errorMessage,
+                        'response_body' => $body,
+                    ]);
+                } catch (\Exception $parseException) {
+                    Log::error('Failed to parse Cloudflare API error response', [
+                        'domain' => $domain,
+                        'record_id' => $recordId,
+                        'guzzle_message' => $e->getMessage(),
+                        'parse_error' => $parseException->getMessage(),
+                    ]);
+                }
+            } else {
+                Log::error('Cloudflare API connection error during update', [
+                    'domain' => $domain,
+                    'record_id' => $recordId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            
+            throw DnsProviderException::recordUpdateFailed($domain, [$recordId], $errorMessage);
         }
     }
 
@@ -260,6 +390,30 @@ class CloudflareProvider implements DnsProviderInterface
     public function getSupportedRecordTypes(): array
     {
         return ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'SRV', 'NS', 'PTR', 'CAA'];
+    }
+
+    /**
+     * Normalize DNS record name to be relative to the zone.
+     * Cloudflare API prefers relative names (e.g., "subdomain" instead of "subdomain.example.com").
+     */
+    private function normalizeRecordName(string $name, string $domain): string
+    {
+        // Remove trailing dot if present
+        $name = rtrim($name, '.');
+        $domain = rtrim($domain, '.');
+
+        // If name ends with the domain, remove it to make it relative
+        $domainPattern = '.' . $domain;
+        if (str_ends_with($name, $domainPattern)) {
+            return substr($name, 0, -strlen($domainPattern));
+        }
+
+        // If name exactly matches the domain, return '@' (zone apex)
+        if ($name === $domain) {
+            return '@';
+        }
+
+        return $name;
     }
 
     /**

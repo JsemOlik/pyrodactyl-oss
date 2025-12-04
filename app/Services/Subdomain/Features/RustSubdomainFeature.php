@@ -42,12 +42,10 @@ class RustSubdomainFeature implements SubdomainFeatureInterface
             'content' => [
                 'service' => '_rust',
                 'proto' => '_udp',
-                'name' => '_rust._udp.' . $subdomain,
                 'priority' => 0,
                 'weight' => 5,
                 'port' => $port,
                 'target' => $fullDomain,
-                'content' => "SRV 0 5 {$port} {$fullDomain}",
             ],
             'ttl' => 300,
         ];

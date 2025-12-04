@@ -43,12 +43,10 @@ class ScpSlSubdomainFeature implements SubdomainFeatureInterface
                 'content' => [
                     'service' => '_scpsl',
                     'proto' => '_udp',
-                    'name' => $subdomain,
                     'priority' => 0,
                     'weight' => 5,
                     'port' => $port,
                     'target' => $fullDomain,
-                    'content' => "SRV 0 5 {$port} {$fullDomain}",
                 ],
                 'ttl' => 300,
             ];

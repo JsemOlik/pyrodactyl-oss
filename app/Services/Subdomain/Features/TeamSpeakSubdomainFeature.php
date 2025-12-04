@@ -42,12 +42,10 @@ class TeamSpeakSubdomainFeature implements SubdomainFeatureInterface
             'content' => [
                 'service' => '_ts3',
                 'proto' => '_udp',
-                'name' => '_ts3._udp.' . $subdomain,
                 'priority' => 0,
                 'weight' => 5,
                 'port' => $port,
                 'target' => $fullDomain,
-                'content' => "SRV 0 5 {$port} {$fullDomain}",
             ],
             'ttl' => 300,
         ];
@@ -61,12 +59,10 @@ class TeamSpeakSubdomainFeature implements SubdomainFeatureInterface
                 'content' => [
                     'service' => '_tsdns',
                     'proto' => '_tcp',
-                    'name' => '_tsdns._tcp.' . $subdomain,
                     'priority' => 0,
                     'weight' => 5,
                     'port' => $port,
                     'target' => $fullDomain,
-                    'content' => "SRV 0 5 {$port} {$fullDomain}",
                 ],
                 'ttl' => 300,
             ];

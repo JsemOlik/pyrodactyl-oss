@@ -43,12 +43,10 @@ class MinecraftSubdomainFeature implements SubdomainFeatureInterface
                 'content' => [
                     'service' => '_minecraft',
                     'proto' => '_tcp',
-                    'name' => $subdomain,
                     'priority' => 0,
                     'weight' => 5,
                     'port' => $port,
                     'target' => $fullDomain,
-                    'content' => "SRV 0 5 {$port} {$fullDomain}",
                 ],
                 'ttl' => 300,
             ];

@@ -42,12 +42,10 @@ class FactorioSubdomainFeature implements SubdomainFeatureInterface
             'content' => [
                 'service' => '_factorio',
                 'proto' => '_udp',
-                'name' => '_factorio._udp.' . $subdomain,
                 'priority' => 0,
                 'weight' => 0,
                 'port' => $port,
                 'target' => $fullDomain,
-                'content' => "SRV 0 0 {$port} {$fullDomain}",
             ],
             'ttl' => 300,
         ];
