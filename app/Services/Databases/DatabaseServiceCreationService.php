@@ -31,7 +31,6 @@ class DatabaseServiceCreationService
         private DaemonDatabaseServiceRepository $daemonDatabaseServiceRepository,
         private FindViableNodesService $findViableNodesService,
         private DatabaseServiceRepository $repository,
-        private DatabaseServiceDeletionService $databaseServiceDeletionService,
         private ServerVariableRepository $serverVariableRepository,
         private VariableValidatorService $validatorService,
     ) {
@@ -97,7 +96,10 @@ class DatabaseServiceCreationService
                 Arr::get($data, 'start_on_completion', false) ?? false
             );
         } catch (DaemonConnectionException $exception) {
-            $this->databaseServiceDeletionService->withForce()->handle($databaseService);
+            // If creation fails, delete the database service from the database
+            // Use app() to resolve to avoid circular dependency
+            $deletionService = app(\Pterodactyl\Services\Databases\DatabaseServiceDeletionService::class);
+            $deletionService->withForce()->handle($databaseService);
 
             throw $exception;
         }
