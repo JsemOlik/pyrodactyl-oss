@@ -172,17 +172,18 @@ class DatabaseServiceCreationService
 
     /**
      * Configure the allocations assigned to this database service.
+     * 
+     * Note: We don't update the allocations table's server_id because it has a foreign key
+     * constraint to the servers table. Database services use allocations but don't need
+     * to be linked in the allocations table - the allocation_id is stored on the database
+     * service itself.
      */
     private function storeAssignedAllocations(DatabaseService $databaseService, array $data): void
     {
-        $records = [$data['allocation_id']];
-        if (isset($data['allocation_additional']) && is_array($data['allocation_additional'])) {
-            $records = array_merge($records, $data['allocation_additional']);
-        }
-
-        Allocation::query()->whereIn('id', $records)->update([
-            'server_id' => $databaseService->id,
-        ]);
+        // For database services, we don't update the allocations table's server_id
+        // because it has a foreign key constraint to servers table.
+        // The allocation_id is already stored on the database_service record.
+        // Wings will use the allocation based on the database service's allocation_id.
     }
 
     /**
