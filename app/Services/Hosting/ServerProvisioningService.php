@@ -98,17 +98,16 @@ class ServerProvisioningService
         $deployment->setLocations([]); // Auto-select from all locations
         $deployment->setPorts([]); // Auto-select port
 
-        // Create the server
-        $server = DB::transaction(function () use ($serverData, $deployment, $subscription) {
-            $server = $this->serverCreationService->handle($serverData, $deployment);
-            
-            // Link server to subscription
-            $server->update([
-                'subscription_id' => $subscription->id,
-            ]);
-
-            return $server;
-        });
+        // Create the server (ServerCreationService handles its own transaction and Wings call)
+        $server = $this->serverCreationService->handle($serverData, $deployment);
+        
+        // Link server to subscription after creation
+        $server->update([
+            'subscription_id' => $subscription->id,
+        ]);
+        
+        // Refresh server to ensure all relationships are loaded
+        $server->refresh();
 
         Log::info('Server provisioned from Stripe checkout', [
             'server_id' => $server->id,
