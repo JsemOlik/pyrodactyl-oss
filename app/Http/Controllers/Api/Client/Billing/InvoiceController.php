@@ -73,6 +73,7 @@ class InvoiceController extends ClientApiController
                     'currency' => strtoupper($stripeInvoice->currency),
                     'status' => $stripeInvoice->status,
                     'download_url' => $stripeInvoice->invoice_pdf ?? null,
+                    'hosted_invoice_url' => $stripeInvoice->hosted_invoice_url ?? null,
                 ];
             }
 

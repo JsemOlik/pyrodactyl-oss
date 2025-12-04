@@ -8,9 +8,10 @@ export type BillingInvoice = {
     currency: string;
     status: 'paid' | 'open' | 'void' | 'uncollectible' | 'draft';
     downloadUrl?: string;
+    hosted_invoice_url?: string;
 };
 
-const StatusIndicatorBox = styled.div<{ $status: BillingInvoice['status'] | undefined }>`
+const StatusIndicatorBox = styled.div<{ $status: BillingInvoice['status'] | undefined; $clickable?: boolean }>`
     background: #ffffff11;
     border: 1px solid #ffffff12;
     transition: all 250ms ease-in-out;
@@ -19,6 +20,7 @@ const StatusIndicatorBox = styled.div<{ $status: BillingInvoice['status'] | unde
     display: flex;
     align-items: center;
     justify-content: space-between;
+    ${({ $clickable }) => ($clickable ? 'cursor: pointer;' : '')}
 
     &:hover {
         border: 1px solid #ffffff19;
@@ -62,8 +64,22 @@ export function BillingInvoiceRow({ invoice }: { invoice: BillingInvoice }) {
     });
     const amount = formatMoney(invoice.amount, invoice.currency.toUpperCase());
 
+    const handleClick = () => {
+        if (invoice.hosted_invoice_url) {
+            window.open(invoice.hosted_invoice_url, '_blank', 'noopener,noreferrer');
+        }
+    };
+
+    const handleDownloadClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.stopPropagation();
+    };
+
     return (
-        <StatusIndicatorBox $status={invoice.status}>
+        <StatusIndicatorBox
+            $status={invoice.status}
+            $clickable={!!invoice.hosted_invoice_url}
+            onClick={invoice.hosted_invoice_url ? handleClick : undefined}
+        >
             <div className='flex items-center gap-2'>
                 <div className='status-bar' />
                 <div className='flex flex-col'>
@@ -84,6 +100,7 @@ export function BillingInvoiceRow({ invoice }: { invoice: BillingInvoice }) {
                         href={invoice.downloadUrl}
                         target='_blank'
                         rel='noreferrer'
+                        onClick={handleDownloadClick}
                         className='inline-flex items-center gap-2 rounded-full bg-[#3f3f46] hover:bg-[#52525b] text-white px-3 py-1.5 text-xs font-semibold transition-colors'
                     >
                         Download

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 
@@ -46,6 +46,7 @@ const BillingContainer = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [cancelImmediate, setCancelImmediate] = useState<boolean | null>(null);
     const [billingPortalLoading, setBillingPortalLoading] = useState<number | null>(null);
+    const [countdown, setCountdown] = useState<number>(0);
 
     // Handler functions
     const handleBillingPortal = useCallback(async (subscriptionId: number) => {
@@ -132,12 +133,37 @@ const BillingContainer = () => {
             setCancelConfirmDialogOpen(false);
             setSelectedSubscription(null);
             setCancelImmediate(null);
+            setCountdown(0);
         } catch (error: any) {
             toast.error(httpErrorToHuman(error) || 'Failed to cancel subscription.');
         } finally {
             setIsLoading(false);
         }
     };
+
+    // Countdown timer effect for cancel confirmation dialog
+    useEffect(() => {
+        if (cancelConfirmDialogOpen) {
+            // Reset countdown to 5 when dialog opens
+            setCountdown(5);
+
+            // Start countdown timer
+            const timer = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+            // Cleanup on unmount or dialog close
+            return () => clearInterval(timer);
+        } else {
+            setCountdown(0);
+        }
+    }, [cancelConfirmDialogOpen]);
 
     const confirmResume = async () => {
         if (!selectedSubscription) return;
@@ -384,21 +410,14 @@ const BillingContainer = () => {
             </Dialog>
 
             {/* Cancel Confirmation Dialog */}
-            <Dialog.Confirm
+            <Dialog
                 open={cancelConfirmDialogOpen}
                 onClose={() => {
                     setCancelConfirmDialogOpen(false);
                     setCancelDialogOpen(true);
+                    setCountdown(0);
                 }}
                 title={cancelImmediate ? 'Confirm Immediate Cancellation' : 'Confirm Cancellation at Billing Date'}
-                confirm={cancelImmediate ? 'Cancel Immediately' : 'Cancel at Billing Date'}
-                onConfirmed={() => {
-                    if (cancelImmediate !== null) {
-                        confirmCancel(cancelImmediate);
-                        setCancelConfirmDialogOpen(false);
-                    }
-                }}
-                loading={isLoading}
             >
                 {cancelImmediate ? (
                     <>
@@ -453,7 +472,41 @@ const BillingContainer = () => {
                         </p>
                     </>
                 )}
-            </Dialog.Confirm>
+
+                <Dialog.Footer>
+                    <ActionButton
+                        variant='secondary'
+                        onClick={() => {
+                            setCancelConfirmDialogOpen(false);
+                            setCancelDialogOpen(true);
+                            setCountdown(0);
+                        }}
+                    >
+                        Back
+                    </ActionButton>
+                    <ActionButton
+                        variant='danger'
+                        onClick={() => {
+                            if (cancelImmediate !== null && countdown === 0) {
+                                confirmCancel(cancelImmediate);
+                                setCancelConfirmDialogOpen(false);
+                            }
+                        }}
+                        disabled={isLoading || countdown > 0}
+                    >
+                        <div className='flex items-center gap-2'>
+                            {isLoading && <Spinner size='small' />}
+                            <span>
+                                {countdown > 0
+                                    ? `(${countdown}) ${cancelImmediate ? 'Cancel Immediately' : 'Cancel at Billing Date'}`
+                                    : cancelImmediate
+                                      ? 'Cancel Immediately'
+                                      : 'Cancel at Billing Date'}
+                            </span>
+                        </div>
+                    </ActionButton>
+                </Dialog.Footer>
+            </Dialog>
 
             {/* Resume Subscription Dialog */}
             <Dialog.Confirm
