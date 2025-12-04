@@ -36,6 +36,7 @@ Route::prefix('/nests')->group(function () {
 
 Route::prefix('/hosting')->group(function () {
     Route::post('/checkout', [Client\Hosting\CheckoutController::class, 'store']);
+    Route::get('/verify-payment', [Client\Hosting\PaymentVerificationController::class, 'check']);
 });
 
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {

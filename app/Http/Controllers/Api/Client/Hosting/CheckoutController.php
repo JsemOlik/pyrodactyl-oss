@@ -101,10 +101,10 @@ class CheckoutController extends Controller
             }
 
             // Get success and cancel URLs
-            $successUrl = config('app.url') . '/?checkout=success';
             $cancelUrl = config('app.url') . '/hosting/checkout?' . http_build_query($request->only(['plan_id', 'custom', 'memory', 'interval', 'nest_id', 'egg_id']));
 
             // Create Stripe Checkout Session
+            // Stripe will replace {CHECKOUT_SESSION_ID} with the actual session ID in the success_url
             $checkoutSession = Session::create([
                 'customer' => $stripeCustomer->id,
                 'payment_method_types' => ['card'],
@@ -113,7 +113,7 @@ class CheckoutController extends Controller
                     'quantity' => 1,
                 ]],
                 'mode' => 'subscription',
-                'success_url' => $successUrl,
+                'success_url' => config('app.url') . '/hosting/verifying?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => $cancelUrl,
                 'metadata' => $metadata,
                 'subscription_data' => [
