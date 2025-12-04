@@ -3,11 +3,11 @@ import styled from 'styled-components';
 const MainSidebar = styled.nav`
     width: 300px;
     flex-direction: column;
-    shrink: 0;
+    flex-shrink: 0;
     border-radius: 8px;
     overflow-x: hidden;
     padding: 32px;
-    // position: absolute;
+    /* position: absolute; */
     margin-right: 8px;
     user-select: none;
     background: rgba(0, 0, 0, 0.6);
@@ -17,6 +17,9 @@ const MainSidebar = styled.nav`
         display: flex;
         flex-direction: column;
         font-size: 14px;
+        /* make the list stretch so the spacer can push bottom links */
+        flex: 1 1 auto;
+        min-height: 0;
 
         & > a,
         & > div {
@@ -35,9 +38,16 @@ const MainSidebar = styled.nav`
             transition: 200ms all ease-in-out;
 
             &.active {
-                color: #fa4e49;
-                fill: #fa4e49;
+                // color: #fa4e49;
+                // fill: #fa4e49;
+                color: #ee8132;
+                fill: #ee8132;
             }
+        }
+
+        /* spacer consumes remaining vertical space */
+        & > .pyro-subnav-spacer {
+            flex: 1 1 auto;
         }
     }
 `;

@@ -5,7 +5,9 @@ import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
 import routes from '@/routers/routes';
 
+import BillingContainer from '@/components/dashboard/BillingContainer';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
+import SupportContainer from '@/components/dashboard/SupportContainer';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -49,20 +51,24 @@ const DashboardRouter = () => {
     };
 
     // Define refs for navigation buttons.
-    const NavigationHome = useRef(null);
-    const NavigationSettings = useRef(null);
-    const NavigationApi = useRef(null);
-    const NavigationSSH = useRef(null);
+    const NavigationHome = useRef<HTMLAnchorElement | null>(null);
+    const NavigationSettingsBilling = useRef<HTMLAnchorElement | null>(null);
+    const NavigationSettings = useRef<HTMLAnchorElement | null>(null);
+    const NavigationApi = useRef<HTMLAnchorElement | null>(null);
+    const NavigationSSH = useRef<HTMLAnchorElement | null>(null);
+    const NavigationSupport = useRef<HTMLAnchorElement | null>(null);
 
     const calculateTop = (pathname: string) => {
         // Get currents of navigation refs.
         const ButtonHome = NavigationHome.current;
+        const ButtonSettingsBilling = NavigationSettingsBilling.current;
         const ButtonSettings = NavigationSettings.current;
         const ButtonApi = NavigationApi.current;
         const ButtonSSH = NavigationSSH.current;
+        const ButtonSupport = NavigationSupport.current;
 
         // Perfectly center the page highlighter with simple math.
-        // Height of navigation links (56) minus highlight height (40) equals 16. 16 devided by 2 is 8.
+        // Height of navigation links (56) minus highlight height (40) equals 16. 16 divided by 2 is 8.
         const HighlightOffset: number = 8;
 
         if (pathname.endsWith(`/`) && ButtonHome != null) return (ButtonHome as any).offsetTop + HighlightOffset;
@@ -70,6 +76,11 @@ const DashboardRouter = () => {
             return (ButtonSettings as any).offsetTop + HighlightOffset;
         if (pathname.endsWith('/api') && ButtonApi != null) return (ButtonApi as any).offsetTop + HighlightOffset;
         if (pathname.endsWith('/ssh') && ButtonSSH != null) return (ButtonSSH as any).offsetTop + HighlightOffset;
+        if (pathname.includes('/billing') && ButtonSettingsBilling != null)
+            return (ButtonSettingsBilling as any).offsetTop + HighlightOffset;
+        if (pathname.endsWith('/support') && ButtonSupport != null)
+            return (ButtonSupport as any).offsetTop + HighlightOffset;
+
         return '0';
     };
 
@@ -121,7 +132,6 @@ const DashboardRouter = () => {
                     <div className='relative flex flex-row items-center justify-between h-8'>
                         <NavLink to={'/'} className='flex shrink-0 h-8 w-fit'>
                             <Logo uniqueId='desktop-sidebar' />
-                            {/* <h1 className='text-[35px] font-semibold leading-[98%] tracking-[-0.05rem] mb-8'>Panel</h1> */}
                         </NavLink>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -148,7 +158,7 @@ const DashboardRouter = () => {
                     <ul data-pyro-subnav-routes-wrapper='' className='pyro-subnav-routes-wrapper'>
                         <NavLink to={'/'} end className='flex flex-row items-center' ref={NavigationHome}>
                             <House width={22} height={22} fill='currentColor' />
-                            <p>Servers</p>
+                            <p>Your Servers</p>
                         </NavLink>
                         <NavLink to={'/account/api'} end className='flex flex-row items-center' ref={NavigationApi}>
                             <Lock width={22} height={22} fill='currentColor' />
@@ -157,6 +167,22 @@ const DashboardRouter = () => {
                         <NavLink to={'/account/ssh'} end className='flex flex-row items-center' ref={NavigationSSH}>
                             <Key width={22} height={22} fill='currentColor' />
                             <p>SSH Keys</p>
+                        </NavLink>
+                        {/* Spacer pushes the following links to the bottom */}
+                        <div className='pyro-subnav-spacer' />
+                        {/* Bottom links */}
+                        <NavLink
+                            to={'/billing'}
+                            end
+                            className='flex flex-row items-center'
+                            ref={NavigationSettingsBilling}
+                        >
+                            <Gear fill='currentColor' />
+                            <p>Billing</p>
+                        </NavLink>
+                        <NavLink to={'/support'} end className='flex flex-row items-center' ref={NavigationSupport}>
+                            <Gear fill='currentColor' />
+                            <p>Support</p>
                         </NavLink>
                         <NavLink to={'/account'} end className='flex flex-row items-center' ref={NavigationSettings}>
                             <Gear width={22} height={22} fill='currentColor' />
@@ -182,6 +208,10 @@ const DashboardRouter = () => {
                                         element={<Component />}
                                     />
                                 ))}
+
+                                <Route path='/billing' element={<BillingContainer />} />
+
+                                <Route path='/support' element={<SupportContainer />} />
 
                                 <Route path='*' element={<NotFound />} />
                             </Routes>

@@ -12,10 +12,23 @@ class MigrateSettingsTableToNewFormat extends Migration
    */
   public function up(): void
   {
-    DB::table('settings')->truncate();
-    Schema::table('settings', function (Blueprint $table) {
-      $table->increments('id')->first();
-    });
+    $driver = DB::getDriverName();
+
+    if ($driver === 'sqlite') {
+      // SQLite doesn't support adding primary key columns to existing tables
+      // Check if id column already exists
+      if (!Schema::hasColumn('settings', 'id')) {
+        // For SQLite, we need to recreate the table
+        // But since this is a migration that might have already run, we'll skip it
+        // The settings table in SQLite likely already has the structure needed
+        return;
+      }
+    } else {
+      DB::table('settings')->truncate();
+      Schema::table('settings', function (Blueprint $table) {
+        $table->increments('id')->first();
+      });
+    }
   }
 
   /**

@@ -21,6 +21,9 @@ import { NavLink } from 'react-router-dom';
 
 import Can from '@/components/elements/Can';
 
+import HugeIconsCashIcon from './hugeicons/CashIcon';
+import HugeIconsQuestion from './hugeicons/Question';
+
 interface MobileFullScreenMenuProps {
     isVisible: boolean;
     onClose: () => void;
@@ -98,6 +101,12 @@ export const DashboardMobileMenu = ({ isVisible, onClose }: DashboardMobileMenuP
             </NavigationItem>
             <NavigationItem to='/account/ssh' icon={Key} end>
                 SSH Keys
+            </NavigationItem>
+            <NavigationItem to='/billing' icon={Gear} end>
+                Billing
+            </NavigationItem>
+            <NavigationItem to='/support' icon={Gear} end>
+                Support
             </NavigationItem>
             <NavigationItem to='/account' icon={Gear} end>
                 Settings

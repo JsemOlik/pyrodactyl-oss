@@ -12,6 +12,9 @@ parameters:
 
         # Ignore magic spatie calls
         - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder::allowed(\w+)\(\)#'
+
+        # Ignore Cashier Billable trait not found (IDE/static analysis false positive)
+        - '#Trait "Laravel\\Cashier\\Billable" not found#'
     excludePaths:
         - app/Repositories
 

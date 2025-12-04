@@ -14,19 +14,6 @@ import useWebsocketEvent from '@/plugins/useWebsocketEvent';
 
 type Stats = Record<'memory' | 'cpu' | 'disk' | 'uptime' | 'rx' | 'tx', number>;
 
-// const getBackgroundColor = (value: number, max: number | null): string | undefined => {
-//     const delta = !max ? 0 : value / max;
-
-//     if (delta > 0.8) {
-//         if (delta > 0.9) {
-//             return 'bg-red-500';
-//         }
-//         return 'bg-yellow-500';
-//     }
-
-//     return undefined;
-// };
-
 // @ts-expect-error - Unused parameter in component definition
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Limit = ({ limit, children }: { limit: string | null; children: React.ReactNode }) => <>{children}</>;
@@ -91,20 +78,20 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
     }, [instance, connected]);
 
     useWebsocketEvent(SocketEvent.STATS, (data) => {
-        let stats: any = {};
+        let parsed: any = {};
         try {
-            stats = JSON.parse(data);
+            parsed = JSON.parse(data);
         } catch (e) {
             return;
         }
 
         setStats({
-            memory: stats.memory_bytes,
-            cpu: stats.cpu_absolute,
-            disk: stats.disk_bytes,
-            tx: stats.network.tx_bytes,
-            rx: stats.network.rx_bytes,
-            uptime: stats.uptime || 0,
+            memory: parsed.memory_bytes,
+            cpu: parsed.cpu_absolute,
+            disk: parsed.disk_bytes,
+            tx: parsed.network.tx_bytes,
+            rx: parsed.network.rx_bytes,
+            uptime: parsed.uptime || 0,
         });
     });
 
@@ -134,7 +121,9 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
                     ) : (
-                        <Limit limit={textLimits.cpu}>{stats.cpu.toFixed(2)}%</Limit>
+                        <Limit
+                            limit={textLimits.cpu}
+                        >{`${stats.cpu.toFixed(2)}% / ${textLimits.cpu ?? 'Unlimited'}`}</Limit>
                     )}
                 </StatBlock>
             </div>
@@ -150,7 +139,9 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
                     ) : (
-                        <Limit limit={textLimits.memory}>{bytesToString(stats.memory)}</Limit>
+                        <Limit limit={textLimits.memory}>
+                            {`${bytesToString(stats.memory)} / ${textLimits.memory ?? 'Unlimited'}`}
+                        </Limit>
                     )}
                 </StatBlock>
             </div>
@@ -163,7 +154,9 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                 }}
             >
                 <StatBlock title={'Storage'}>
-                    <Limit limit={textLimits.disk}>{bytesToString(stats.disk)}</Limit>
+                    <Limit
+                        limit={textLimits.disk}
+                    >{`${bytesToString(stats.disk)} / ${textLimits.disk ?? 'Unlimited'}`}</Limit>
                 </StatBlock>
             </div>
         </div>

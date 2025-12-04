@@ -46,6 +46,16 @@ class RouteServiceProvider extends ServiceProvider
                 Route::middleware('guest')->prefix('/auth')->group(base_path('routes/auth.php'));
             });
 
+            // Public hosting API routes (no authentication required)
+            // These routes need to be accessible without authentication for the public hosting page
+            Route::middleware(['api'])->withoutMiddleware(['auth:sanctum', RequireTwoFactorAuthentication::class, \Pterodactyl\Http\Middleware\Api\AuthenticateIPAccess::class])->group(function () {
+                Route::prefix('/api/client/hosting')
+                    ->group(function () {
+                        Route::get('/plans', [\Pterodactyl\Http\Controllers\Api\Client\Hosting\HostingPlanController::class, 'index']);
+                        Route::post('/calculate-custom-plan', [\Pterodactyl\Http\Controllers\Api\Client\Hosting\HostingPlanController::class, 'calculateCustomPlan']);
+                    });
+            });
+
             Route::middleware(['api', RequireTwoFactorAuthentication::class])->group(function () {
                 Route::middleware(['application-api', 'throttle:api.application'])
                     ->prefix('/api/application')

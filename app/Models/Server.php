@@ -27,6 +27,7 @@ use Pterodactyl\Models\ServerSubdomain;
  * @property string|null $status
  * @property bool $skip_scripts
  * @property int $owner_id
+ * @property int|null $subscription_id
  * @property int $memory
  * @property int $overhead_memory
  * @property int $swap
@@ -70,6 +71,7 @@ use Pterodactyl\Models\ServerSubdomain;
  * @property int|null $subusers_count
  * @property ServerTransfer|null $transfer
  * @property User $user
+ * @property \Pterodactyl\Models\Subscription|null $subscription
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\EggVariable[] $variables
  * @property int|null $variables_count
  *
@@ -269,6 +271,14 @@ class Server extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Gets the subscription associated with this server.
+     */
+    public function subscription(): BelongsTo
+    {
+        return $this->belongsTo(Subscription::class);
     }
 
     /**

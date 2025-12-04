@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Pterodactyl\Http\Controllers\Admin;
 use Pterodactyl\Http\Middleware\Admin\Servers\ServerInstalled;
+use Pterodactyl\Http\Controllers\Admin\AnnouncementController;
 
 Route::get('/', [Admin\BaseController::class, 'index'])->name('admin.index');
 
@@ -151,8 +152,7 @@ Route::group(['prefix' => 'servers'], function () {
     Route::patch('/view/{server:id}/database', [Admin\ServersController::class, 'resetDatabasePassword']);
 
     Route::delete('/view/{server:id}/database/{database:id}/delete', [Admin\ServersController::class, 'deleteDatabase'])->name('admin.servers.view.database.delete');
-    Route::delete('/view/{server:id}/mounts/{mount:id}', [Admin\ServersController::class, 'deleteMount'])
-        ->name('admin.servers.view.mounts.delete');
+    Route::delete('/view/{server:id}/mounts/{mount:id}', [Admin\ServersController::class, 'deleteMount'])->name('admin.servers.view.mounts.delete');
 });
 
 /*
@@ -242,4 +242,21 @@ Route::group(['prefix' => 'nests'], function () {
     Route::delete('/view/{nest:id}', [Admin\Nests\NestController::class, 'destroy']);
     Route::delete('/egg/{egg:id}', [Admin\Nests\EggController::class, 'destroy']);
     Route::delete('/egg/{egg:id}/variables/{variable:id}', [Admin\Nests\EggVariableController::class, 'destroy']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Announcements Controller Routes
+|--------------------------------------------------------------------------
+|
+| Endpoint: /admin/announcements
+|
+*/
+Route::group(['prefix' => 'announcements'], function () {
+    Route::get('/', [AnnouncementController::class, 'index'])->name('admin.announcements.index');
+    Route::get('/create', [AnnouncementController::class, 'create'])->name('admin.announcements.create');
+    Route::post('/', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
+    Route::get('/{announcement}/edit', [AnnouncementController::class, 'edit'])->name('admin.announcements.edit');
+    Route::put('/{announcement}', [AnnouncementController::class, 'update'])->name('admin.announcements.update');
+    Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
 });

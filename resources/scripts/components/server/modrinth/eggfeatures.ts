@@ -39,6 +39,7 @@ export const parseEggFeatures = (features: string[]): LoaderMatch[] => {
         });
     });
 
+    // Remove duplicates and return exact matches first
     return matches
         .filter(
             (match, index, self) => index === self.findIndex((m) => m.type === match.type && m.loader === match.loader),

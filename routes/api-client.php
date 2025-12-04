@@ -7,6 +7,8 @@ use Pterodactyl\Http\Middleware\Activity\AccountSubject;
 use Pterodactyl\Http\Middleware\RequireTwoFactorAuthentication;
 use Pterodactyl\Http\Middleware\Api\Client\Server\ResourceBelongsToServer;
 use Pterodactyl\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
+use Pterodactyl\Http\Controllers\Api\Client\ServersOrderController;
+use Pterodactyl\Models\Announcement;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,10 +24,16 @@ Route::get('/version', function () {
     return response()->json(['version' => config('app.version')]);
 });
 
+Route::prefix('/servers')->group(function () {
+    Route::get('/order', [Client\ServersOrderController::class, 'show']);
+    Route::put('/order', [Client\ServersOrderController::class, 'update']);
+});
+
 Route::prefix('/nests')->group(function () {
     Route::get('/', [Client\Nests\NestController::class, 'index'])->name('api:client.nests');
     Route::get('/{nest}', [Client\Nests\NestController::class, 'view'])->name('api:client.nests.view');
 });
+
 
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {
     Route::prefix('/')->withoutMiddleware(RequireTwoFactorAuthentication::class)->group(function () {
@@ -50,6 +58,7 @@ Route::prefix('/account')->middleware(AccountSubject::class)->group(function () 
         Route::post('/remove', [Client\SSHKeyController::class, 'delete']);
     });
 });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -189,4 +198,18 @@ Route::group([
         Route::get('/', [Client\Servers\SettingsController::class, 'getServerOperations']);
         Route::get('/{operationId}', [Client\Servers\SettingsController::class, 'getOperationStatus']);
     });
+});
+
+Route::get('/announcements', function () {
+    $now = now();
+    $announcements = Announcement::query()
+        ->where('active', true)
+        ->where(function ($q) use ($now) {
+            $q->whereNull('published_at')->orWhere('published_at', '<=', $now);
+        })
+        ->orderByDesc('published_at')
+        ->orderByDesc('created_at')
+        ->get(['id', 'title', 'message', 'type', 'published_at', 'created_at']);
+
+    return response()->json($announcements);
 });

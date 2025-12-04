@@ -1178,7 +1178,7 @@ const SoftwareContainer = () => {
     // Show loading state if server data is not available
     if (!serverData) {
         return (
-            <ServerContentBlock title='Software Management'>
+            <ServerContentBlock title='Game/Software Management'>
                 <div className='flex items-center justify-center h-64'>
                     <div className='flex flex-col items-center text-center'>
                         <Spinner size='large' />
