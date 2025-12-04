@@ -77,14 +77,37 @@ class CloudflareProvider implements DnsProviderInterface
             if (is_array($content)) {
                 // For SRV records, Cloudflare expects specific format in 'data' field
                 if (strtoupper($type) === 'SRV') {
+                    // Extract values with proper defaults - SRV targets should be relative to zone
+                    $service = isset($content['service']) ? (string) $content['service'] : '';
+                    $proto = isset($content['proto']) ? (string) $content['proto'] : '';
+                    $priority = isset($content['priority']) ? (int) $content['priority'] : 0;
+                    $weight = isset($content['weight']) ? (int) $content['weight'] : 5;
+                    $port = isset($content['port']) ? (int) $content['port'] : 0;
+                    
+                    // Target should be normalized to be relative to the zone
+                    $target = '';
+                    if (!empty($content['target'])) {
+                        $target = $this->normalizeRecordName((string) $content['target'], $domain);
+                    }
+                    
+                    // If target is empty, fall back to using the name without the service prefix
+                    if (empty($target)) {
+                        // Extract the base subdomain from the SRV name (e.g., "_ts3._udp.teamspeak3" -> "teamspeak3")
+                        $target = preg_replace('/^_[^._]+\._[^._]+\./', '', $name);
+                        if (empty($target)) {
+                            $target = $name;
+                        }
+                    }
+                    
+                    // Ensure all required fields are present - Cloudflare requires weight, port, and target
                     $payload['data'] = [
-                        'service' => $content['service'] ?? '',
-                        'proto' => $content['proto'] ?? '',
-                        'name' => $content['target'] ?? $name,
-                        'priority' => $content['priority'] ?? 0,
-                        'weight' => $content['weight'] ?? 5,
-                        'port' => $content['port'] ?? 0,
-                        'target' => $content['target'] ?? $name,
+                        'service' => $service,
+                        'proto' => $proto,
+                        'name' => $target,
+                        'priority' => $priority,
+                        'weight' => $weight,
+                        'port' => $port,
+                        'target' => $target,
                     ];
                 } else {
                     // For other structured data types
@@ -96,6 +119,15 @@ class CloudflareProvider implements DnsProviderInterface
             } else {
                 // For simple records like A, CNAME
                 $payload['content'] = $content;
+            }
+
+            // Log SRV payload for debugging
+            if (strtoupper($type) === 'SRV') {
+                Log::debug('Creating SRV record', [
+                    'domain' => $domain,
+                    'name' => $name,
+                    'payload' => $payload,
+                ]);
             }
 
             $response = $this->client->post("zones/{$zoneId}/dns_records", [
