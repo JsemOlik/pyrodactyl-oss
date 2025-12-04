@@ -112,10 +112,30 @@ class ServerProvisioningService
         Log::info('Server provisioned from Stripe checkout', [
             'server_id' => $server->id,
             'server_uuid' => $server->uuid,
+            'server_uuid_short' => $server->uuidShort,
+            'node_id' => $server->node_id,
+            'allocation_id' => $server->allocation_id,
             'user_id' => $user->id,
             'subscription_id' => $subscription->id,
             'session_id' => $stripeSession->id,
         ]);
+        
+        // Verify server is accessible via repository (as Wings would query it)
+        try {
+            $serverRepository = app(\Pterodactyl\Repositories\Eloquent\ServerRepository::class);
+            $verifiedServer = $serverRepository->getByUuid($server->uuid);
+            Log::info('Server verified as accessible via repository', [
+                'server_id' => $verifiedServer->id,
+                'uuid' => $verifiedServer->uuid,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Server not accessible via repository after creation', [
+                'server_id' => $server->id,
+                'uuid' => $server->uuid,
+                'error' => $e->getMessage(),
+            ]);
+            throw new \Exception('Server was created but is not accessible via repository: ' . $e->getMessage());
+        }
 
         return $server;
     }
