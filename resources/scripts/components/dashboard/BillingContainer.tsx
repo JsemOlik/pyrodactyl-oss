@@ -1,33 +1,33 @@
-import { useMemo, useState, useCallback } from 'react';
-import useSWR from 'swr';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import useSWR from 'swr';
 
+import { BillingInvoice, BillingInvoiceRow } from '@/components/dashboard/BillingInvoiceRow';
 import { BillingService, BillingServiceRow } from '@/components/dashboard/BillingServiceRow';
+import ActionButton from '@/components/elements/ActionButton';
 import AnimatedCollapsible from '@/components/elements/AnimatedCollapsible';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import PageContentBlock from '@/components/elements/PageContentBlock';
-import { PageListContainer } from '@/components/elements/pages/PageList';
-import { Dialog } from '@/components/elements/dialog';
-import ActionButton from '@/components/elements/ActionButton';
 import Spinner from '@/components/elements/Spinner';
+import { Dialog } from '@/components/elements/dialog';
+import { PageListContainer } from '@/components/elements/pages/PageList';
 
-import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
 import cancelSubscription from '@/api/billing/cancelSubscription';
-import resumeSubscription from '@/api/billing/resumeSubscription';
 import getBillingPortalUrl from '@/api/billing/getBillingPortalUrl';
 import getInvoices from '@/api/billing/getInvoices';
+import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
+import resumeSubscription from '@/api/billing/resumeSubscription';
 import { httpErrorToHuman } from '@/api/http';
-import { BillingInvoice, BillingInvoiceRow } from '@/components/dashboard/BillingInvoiceRow';
 
 const BillingContainer = () => {
     // Load subscriptions
-    const { data: subscriptions, error, mutate } = useSWR<Subscription[]>(
-        '/api/client/billing/subscriptions',
-        getSubscriptions,
-        {
-            revalidateOnFocus: false,
-        }
-    );
+    const {
+        data: subscriptions,
+        error,
+        mutate,
+    } = useSWR<Subscription[]>('/api/client/billing/subscriptions', getSubscriptions, {
+        revalidateOnFocus: false,
+    });
 
     // Load invoices
     const { data: invoices, error: invoicesError } = useSWR<BillingInvoice[]>(
@@ -35,7 +35,7 @@ const BillingContainer = () => {
         getInvoices,
         {
             revalidateOnFocus: false,
-        }
+        },
     );
 
     // State for managing dialogs
@@ -62,7 +62,7 @@ const BillingContainer = () => {
     const handleCancel = (service: BillingService & { subscriptionId: number }) => {
         const subscription = subscriptions?.find((s) => s.attributes.id === service.subscriptionId);
         if (!subscription) return;
-        
+
         setSelectedSubscription(subscription);
         setCancelDialogOpen(true);
     };
@@ -70,7 +70,7 @@ const BillingContainer = () => {
     const handleResume = (service: BillingService & { subscriptionId: number }) => {
         const subscription = subscriptions?.find((s) => s.attributes.id === service.subscriptionId);
         if (!subscription) return;
-        
+
         setSelectedSubscription(subscription);
         setResumeDialogOpen(true);
     };
@@ -78,7 +78,7 @@ const BillingContainer = () => {
     // Map subscriptions to BillingService format
     const services: (BillingService & { subscriptionId: number })[] = useMemo(() => {
         if (!subscriptions) return [];
-        
+
         return subscriptions.map((sub) => {
             const attrs = sub.attributes;
             const priceFormatted = new Intl.NumberFormat(undefined, {
@@ -115,7 +115,6 @@ const BillingContainer = () => {
             };
         });
     }, [subscriptions, handleBillingPortal]);
-
 
     const confirmCancel = async (immediate: boolean) => {
         if (!selectedSubscription) return;
@@ -169,13 +168,13 @@ const BillingContainer = () => {
                 <MainPageHeader title='Active Services' />
                 <PageListContainer className='p-4 flex flex-col gap-3'>
                     {!subscriptions && !error ? (
-                        <div className='p-4 text-sm text-white/70'>Loading services…</div>
+                        <div className='p-2 text-sm text-white/70'>Loading services…</div>
                     ) : error ? (
-                        <div className='p-4 text-sm text-red-400'>
+                        <div className='p-2 text-sm text-red-400'>
                             Failed to load subscriptions: {httpErrorToHuman(error)}
                         </div>
                     ) : services.length === 0 ? (
-                        <div className='p-4 text-sm text-white/70'>No active services yet.</div>
+                        <div className='p-2 text-sm text-white/70'>No active services yet.</div>
                     ) : (
                         <>
                             {visible.map((service, index) => (
@@ -239,7 +238,9 @@ const BillingContainer = () => {
                                                             className='transition-all duration-300'
                                                             style={{
                                                                 opacity: expanded ? 1 : 0,
-                                                                transform: expanded ? 'translateY(0px)' : 'translateY(-4px)',
+                                                                transform: expanded
+                                                                    ? 'translateY(0px)'
+                                                                    : 'translateY(-4px)',
                                                             }}
                                                         >
                                                             <BillingServiceRow
@@ -289,17 +290,15 @@ const BillingContainer = () => {
                 <MainPageHeader title='Billing & Invoices' />
                 <PageListContainer className='p-4 flex flex-col gap-3'>
                     {!invoices && !invoicesError ? (
-                        <div className='p-4 text-sm text-white/70'>Loading invoices…</div>
+                        <div className='p-2 text-sm text-white/70'>Loading invoices…</div>
                     ) : invoicesError ? (
-                        <div className='p-4 text-sm text-red-400'>
+                        <div className='p-2 text-sm text-red-400'>
                             Failed to load invoices: {httpErrorToHuman(invoicesError)}
                         </div>
                     ) : !invoices || invoices.length === 0 ? (
-                        <div className='p-4 text-sm text-white/70'>No invoices yet.</div>
+                        <div className='p-2 text-sm text-white/70'>No invoices yet.</div>
                     ) : (
-                        invoices.map((invoice) => (
-                            <BillingInvoiceRow key={invoice.id} invoice={invoice} />
-                        ))
+                        invoices.map((invoice) => <BillingInvoiceRow key={invoice.id} invoice={invoice} />)
                     )}
                 </PageListContainer>
             </div>
@@ -359,11 +358,14 @@ const BillingContainer = () => {
                 </div>
 
                 <Dialog.Footer>
-                    <ActionButton variant='secondary' onClick={() => {
-                        setCancelDialogOpen(false);
-                        setSelectedSubscription(null);
-                        setCancelImmediate(null);
-                    }}>
+                    <ActionButton
+                        variant='secondary'
+                        onClick={() => {
+                            setCancelDialogOpen(false);
+                            setSelectedSubscription(null);
+                            setCancelImmediate(null);
+                        }}
+                    >
                         Cancel
                     </ActionButton>
                     <ActionButton
@@ -425,10 +427,13 @@ const BillingContainer = () => {
                         <div className='space-y-2 text-sm text-zinc-300'>
                             <p>When you cancel at the billing date, you will:</p>
                             <ul className='list-disc list-inside space-y-1 ml-2'>
-                                <li>Keep access to your server until{' '}
+                                <li>
+                                    Keep access to your server until{' '}
                                     {selectedSubscription?.attributes.next_renewal_at ? (
                                         <span className='font-semibold'>
-                                            {new Date(selectedSubscription.attributes.next_renewal_at).toLocaleDateString(undefined, {
+                                            {new Date(
+                                                selectedSubscription.attributes.next_renewal_at,
+                                            ).toLocaleDateString(undefined, {
                                                 year: 'numeric',
                                                 month: 'long',
                                                 day: 'numeric',
@@ -439,8 +444,7 @@ const BillingContainer = () => {
                                     )}
                                 </li>
                                 <li>Have until the billing date to retrieve any data and/or backups</li>
-                                <li>Your subscription will remain active and you will continue to be charged until then</li>
-                                <li>Your server will be suspended after the cancellation date</li>
+                                <li>Your server will be permanently deleted after the cancellation date</li>
                                 <li>You can resume the subscription at any time before the cancellation date</li>
                             </ul>
                         </div>
