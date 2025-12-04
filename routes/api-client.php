@@ -39,6 +39,14 @@ Route::prefix('/hosting')->group(function () {
     Route::get('/verify-payment', [Client\Hosting\PaymentVerificationController::class, 'check']);
 });
 
+Route::prefix('/billing')->group(function () {
+    Route::get('/subscriptions', [Client\Billing\SubscriptionController::class, 'index']);
+    Route::get('/subscriptions/{subscription}', [Client\Billing\SubscriptionController::class, 'view']);
+    Route::post('/subscriptions/{subscription}/cancel', [Client\Billing\SubscriptionController::class, 'cancel']);
+    Route::post('/subscriptions/{subscription}/resume', [Client\Billing\SubscriptionController::class, 'resume']);
+    Route::get('/subscriptions/{subscription}/billing-portal', [Client\Billing\SubscriptionController::class, 'billingPortal']);
+});
+
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {
     Route::prefix('/')->withoutMiddleware(RequireTwoFactorAuthentication::class)->group(function () {
         Route::get('/', [Client\AccountController::class, 'index'])->name('api:client.account');
