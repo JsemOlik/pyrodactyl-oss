@@ -90,10 +90,9 @@ const AllocationRow = ({ allocation }: Props) => {
     };
 
     const deleteAllocation = () => {
-        if (!confirm('Are you sure you want to delete this allocation?')) return;
-
         clearFlashes();
         setDeleteLoading(true);
+        setShowDeleteDialog(false);
 
         deleteServerAllocation(uuid, allocation.id)
             .then(() => {
@@ -104,8 +103,24 @@ const AllocationRow = ({ allocation }: Props) => {
     };
 
     return (
-        <PageListItem>
-            <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full'>
+        <>
+            <Dialog.Confirm
+                open={showDeleteDialog}
+                onClose={() => setShowDeleteDialog(false)}
+                title={'Delete Allocation'}
+                confirm={'Delete'}
+                onConfirmed={deleteAllocation}
+                loading={deleteLoading}
+            >
+                Are you sure you want to delete this allocation? The allocation{' '}
+                <span className='font-mono font-semibold text-zinc-200'>
+                    {allocation.alias ? allocation.alias : ip(allocation.ip)}:{allocation.port}
+                </span>{' '}
+                will be immediately removed from your server. This action cannot be undone.
+            </Dialog.Confirm>
+
+            <PageListItem>
+                <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full'>
                 <div className='flex-1 min-w-0'>
                     <div className='flex items-center gap-3 mb-3'>
                         <div className='flex-shrink-0 w-8 h-8 rounded-lg bg-[#ffffff11] flex items-center justify-center'>
@@ -202,7 +217,7 @@ const AllocationRow = ({ allocation }: Props) => {
                         <ActionButton
                             variant='danger'
                             size='sm'
-                            onClick={deleteAllocation}
+                            onClick={() => setShowDeleteDialog(true)}
                             disabled={allocation.isDefault || deleteLoading}
                             title={
                                 allocation.isDefault ? 'Cannot delete the primary allocation' : 'Delete this allocation'
@@ -219,6 +234,7 @@ const AllocationRow = ({ allocation }: Props) => {
                 </div>
             </div>
         </PageListItem>
+        </>
     );
 };
 
