@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
-type BillingStatus = 'active' | 'past_due' | 'canceled' | 'trialing' | 'incomplete' | 'paused';
+type BillingStatus = 'active' | 'past_due' | 'canceled' | 'trialing' | 'incomplete' | 'paused' | 'pending_cancellation';
 
 export type BillingService = {
     id: string;
@@ -60,14 +60,18 @@ const StatusIndicatorBox = styled.div<{ $status: BillingStatus | undefined }>`
                 ? '0 0 12px 1px #C74343'
                 : $status === 'active' || $status === 'trialing'
                   ? '0 0 12px 1px #43C760'
-                  : '0 0 12px 1px #c7aa43'};
+                  : $status === 'pending_cancellation'
+                    ? '0 0 12px 1px #FBBF24'
+                    : '0 0 12px 1px #c7aa43'};
 
         background: ${({ $status }) =>
             !$status || $status === 'canceled'
                 ? `linear-gradient(180deg, #C74343 0%, #C74343 100%)`
                 : $status === 'active' || $status === 'trialing'
                   ? `linear-gradient(180deg, #91FFA9 0%, #43C760 100%)`
-                  : `linear-gradient(180deg, #c7aa43 0%, #c7aa43 100%)`};
+                  : $status === 'pending_cancellation'
+                    ? `linear-gradient(180deg, #FCD34D 0%, #FBBF24 100%)`
+                    : `linear-gradient(180deg, #c7aa43 0%, #c7aa43 100%)`};
     }
 `;
 
@@ -89,6 +93,8 @@ function statusLabel(status: BillingStatus) {
             return 'Past Due';
         case 'canceled':
             return 'Canceled';
+        case 'pending_cancellation':
+            return 'Pending Cancellation';
         case 'paused':
             return 'Paused';
         case 'incomplete':
@@ -170,7 +176,11 @@ export function BillingServiceRow({
                         {nextRenewal && (
                             <>
                                 <span className='opacity-60'>•</span>
-                                <span>Renews on {nextRenewal}</span>
+                                <span>
+                                    {service.status === 'pending_cancellation'
+                                        ? `Cancels on ${nextRenewal}`
+                                        : `Renews on ${nextRenewal}`}
+                                </span>
                             </>
                         )}
                     </div>
@@ -184,9 +194,11 @@ export function BillingServiceRow({
                             ? 'Payment required'
                             : service.status === 'canceled'
                               ? 'Subscription canceled'
-                              : service.status === 'trialing'
-                                ? 'Trial in progress'
-                                : 'Manage your subscription'}
+                              : service.status === 'pending_cancellation'
+                                ? 'Canceling at billing date'
+                                : service.status === 'trialing'
+                                  ? 'Trial in progress'
+                                  : 'Manage your subscription'}
                     </span>
 
                     <div className='flex items-center gap-2'>
@@ -222,7 +234,7 @@ export function BillingServiceRow({
                                 Cancel
                             </button>
                         )}
-                        {service.canResume && (service.status === 'paused' || service.status === 'canceled') && (
+                        {service.canResume && (service.status === 'paused' || service.status === 'canceled' || service.status === 'pending_cancellation') && (
                             <button
                                 onClick={handleResume}
                                 className='inline-flex items-center gap-2 rounded-full bg-[#3f3f46] hover:bg-[#52525b] text-white px-3 py-1.5 text-xs font-semibold transition-colors'

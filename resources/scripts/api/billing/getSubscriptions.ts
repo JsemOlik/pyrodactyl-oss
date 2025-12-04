@@ -5,7 +5,7 @@ export interface Subscription {
     attributes: {
         id: number;
         stripe_id: string;
-        status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'paused';
+        status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'paused' | 'pending_cancellation';
         stripe_status: string;
         plan_name: string;
         price_amount: number;

@@ -8,6 +8,8 @@ import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import PageContentBlock from '@/components/elements/PageContentBlock';
 import { PageListContainer } from '@/components/elements/pages/PageList';
 import { Dialog } from '@/components/elements/dialog';
+import ActionButton from '@/components/elements/ActionButton';
+import Spinner from '@/components/elements/Spinner';
 
 import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
 import cancelSubscription from '@/api/billing/cancelSubscription';
@@ -30,6 +32,7 @@ const BillingContainer = () => {
     const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
     const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [cancelImmediate, setCancelImmediate] = useState<boolean | null>(null);
     const [billingPortalLoading, setBillingPortalLoading] = useState<number | null>(null);
 
     // Handler functions
@@ -102,16 +105,21 @@ const BillingContainer = () => {
     }, [subscriptions, handleBillingPortal]);
 
 
-    const confirmCancel = async () => {
+    const confirmCancel = async (immediate: boolean) => {
         if (!selectedSubscription) return;
 
         setIsLoading(true);
         try {
-            await cancelSubscription(selectedSubscription.attributes.id);
-            toast.success('Subscription will be canceled at the end of the billing period.');
+            await cancelSubscription(selectedSubscription.attributes.id, immediate);
+            if (immediate) {
+                toast.success('Subscription has been canceled immediately and the server has been deleted.');
+            } else {
+                toast.success('Subscription will be canceled at the end of the billing period.');
+            }
             await mutate();
             setCancelDialogOpen(false);
             setSelectedSubscription(null);
+            setCancelImmediate(null);
         } catch (error: any) {
             toast.error(httpErrorToHuman(error) || 'Failed to cancel subscription.');
         } finally {
@@ -272,29 +280,89 @@ const BillingContainer = () => {
             </div>
 
             {/* Cancel Subscription Dialog */}
-            <Dialog.Confirm
+            <Dialog
                 open={cancelDialogOpen}
                 onClose={() => {
                     setCancelDialogOpen(false);
                     setSelectedSubscription(null);
+                    setCancelImmediate(null);
                 }}
                 title='Cancel Subscription'
-                confirm='Cancel Subscription'
-                onConfirmed={confirmCancel}
-                loading={isLoading}
             >
-                <p className='mb-2'>
-                    Are you sure you want to cancel your subscription for{' '}
-                    <span className='font-semibold text-zinc-50'>
-                        {selectedSubscription?.attributes.server_name || 'this server'}
-                    </span>
-                    ?
-                </p>
-                <p className='text-sm text-zinc-400'>
-                    Your subscription will remain active until the end of the current billing period. After that, your
-                    server will be suspended.
-                </p>
-            </Dialog.Confirm>
+                <div className='space-y-4'>
+                    <p className='text-zinc-300'>
+                        How would you like to cancel your subscription for{' '}
+                        <span className='font-semibold text-zinc-50'>
+                            {selectedSubscription?.attributes.server_name || 'this server'}
+                        </span>
+                        ?
+                    </p>
+
+                    <div className='space-y-3'>
+                        <button
+                            onClick={() => setCancelImmediate(false)}
+                            disabled={isLoading}
+                            className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                                cancelImmediate === false
+                                    ? 'border-yellow-500 bg-yellow-500/10'
+                                    : 'border-[#ffffff12] hover:border-[#ffffff20]'
+                            }`}
+                        >
+                            <div className='font-semibold text-zinc-50 mb-1'>Cancel at Billing Date</div>
+                            <div className='text-sm text-zinc-400'>
+                                Your subscription will remain active until the end of the current billing period. Your
+                                server will stay accessible until then.
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={() => setCancelImmediate(true)}
+                            disabled={isLoading}
+                            className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                                cancelImmediate === true
+                                    ? 'border-red-500 bg-red-500/10'
+                                    : 'border-[#ffffff12] hover:border-[#ffffff20]'
+                            }`}
+                        >
+                            <div className='font-semibold text-zinc-50 mb-1'>Cancel Immediately</div>
+                            <div className='text-sm text-zinc-400'>
+                                Your subscription will be canceled immediately and your server will be deleted. This
+                                action cannot be undone.
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <Dialog.Footer>
+                    <ActionButton variant='secondary' onClick={() => {
+                        setCancelDialogOpen(false);
+                        setSelectedSubscription(null);
+                        setCancelImmediate(null);
+                    }}>
+                        Cancel
+                    </ActionButton>
+                    <ActionButton
+                        variant='danger'
+                        onClick={() => {
+                            if (cancelImmediate !== null) {
+                                confirmCancel(cancelImmediate);
+                            }
+                        }}
+                        disabled={isLoading || cancelImmediate === null}
+                    >
+                        <div className='flex items-center gap-2'>
+                            {isLoading && <Spinner size='small' />}
+                            <span>
+                                {cancelImmediate === true
+                                    ? 'Cancel Immediately'
+                                    : cancelImmediate === false
+                                      ? 'Cancel at Billing Date'
+                                      : 'Confirm Cancellation'}
+                            </span>
+                        </div>
+                    </ActionButton>
+                </Dialog.Footer>
+            </Dialog>
 
             {/* Resume Subscription Dialog */}
             <Dialog.Confirm

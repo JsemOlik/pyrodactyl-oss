@@ -80,28 +80,71 @@ class SubscriptionController extends ClientApiController
             ], 400);
         }
 
+        $immediate = $request->input('immediate', false);
+
         try {
-            // Cancel at period end (don't immediately cancel)
             $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionModel->stripe_id);
-            $stripeSubscription->cancel_at_period_end = true;
-            $stripeSubscription->save();
+            
+            if ($immediate) {
+                // Cancel immediately
+                $stripeSubscription->cancel();
+                
+                // Delete the associated server(s)
+                $servers = $subscriptionModel->servers;
+                foreach ($servers as $server) {
+                    try {
+                        $deletionService = app(\Pterodactyl\Services\Servers\ServerDeletionService::class);
+                        $deletionService->handle($server);
+                        Log::info('Server deleted due to immediate subscription cancellation', [
+                            'server_id' => $server->id,
+                            'subscription_id' => $subscriptionModel->id,
+                            'user_id' => $user->id,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to delete server during immediate cancellation', [
+                            'server_id' => $server->id,
+                            'subscription_id' => $subscriptionModel->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                        // Continue with cancellation even if server deletion fails
+                    }
+                }
+                
+                // Update local subscription
+                $subscriptionModel->refresh();
 
-            // Update local subscription
-            $subscriptionModel->refresh();
+                Log::info('Subscription canceled immediately', [
+                    'subscription_id' => $subscriptionModel->id,
+                    'stripe_id' => $subscriptionModel->stripe_id,
+                    'user_id' => $user->id,
+                ]);
 
-            Log::info('Subscription canceled at period end', [
-                'subscription_id' => $subscriptionModel->id,
-                'stripe_id' => $subscriptionModel->stripe_id,
-                'user_id' => $user->id,
-            ]);
+                return response()->json([
+                    'message' => 'Subscription has been canceled immediately and the server has been deleted.',
+                ]);
+            } else {
+                // Cancel at period end (don't immediately cancel)
+                $stripeSubscription->cancel_at_period_end = true;
+                $stripeSubscription->save();
 
-            return response()->json([
-                'message' => 'Subscription will be canceled at the end of the billing period.',
-                'ends_at' => $subscriptionModel->ends_at ? $subscriptionModel->ends_at->toIso8601String() : null,
-            ]);
+                // Update local subscription
+                $subscriptionModel->refresh();
+
+                Log::info('Subscription canceled at period end', [
+                    'subscription_id' => $subscriptionModel->id,
+                    'stripe_id' => $subscriptionModel->stripe_id,
+                    'user_id' => $user->id,
+                ]);
+
+                return response()->json([
+                    'message' => 'Subscription will be canceled at the end of the billing period.',
+                    'ends_at' => $subscriptionModel->ends_at ? $subscriptionModel->ends_at->toIso8601String() : null,
+                ]);
+            }
         } catch (ApiErrorException $e) {
             Log::error('Failed to cancel subscription', [
                 'subscription_id' => $subscriptionModel->id,
+                'immediate' => $immediate,
                 'error' => $e->getMessage(),
             ]);
 
