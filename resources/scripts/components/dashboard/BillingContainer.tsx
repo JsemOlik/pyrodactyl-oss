@@ -15,7 +15,9 @@ import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
 import cancelSubscription from '@/api/billing/cancelSubscription';
 import resumeSubscription from '@/api/billing/resumeSubscription';
 import getBillingPortalUrl from '@/api/billing/getBillingPortalUrl';
+import getInvoices from '@/api/billing/getInvoices';
 import { httpErrorToHuman } from '@/api/http';
+import { BillingInvoice, BillingInvoiceRow } from '@/components/dashboard/BillingInvoiceRow';
 
 const BillingContainer = () => {
     // Load subscriptions
@@ -27,8 +29,18 @@ const BillingContainer = () => {
         }
     );
 
+    // Load invoices
+    const { data: invoices, error: invoicesError } = useSWR<BillingInvoice[]>(
+        '/api/client/billing/invoices',
+        getInvoices,
+        {
+            revalidateOnFocus: false,
+        }
+    );
+
     // State for managing dialogs
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [cancelConfirmDialogOpen, setCancelConfirmDialogOpen] = useState(false);
     const [resumeDialogOpen, setResumeDialogOpen] = useState(false);
     const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -118,6 +130,7 @@ const BillingContainer = () => {
             }
             await mutate();
             setCancelDialogOpen(false);
+            setCancelConfirmDialogOpen(false);
             setSelectedSubscription(null);
             setCancelImmediate(null);
         } catch (error: any) {
@@ -274,8 +287,20 @@ const BillingContainer = () => {
 
             <div className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'>
                 <MainPageHeader title='Billing & Invoices' />
-                <PageListContainer className='p-4'>
-                    <div className='p-4 text-sm text-white/70'>No invoices yet.</div>
+                <PageListContainer className='p-4 flex flex-col gap-3'>
+                    {!invoices && !invoicesError ? (
+                        <div className='p-4 text-sm text-white/70'>Loading invoices…</div>
+                    ) : invoicesError ? (
+                        <div className='p-4 text-sm text-red-400'>
+                            Failed to load invoices: {httpErrorToHuman(invoicesError)}
+                        </div>
+                    ) : !invoices || invoices.length === 0 ? (
+                        <div className='p-4 text-sm text-white/70'>No invoices yet.</div>
+                    ) : (
+                        invoices.map((invoice) => (
+                            <BillingInvoiceRow key={invoice.id} invoice={invoice} />
+                        ))
+                    )}
                 </PageListContainer>
             </div>
 
@@ -342,27 +367,89 @@ const BillingContainer = () => {
                         Cancel
                     </ActionButton>
                     <ActionButton
-                        variant='danger'
+                        variant='primary'
                         onClick={() => {
                             if (cancelImmediate !== null) {
-                                confirmCancel(cancelImmediate);
+                                setCancelDialogOpen(false);
+                                setCancelConfirmDialogOpen(true);
                             }
                         }}
                         disabled={isLoading || cancelImmediate === null}
                     >
-                        <div className='flex items-center gap-2'>
-                            {isLoading && <Spinner size='small' />}
-                            <span>
-                                {cancelImmediate === true
-                                    ? 'Cancel Immediately'
-                                    : cancelImmediate === false
-                                      ? 'Cancel at Billing Date'
-                                      : 'Confirm Cancellation'}
-                            </span>
-                        </div>
+                        Continue
                     </ActionButton>
                 </Dialog.Footer>
             </Dialog>
+
+            {/* Cancel Confirmation Dialog */}
+            <Dialog.Confirm
+                open={cancelConfirmDialogOpen}
+                onClose={() => {
+                    setCancelConfirmDialogOpen(false);
+                    setCancelDialogOpen(true);
+                }}
+                title={cancelImmediate ? 'Confirm Immediate Cancellation' : 'Confirm Cancellation at Billing Date'}
+                confirm={cancelImmediate ? 'Cancel Immediately' : 'Cancel at Billing Date'}
+                onConfirmed={() => {
+                    if (cancelImmediate !== null) {
+                        confirmCancel(cancelImmediate);
+                        setCancelConfirmDialogOpen(false);
+                    }
+                }}
+                loading={isLoading}
+            >
+                {cancelImmediate ? (
+                    <>
+                        <p className='mb-3 font-semibold text-red-400'>
+                            You are about to immediately cancel your subscription and permanently delete your server.
+                        </p>
+                        <div className='space-y-2 text-sm text-zinc-300'>
+                            <p>When you cancel immediately, you will:</p>
+                            <ul className='list-disc list-inside space-y-1 ml-2'>
+                                <li>Immediately lose all access to your server</li>
+                                <li>Have your server permanently deleted</li>
+                                <li>Lose all server data, files, backups, and configurations</li>
+                                <li>Not receive any refund for the remaining billing period</li>
+                                <li>Not be able to recover any data after this action</li>
+                            </ul>
+                        </div>
+                        <p className='mt-4 text-sm text-red-400 font-semibold'>
+                            This action cannot be undone. Are you absolutely sure?
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <p className='mb-3 font-semibold text-yellow-400'>
+                            You are about to cancel your subscription at the end of the billing period.
+                        </p>
+                        <div className='space-y-2 text-sm text-zinc-300'>
+                            <p>When you cancel at the billing date, you will:</p>
+                            <ul className='list-disc list-inside space-y-1 ml-2'>
+                                <li>Keep access to your server until{' '}
+                                    {selectedSubscription?.attributes.next_renewal_at ? (
+                                        <span className='font-semibold'>
+                                            {new Date(selectedSubscription.attributes.next_renewal_at).toLocaleDateString(undefined, {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                            })}
+                                        </span>
+                                    ) : (
+                                        'the end of your billing period'
+                                    )}
+                                </li>
+                                <li>Have until the billing date to retrieve any data and/or backups</li>
+                                <li>Your subscription will remain active and you will continue to be charged until then</li>
+                                <li>Your server will be suspended after the cancellation date</li>
+                                <li>You can resume the subscription at any time before the cancellation date</li>
+                            </ul>
+                        </div>
+                        <p className='mt-4 text-sm text-zinc-400'>
+                            Are you sure you want to proceed with canceling at the billing date?
+                        </p>
+                    </>
+                )}
+            </Dialog.Confirm>
 
             {/* Resume Subscription Dialog */}
             <Dialog.Confirm
