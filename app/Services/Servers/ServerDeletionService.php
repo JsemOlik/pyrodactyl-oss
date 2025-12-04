@@ -4,6 +4,7 @@ namespace Pterodactyl\Services\Servers;
 
 use Illuminate\Http\Response;
 use Pterodactyl\Models\Server;
+use Pterodactyl\Models\Subscription;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\ConnectionInterface;
 use Pterodactyl\Repositories\Wings\DaemonServerRepository;
@@ -58,6 +59,38 @@ class ServerDeletionService
         }
 
         $this->connection->transaction(function () use ($server) {
+            // Handle subscription cancellation if server has a subscription
+            if ($server->subscription_id) {
+                try {
+                    $subscription = \Pterodactyl\Models\Subscription::find($server->subscription_id);
+                    if ($subscription && $subscription->stripe_id) {
+                        \Stripe\Stripe::setApiKey(config('cashier.secret'));
+                        $stripeSubscription = \Stripe\Subscription::retrieve($subscription->stripe_id);
+                        
+                        // Cancel the subscription immediately
+                        if (in_array($stripeSubscription->status, ['active', 'trialing'])) {
+                            \Stripe\Subscription::update($subscription->stripe_id, [
+                                'cancel_at_period_end' => false,
+                            ]);
+                            \Stripe\Subscription::cancel($subscription->stripe_id);
+                            
+                            Log::info('Canceled Stripe subscription after server deletion', [
+                                'server_id' => $server->id,
+                                'subscription_id' => $subscription->id,
+                                'stripe_id' => $subscription->stripe_id,
+                            ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Log error but don't fail the deletion operation
+                    Log::warning('Failed to cancel Stripe subscription during server deletion', [
+                        'server_id' => $server->id,
+                        'subscription_id' => $server->subscription_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             // Delete all backups associated with this server
             foreach ($server->backups as $backup) {
                 try {

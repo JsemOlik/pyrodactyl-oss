@@ -8,6 +8,7 @@ use Pterodactyl\Models\Server;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Pterodactyl\Facades\Activity;
+use Pterodactyl\Models\Subscription;
 use Pterodactyl\Repositories\Eloquent\ServerRepository;
 use Pterodactyl\Services\Servers\ReinstallServerService;
 use Pterodactyl\Http\Controllers\Api\Client\ClientApiController;
@@ -43,15 +44,47 @@ class SettingsController extends ClientApiController
     {
         $name = $request->input('name');
         $description = $request->has('description') ? (string) $request->input('description') : $server->description;
+        $oldName = $server->name;
         $this->repository->update($server->id, [
             'name' => $name,
             'description' => $description,
         ]);
 
-        if ($server->name !== $name) {
+        // Refresh server to get updated data
+        $server->refresh();
+
+        if ($oldName !== $name) {
             Activity::event('server:settings.rename')
-                ->property(['old' => $server->name, 'new' => $name])
+                ->property(['old' => $oldName, 'new' => $name])
                 ->log();
+
+            // Update Stripe subscription metadata if server has a subscription
+            if ($server->subscription_id) {
+                try {
+                    $subscription = Subscription::find($server->subscription_id);
+                    if ($subscription && $subscription->stripe_id) {
+                        \Stripe\Stripe::setApiKey(config('cashier.secret'));
+                        $stripeSubscription = \Stripe\Subscription::retrieve($subscription->stripe_id);
+                        $metadata = $stripeSubscription->metadata ?? [];
+                        $metadata['server_name'] = $name;
+                        if ($description) {
+                            $metadata['server_description'] = $description;
+                        }
+                        \Stripe\Subscription::update($subscription->stripe_id, ['metadata' => $metadata]);
+                        Log::info('Updated Stripe subscription metadata after server rename', [
+                            'server_id' => $server->id,
+                            'subscription_id' => $subscription->id,
+                            'new_name' => $name,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    // Log error but don't fail the rename operation
+                    Log::warning('Failed to update Stripe subscription metadata after server rename', [
+                        'server_id' => $server->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
 
         if ($server->description !== $description) {
