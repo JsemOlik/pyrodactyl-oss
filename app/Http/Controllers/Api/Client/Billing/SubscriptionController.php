@@ -183,20 +183,46 @@ class SubscriptionController extends ClientApiController
             ->firstOrFail();
 
         try {
-            // Ensure user has Stripe customer ID
-            if (!$user->stripe_id) {
+            // Get Stripe customer ID - prefer user's stripe_id, but get from subscription if needed
+            $stripeCustomerId = $user->stripe_id;
+            
+            if (!$stripeCustomerId) {
+                // Try to get customer ID from the subscription
+                try {
+                    $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionModel->stripe_id);
+                    $stripeCustomerId = $stripeSubscription->customer;
+                    
+                    // If we found a customer ID, save it to the user for future use
+                    if ($stripeCustomerId && is_string($stripeCustomerId)) {
+                        $user->update(['stripe_id' => $stripeCustomerId]);
+                        Log::info('Updated user with Stripe customer ID from subscription', [
+                            'user_id' => $user->id,
+                            'stripe_customer_id' => $stripeCustomerId,
+                            'subscription_id' => $subscriptionModel->id,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Could not retrieve customer ID from subscription', [
+                        'user_id' => $user->id,
+                        'subscription_id' => $subscriptionModel->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+            
+            if (!$stripeCustomerId) {
                 return response()->json([
                     'errors' => [[
                         'code' => 'NoStripeCustomer',
                         'status' => '400',
-                        'detail' => 'No Stripe customer associated with your account.',
+                        'detail' => 'No Stripe customer associated with your account. Please contact support.',
                     ]],
                 ], 400);
             }
 
             // Create billing portal session
             $session = \Stripe\BillingPortal\Session::create([
-                'customer' => $user->stripe_id,
+                'customer' => $stripeCustomerId,
                 'return_url' => config('app.url') . '/billing',
             ]);
 
@@ -206,6 +232,7 @@ class SubscriptionController extends ClientApiController
         } catch (ApiErrorException $e) {
             Log::error('Failed to create billing portal session', [
                 'user_id' => $user->id,
+                'subscription_id' => $subscriptionModel->id,
                 'error' => $e->getMessage(),
             ]);
 

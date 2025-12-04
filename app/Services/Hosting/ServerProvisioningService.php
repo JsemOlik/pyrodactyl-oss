@@ -162,6 +162,16 @@ class ServerProvisioningService
         \Stripe\Stripe::setApiKey(config('cashier.secret'));
         $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionId);
         
+        // Ensure user has Stripe customer ID set
+        if (!$user->stripe_id && $stripeSubscription->customer) {
+            $user->update(['stripe_id' => $stripeSubscription->customer]);
+            \Illuminate\Support\Facades\Log::info('Updated user with Stripe customer ID from subscription', [
+                'user_id' => $user->id,
+                'stripe_customer_id' => $stripeSubscription->customer,
+                'subscription_id' => $subscriptionId,
+            ]);
+        }
+        
         // Determine plan from metadata or Stripe price
         $metadata = $stripeSession->metadata ?? [];
         $plan = null;
