@@ -163,7 +163,7 @@ class DatabaseServiceCreationService
             'egg_id' => Arr::get($data, 'egg_id'),
             'startup' => Arr::get($data, 'startup'),
             'image' => Arr::get($data, 'image'),
-            'backup_limit' => Arr::get($data, 'backup_limit'),
+            'backup_limit' => Arr::get($data, 'backup_limit', 0),
             'backup_storage_limit' => Arr::get($data, 'backup_storage_limit'),
         ]);
 
