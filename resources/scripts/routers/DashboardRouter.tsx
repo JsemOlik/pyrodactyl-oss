@@ -1,4 +1,4 @@
-import { Ellipsis, Gear, House, Key, Lock } from '@gravity-ui/icons';
+import { CircleDollar, CircleQuestion, Ellipsis, Gear, House, Key, Lock } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
@@ -177,11 +177,11 @@ const DashboardRouter = () => {
                             className='flex flex-row items-center'
                             ref={NavigationSettingsBilling}
                         >
-                            <Gear fill='currentColor' />
+                            <CircleDollar width={22} height={22} fill='currentColor' />
                             <p>Billing</p>
                         </NavLink>
                         <NavLink to={'/support'} end className='flex flex-row items-center' ref={NavigationSupport}>
-                            <Gear fill='currentColor' />
+                            <CircleQuestion width={22} height={22} fill='currentColor' />
                             <p>Support</p>
                         </NavLink>
                         <NavLink to={'/account'} end className='flex flex-row items-center' ref={NavigationSettings}>
