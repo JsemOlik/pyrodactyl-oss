@@ -24,16 +24,25 @@ class ServerProvisioningService
      */
     public function provisionServer($stripeSession): \Pterodactyl\Models\Server
     {
-        $metadata = $stripeSession->metadata ?? [];
+        // Convert Stripe metadata object to array if needed
+        $rawMetadata = $stripeSession->metadata ?? [];
+        $metadata = $this->convertMetadataToArray($rawMetadata);
         
-        $userId = $metadata['user_id'] ?? null;
-        $nestId = $metadata['nest_id'] ?? null;
-        $eggId = $metadata['egg_id'] ?? null;
+        // Extract values (Stripe metadata values are always strings)
+        $userId = isset($metadata['user_id']) ? (int) $metadata['user_id'] : null;
+        $nestId = isset($metadata['nest_id']) ? (int) $metadata['nest_id'] : null;
+        $eggId = isset($metadata['egg_id']) ? (int) $metadata['egg_id'] : null;
         $serverName = $metadata['server_name'] ?? null;
         $serverDescription = $metadata['server_description'] ?? '';
 
         if (!$userId || !$nestId || !$eggId || !$serverName) {
-            throw new \Exception('Missing required metadata in checkout session');
+            throw new \Exception('Missing required metadata in checkout session: ' . json_encode([
+                'has_user_id' => !empty($userId),
+                'has_nest_id' => !empty($nestId),
+                'has_egg_id' => !empty($eggId),
+                'has_server_name' => !empty($serverName),
+                'metadata_keys' => array_keys($metadata),
+            ]));
         }
 
         $user = User::findOrFail($userId);
@@ -164,15 +173,19 @@ class ServerProvisioningService
     {
         // Check if this is a predefined plan
         if (!empty($metadata['plan_id'])) {
-            $plan = Plan::findOrFail($metadata['plan_id']);
+            $planId = is_numeric($metadata['plan_id']) ? (int) $metadata['plan_id'] : null;
             
-            return [
-                'memory' => $plan->memory ?? 1024,
-                'disk' => $plan->disk ?? 10240,
-                'cpu' => $plan->cpu ?? 0,
-                'io' => $plan->io ?? 500,
-                'swap' => $plan->swap ?? 0,
-            ];
+            if ($planId) {
+                $plan = Plan::findOrFail($planId);
+                
+                return [
+                    'memory' => $plan->memory ?? 1024,
+                    'disk' => $plan->disk ?? 10240,
+                    'cpu' => $plan->cpu ?? 0,
+                    'io' => $plan->io ?? 500,
+                    'swap' => $plan->swap ?? 0,
+                ];
+            }
         }
 
         // Custom plan - calculate resources
@@ -203,5 +216,27 @@ class ServerProvisioningService
 
         // Return the first docker image (usually the default)
         return reset($dockerImages);
+    }
+
+    /**
+     * Convert Stripe metadata to array format.
+     */
+    private function convertMetadataToArray($metadata): array
+    {
+        if (is_array($metadata)) {
+            return $metadata;
+        }
+
+        if (is_object($metadata)) {
+            // Handle Stripe\StripeObject
+            if (method_exists($metadata, 'toArray')) {
+                return $metadata->toArray();
+            }
+            
+            // Fallback: convert object to array
+            return json_decode(json_encode($metadata), true) ?? [];
+        }
+
+        return [];
     }
 }
