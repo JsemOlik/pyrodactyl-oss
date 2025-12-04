@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->string('status', 191)->nullable();
             $table->boolean('skip_scripts')->default(false);
             $table->unsignedInteger('owner_id');
-            $table->unsignedInteger('subscription_id')->nullable();
+            $table->unsignedBigInteger('subscription_id')->nullable();
             $table->string('database_type', 50)->default('mysql'); // mysql, mariadb, postgresql, mongodb
             $table->unsignedInteger('memory');
             $table->unsignedInteger('overhead_memory')->default(0);

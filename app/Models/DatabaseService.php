@@ -145,7 +145,7 @@ class DatabaseService extends Model
             'node_id' => 'integer',
             'skip_scripts' => 'boolean',
             'owner_id' => 'integer',
-            'subscription_id' => 'integer',
+            'subscription_id' => 'integer', // Note: stored as bigint in DB but cast as integer for PHP
             'memory' => 'integer',
             'overhead_memory' => 'integer',
             'swap' => 'integer',
