@@ -15,10 +15,12 @@ import getHostingPlans, {
     calculateCustomPlan,
 } from '@/api/hosting/getHostingPlans';
 import { httpErrorToHuman } from '@/api/http';
+import { useStoreState } from '@/state/hooks';
 
 const HostingContainer = () => {
     const navigate = useNavigate();
     const { data: plans, error, isLoading } = useSWR<HostingPlan[]>('/api/client/hosting/plans', getHostingPlans);
+    const isAuthenticated = useStoreState((state) => !!state.user.data?.uuid);
 
     const [customMemory, setCustomMemory] = useState<number>(2048); // Default 2GB
     const customInterval = 'month'; // Always use monthly for custom plans
@@ -75,12 +77,30 @@ const HostingContainer = () => {
     };
 
     const handlePlanSelect = (plan: HostingPlan) => {
+        // Check if user is authenticated
+        if (!isAuthenticated) {
+            navigate(`/auth/login`, {
+                state: { from: `/hosting/configure?plan=${plan.attributes.id}` },
+                replace: false,
+            });
+            return;
+        }
         // Navigate to configuration page with plan selected
         navigate(`/hosting/configure?plan=${plan.attributes.id}`);
     };
 
     const handleCustomPlanSelect = () => {
         if (!customPlanCalculation) {
+            return;
+        }
+        // Check if user is authenticated
+        if (!isAuthenticated) {
+            navigate(`/auth/login`, {
+                state: {
+                    from: `/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}`,
+                },
+                replace: false,
+            });
             return;
         }
         // Navigate to configuration page with custom plan
