@@ -60,6 +60,24 @@ Route::group(['prefix' => 'databases'], function () {
 
 /*
 |--------------------------------------------------------------------------
+| Database Service Controller Routes
+|--------------------------------------------------------------------------
+|
+| Endpoint: /admin/database-services
+|
+*/
+Route::group(['prefix' => 'database-services'], function () {
+    Route::get('/', [Admin\DatabaseServices\DatabaseServiceController::class, 'index'])->name('admin.database-services');
+    Route::get('/new', [Admin\DatabaseServices\DatabaseServiceController::class, 'create'])->name('admin.database-services.new');
+    Route::get('/view/{databaseService:id}', [Admin\DatabaseServices\DatabaseServiceViewController::class, 'index'])->name('admin.database-services.view');
+
+    Route::post('/new', [Admin\DatabaseServices\DatabaseServiceController::class, 'store']);
+    Route::patch('/view/{databaseService:id}', [Admin\DatabaseServices\DatabaseServiceController::class, 'update']);
+    Route::delete('/view/{databaseService:id}', [Admin\DatabaseServices\DatabaseServiceController::class, 'delete']);
+});
+
+/*
+|--------------------------------------------------------------------------
 | Settings Controller Routes
 |--------------------------------------------------------------------------
 |
