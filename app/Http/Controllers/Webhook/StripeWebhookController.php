@@ -52,17 +52,19 @@ class StripeWebhookController extends Controller
             return response('Invalid signature', 400);
         }
 
-        // Handle the event
-        switch ($event->type) {
-            case 'checkout.session.completed':
-                $this->handleCheckoutSessionCompleted($event->data->object);
-                break;
+        // Handle the event with error handling
+        try {
+            switch ($event->type) {
+                case 'checkout.session.completed':
+                    Log::info('Received checkout.session.completed event', [
+                        'session_id' => $event->data->object->id ?? null,
+                    ]);
+                    $this->handleCheckoutSessionCompleted($event->data->object);
+                    break;
 
-            case 'customer.subscription.created':
-                Log::info('Stripe subscription created', [
-                    'subscription_id' => $event->data->object->id,
-                ]);
-                break;
+                case 'customer.subscription.created':
+                    $this->handleSubscriptionCreated($event->data->object);
+                    break;
 
             case 'customer.subscription.updated':
                 $this->handleSubscriptionUpdated($event->data->object);
@@ -84,10 +86,21 @@ class StripeWebhookController extends Controller
                 ]);
                 break;
 
-            default:
-                Log::info('Unhandled Stripe webhook event', [
-                    'type' => $event->type,
-                ]);
+                default:
+                    Log::info('Unhandled Stripe webhook event', [
+                        'type' => $event->type,
+                    ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error handling Stripe webhook event', [
+                'event_type' => $event->type,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            // Return 200 to acknowledge receipt, but log the error
+            // Stripe will retry on 5xx errors, but we've already logged the issue
+            return response('Webhook received with errors', 200);
         }
 
         return response('Webhook received', 200);
@@ -141,6 +154,147 @@ class StripeWebhookController extends Controller
             
             // Re-throw to trigger webhook retry from Stripe
             throw $e;
+        }
+    }
+
+    /**
+     * Handle subscription created event.
+     * This is called when a new subscription is created, which happens after checkout.
+     * We use this as the primary trigger for server provisioning since checkout.session.completed
+     * may not always be reliable or may not be configured in the webhook.
+     */
+    private function handleSubscriptionCreated($subscription): void
+    {
+        Log::info('Stripe subscription created', [
+            'subscription_id' => $subscription->id,
+            'customer_id' => $subscription->customer,
+            'metadata' => $subscription->metadata ?? [],
+        ]);
+
+        // Check if server was already provisioned (idempotency check)
+        $existingSubscription = \Pterodactyl\Models\Subscription::where('stripe_id', $subscription->id)->first();
+        
+        if ($existingSubscription && $existingSubscription->servers()->exists()) {
+            Log::info('Subscription already has servers, skipping provisioning', [
+                'subscription_id' => $subscription->id,
+            ]);
+            return;
+        }
+
+        // Retrieve subscription fresh from Stripe to ensure we have all metadata
+        try {
+            \Stripe\Stripe::setApiKey(config('cashier.secret'));
+            $subscription = \Stripe\Subscription::retrieve($subscription->id, ['expand' => ['default_payment_method']]);
+        } catch (\Exception $e) {
+            Log::warning('Could not retrieve subscription from Stripe, using webhook data', [
+                'subscription_id' => $subscription->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // Always try to get checkout session first (most reliable source of metadata)
+        $provisioned = $this->tryProvisionFromCheckoutSession($subscription);
+        
+        if ($provisioned) {
+            return; // Successfully provisioned from checkout session
+        }
+
+        // Fallback: Try to use subscription metadata
+        $metadata = $subscription->metadata ?? [];
+        
+        Log::info('Subscription metadata retrieved', [
+            'subscription_id' => $subscription->id,
+            'metadata_keys' => array_keys($metadata),
+            'has_user_id' => !empty($metadata['user_id']),
+            'has_nest_id' => !empty($metadata['nest_id']),
+            'has_egg_id' => !empty($metadata['egg_id']),
+        ]);
+
+        // Check if we have the required metadata to provision a server
+        if (empty($metadata['user_id']) || empty($metadata['nest_id']) || empty($metadata['egg_id'])) {
+            Log::error('Cannot provision server: missing required metadata in subscription and checkout session', [
+                'subscription_id' => $subscription->id,
+                'metadata' => $metadata,
+            ]);
+            return;
+        }
+
+        // Provision server using subscription metadata
+        Log::info('Attempting to provision server using subscription metadata', [
+            'subscription_id' => $subscription->id,
+            'user_id' => $metadata['user_id'],
+            'nest_id' => $metadata['nest_id'],
+            'egg_id' => $metadata['egg_id'],
+        ]);
+
+        try {
+            // Create a session-like object from subscription for provisioning service
+            $mockSession = (object) [
+                'id' => 'sub_' . $subscription->id,
+                'customer' => $subscription->customer,
+                'subscription' => $subscription->id,
+                'mode' => 'subscription',
+                'metadata' => $metadata,
+            ];
+
+            $this->provisioningService->provisionServer($mockSession);
+            Log::info('Server provisioned successfully from subscription metadata', [
+                'subscription_id' => $subscription->id,
+                'user_id' => $metadata['user_id'],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to provision server from subscription metadata', [
+                'subscription_id' => $subscription->id,
+                'user_id' => $metadata['user_id'] ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            // Re-throw to trigger webhook retry
+            throw $e;
+        }
+    }
+
+    /**
+     * Try to provision server by retrieving the checkout session.
+     * Returns true if provisioning was attempted (successfully or not), false if session not found.
+     */
+    private function tryProvisionFromCheckoutSession($subscription): bool
+    {
+        try {
+            \Stripe\Stripe::setApiKey(config('cashier.secret'));
+            
+            // Find checkout sessions for this subscription
+            $sessions = \Stripe\Checkout\Session::all([
+                'subscription' => $subscription->id,
+                'limit' => 1,
+            ]);
+            
+            if (!empty($sessions->data)) {
+                $session = $sessions->data[0];
+                Log::info('Found checkout session for subscription, provisioning from session', [
+                    'subscription_id' => $subscription->id,
+                    'session_id' => $session->id,
+                    'session_metadata' => $session->metadata ?? [],
+                ]);
+                
+                $this->handleCheckoutSessionCompleted($session);
+                return true;
+            } else {
+                Log::warning('No checkout session found for subscription', [
+                    'subscription_id' => $subscription->id,
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve checkout session for provisioning', [
+                'subscription_id' => $subscription->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            // Don't re-throw - allow fallback to subscription metadata
+            return false;
         }
     }
 
