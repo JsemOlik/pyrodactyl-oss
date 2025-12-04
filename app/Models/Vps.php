@@ -90,7 +90,7 @@ class Vps extends Model
     /**
      * The table associated with the model.
      */
-    protected $table = 'vpss';
+    protected $table = 'vps_servers';
 
     /**
      * Default values when creating the model.
@@ -111,8 +111,8 @@ class Vps extends Model
      * Validation rules for the model.
      */
     public static array $validationRules = [
-        'uuid' => 'required|string|size:36|unique:vpss',
-        'uuidShort' => 'required|string|size:8|unique:vpss',
+        'uuid' => 'required|string|size:36|unique:vps_servers',
+        'uuidShort' => 'required|string|size:8|unique:vps_servers',
         'owner_id' => 'required|integer|exists:users,id',
         'name' => 'required|string|min:1|max:191',
         'description' => 'nullable|string',
@@ -121,7 +121,7 @@ class Vps extends Model
         'disk' => 'required|integer|min:1024',
         'cpu_cores' => 'required|integer|min:1|max:128',
         'cpu_sockets' => 'sometimes|integer|min:1|max:8',
-        'proxmox_vm_id' => 'nullable|integer|unique:vpss',
+        'proxmox_vm_id' => 'nullable|integer|unique:vps_servers',
         'proxmox_node' => 'nullable|string|max:191',
         'proxmox_storage' => 'nullable|string|max:191',
         'ip_address' => 'nullable|ip',

@@ -301,17 +301,17 @@ class User extends Model implements
     }
 
     /**
-     * Returns all VPSs that a user owns.
+     * Returns all VPS servers that a user owns.
      */
-    public function vpss(): HasMany
+    public function vpsServers(): HasMany
     {
         return $this->hasMany(Vps::class, 'owner_id');
     }
 
     /**
-     * Get all VPSs that are associated with a subscription.
+     * Get all VPS servers that are associated with a subscription.
      */
-    public function subscribedVpss(): HasMany
+    public function subscribedVpsServers(): HasMany
     {
         return $this->hasMany(Vps::class, 'owner_id')
             ->whereNotNull('subscription_id');

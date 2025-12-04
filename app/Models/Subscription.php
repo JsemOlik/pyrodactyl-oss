@@ -19,8 +19,8 @@ use Laravel\Cashier\Subscription as CashierSubscription;
  * @property \Pterodactyl\Models\User $user
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Server[] $servers
  * @property int|null $servers_count
- * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Vps[] $vpss
- * @property int|null $vpss_count
+ * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Vps[] $vpsServers
+ * @property int|null $vps_servers_count
  * @property \Pterodactyl\Models\Plan|null $plan
  */
 class Subscription extends CashierSubscription
@@ -47,9 +47,9 @@ class Subscription extends CashierSubscription
     }
 
     /**
-     * Get all VPSs associated with this subscription.
+     * Get all VPS servers associated with this subscription.
      */
-    public function vpss(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function vpsServers(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Vps::class);
     }

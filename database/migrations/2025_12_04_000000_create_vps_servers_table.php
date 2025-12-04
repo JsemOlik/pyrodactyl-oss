@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vpss', function (Blueprint $table) {
+        Schema::create('vps_servers', function (Blueprint $table) {
             $table->increments('id');
             $table->char('uuid', 36)->unique();
             $table->char('uuidShort', 8)->unique();
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->unsignedInteger('cpu_sockets')->default(1); // Number of CPU sockets
             
             // Proxmox integration fields
-            $table->integer('proxmox_vm_id')->nullable()->unique();
+            $table->integer('proxmox_vm_id')->nullable();
             $table->string('proxmox_node')->nullable();
             $table->string('proxmox_storage')->nullable();
             
@@ -52,6 +52,7 @@ return new class extends Migration
             $table->index('subscription_id');
             $table->index('status');
             $table->index('proxmox_vm_id');
+            $table->unique('proxmox_vm_id');
         });
     }
 
@@ -60,7 +61,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vpss');
+        Schema::dropIfExists('vps_servers');
     }
 };
 
