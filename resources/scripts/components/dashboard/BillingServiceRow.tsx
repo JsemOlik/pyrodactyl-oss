@@ -18,6 +18,8 @@ export type BillingService = {
     canCancel?: boolean;
     canResume?: boolean;
     priceFormatted?: string;
+    subscriptionId?: number; // Internal ID for API calls
+    onManage?: () => void; // Custom manage handler (e.g., billing portal)
 };
 
 const formatMoney = (amount: number, currency: string) =>
@@ -145,7 +147,16 @@ export function BillingServiceRow({
             <div className='flex items-center'>
                 <div className='flex flex-col'>
                     <div className='flex items-center gap-2'>
-                        <p className='text-xl tracking-tight font-bold break-words'>{service.name}</p>
+                        {service.manageUrl ? (
+                            <Link
+                                to={service.manageUrl}
+                                className='text-xl tracking-tight font-bold break-words hover:text-white/80 transition-colors cursor-pointer'
+                            >
+                                {service.name}
+                            </Link>
+                        ) : (
+                            <p className='text-xl tracking-tight font-bold break-words'>{service.name}</p>
+                        )}
                         <div className='status-bar' />
                         <span className='ml-2 text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-white/80'>
                             {statusLabel(service.status)}
@@ -179,18 +190,30 @@ export function BillingServiceRow({
                     </span>
 
                     <div className='flex items-center gap-2'>
-                        {service.status !== 'canceled' && (
-                            <Link
-                                to={service.manageUrl || '#'}
+                        {service.onManage ? (
+                            <button
                                 onClick={(e) => {
-                                    if (!service.manageUrl) e.preventDefault();
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    service.onManage?.();
                                 }}
                                 className='inline-flex items-center gap-2 rounded-full bg-[#3f3f46] hover:bg-[#52525b] text-white px-3 py-1.5 text-xs font-semibold transition-colors'
                                 aria-label='Manage subscription'
                             >
                                 Manage
+                            </button>
+                        ) : service.manageUrl ? (
+                            <Link
+                                to={service.manageUrl}
+                                onClick={(e) => {
+                                    if (!service.manageUrl) e.preventDefault();
+                                }}
+                                className='inline-flex items-center gap-2 rounded-full bg-[#3f3f46] hover:bg-[#52525b] text-white px-3 py-1.5 text-xs font-semibold transition-colors'
+                                aria-label='View server'
+                            >
+                                View Server
                             </Link>
-                        )}
+                        ) : null}
                         {service.canCancel && service.status !== 'canceled' && (
                             <button
                                 onClick={handleCancel}
@@ -199,7 +222,7 @@ export function BillingServiceRow({
                                 Cancel
                             </button>
                         )}
-                        {service.canResume && service.status === 'paused' && (
+                        {service.canResume && (service.status === 'paused' || service.status === 'canceled') && (
                             <button
                                 onClick={handleResume}
                                 className='inline-flex items-center gap-2 rounded-full bg-[#3f3f46] hover:bg-[#52525b] text-white px-3 py-1.5 text-xs font-semibold transition-colors'
