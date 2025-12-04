@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 
-import PageContentBlock from '@/components/elements/PageContentBlock';
-import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import ActionButton from '@/components/elements/ActionButton';
+import { MainPageHeader } from '@/components/elements/MainPageHeader';
+import PageContentBlock from '@/components/elements/PageContentBlock';
 
-import getNests from '@/api/nests/getNests';
 import { httpErrorToHuman } from '@/api/http';
+import getNests from '@/api/nests/getNests';
 
 interface SelectedPlan {
     planId?: number;
@@ -129,9 +129,7 @@ const HostingConfigureContainer = () => {
                 {/* Egg Selection */}
                 {selectedNest && (
                     <div>
-                        <label className='block text-sm font-medium text-white/70 mb-3'>
-                            Select Game (Egg)
-                        </label>
+                        <label className='block text-sm font-medium text-white/70 mb-3'>Select Game (Egg)</label>
                         {availableEggs.length === 0 ? (
                             <div className='text-white/50 text-sm'>No eggs available for this nest.</div>
                         ) : (
@@ -178,4 +176,3 @@ const HostingConfigureContainer = () => {
 };
 
 export default HostingConfigureContainer;
-

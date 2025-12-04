@@ -9,13 +9,13 @@ import {
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
-import { Bars, ChevronDown, House, LayoutCellsLarge, SlidersVertical } from '@gravity-ui/icons';
 import {
     SortableContext,
     arrayMove,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { Bars, ChevronDown, House, LayoutCellsLarge, SlidersVertical } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';

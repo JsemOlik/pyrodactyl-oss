@@ -9,11 +9,10 @@ import PageContentBlock from '@/components/elements/PageContentBlock';
 // import HugeIconsCPU from '@/components/elements/hugeicons/CPU';
 // import HugeIconsZap from '@/components/elements/hugeicons/Zap';
 
-import {
+import getHostingPlans, {
     CustomPlanCalculation,
     HostingPlan,
     calculateCustomPlan,
-    default as getHostingPlans,
 } from '@/api/hosting/getHostingPlans';
 import { httpErrorToHuman } from '@/api/http';
 

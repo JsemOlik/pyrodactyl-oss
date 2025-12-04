@@ -51,4 +51,3 @@ export const calculateCustomPlan = (memory: number, interval: string = 'month'):
             .catch(reject);
     });
 };
-
