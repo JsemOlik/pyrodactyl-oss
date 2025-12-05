@@ -170,16 +170,23 @@ class NodesController extends Controller
         $eggs = $request->input('eggs', []);
 
         // Ensure arrays are properly formatted and not null - handle both array and null cases
+        // Convert to plain indexed array of integers
         if (!is_array($nests)) {
             $nests = [];
         } else {
-            $nests = array_filter(array_map('intval', $nests), fn($val) => $val > 0);
+            $nests = array_values(array_filter(
+                array_map('intval', $nests),
+                fn($val) => $val > 0
+            ));
         }
         
         if (!is_array($eggs)) {
             $eggs = [];
         } else {
-            $eggs = array_filter(array_map('intval', $eggs), fn($val) => $val > 0);
+            $eggs = array_values(array_filter(
+                array_map('intval', $eggs),
+                fn($val) => $val > 0
+            ));
         }
 
         try {

@@ -147,8 +147,8 @@ class AssignmentService
             }
         }
 
-        // Apply restrictions to all created allocations if restriction_type is set
-        if ($restrictionType !== 'none' && !empty($allocationKeys)) {
+        // Apply restrictions to all created allocations
+        if (!empty($allocationKeys)) {
             // Query all allocations we just created/updated (insertIgnore may have skipped some)
             $allocations = Allocation::query()
                 ->where(function ($query) use ($allocationKeys) {
@@ -162,21 +162,35 @@ class AssignmentService
                 })
                 ->get();
             
+            // Always update restriction type
             foreach ($allocations as $allocation) {
-                // Update restriction type in case it was changed
                 $allocation->update(['restriction_type' => $restrictionType]);
                 
-                // Sync nests and eggs (works for both whitelist and blacklist)
-                if (!empty($restrictionNests)) {
-                    $allocation->allowedNests()->sync($restrictionNests);
-                } else {
+                if ($restrictionType === 'none') {
+                    // Clear all restrictions
                     $allocation->allowedNests()->sync([]);
-                }
-                
-                if (!empty($restrictionEggs)) {
-                    $allocation->allowedEggs()->sync($restrictionEggs);
-                } else {
                     $allocation->allowedEggs()->sync([]);
+                } else {
+                    // Filter out invalid values (0, empty strings, etc.) and ensure we have a plain indexed array
+                    $filteredNests = [];
+                    if (is_array($restrictionNests) && !empty($restrictionNests)) {
+                        $filteredNests = array_values(array_filter(
+                            array_map('intval', $restrictionNests),
+                            fn($val) => $val > 0
+                        ));
+                    }
+                    
+                    $filteredEggs = [];
+                    if (is_array($restrictionEggs) && !empty($restrictionEggs)) {
+                        $filteredEggs = array_values(array_filter(
+                            array_map('intval', $restrictionEggs),
+                            fn($val) => $val > 0
+                        ));
+                    }
+                    
+                    // Sync nests and eggs (works for both whitelist and blacklist)
+                    $allocation->allowedNests()->sync($filteredNests);
+                    $allocation->allowedEggs()->sync($filteredEggs);
                 }
             }
         }
