@@ -41,14 +41,15 @@ const PlayersContainer = () => {
             return;
         }
 
+        // Use alias if available, otherwise fall back to IP
+        const serverAddress = defaultAllocation.alias || defaultAllocation.ip;
+
         setLoading(true);
         setError(null);
 
         try {
             // Use mcsrvstat.us API to get player list
-            const response = await fetch(
-                `https://api.mcsrvstat.us/3/${defaultAllocation.ip}:${defaultAllocation.port}`,
-            );
+            const response = await fetch(`https://api.mcsrvstat.us/3/${serverAddress}:${defaultAllocation.port}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch server status');
