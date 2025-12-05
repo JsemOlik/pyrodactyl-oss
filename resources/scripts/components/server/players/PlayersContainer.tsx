@@ -1,5 +1,5 @@
 import { Person } from '@gravity-ui/icons';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import ActionButton from '@/components/elements/ActionButton';
 import ErrorBoundary from '@/components/elements/ErrorBoundary';
@@ -12,26 +12,11 @@ import sendCommand from '@/api/server/sendCommand';
 
 import { ServerContext } from '@/state/server';
 
-interface Player {
-    name: string;
-}
-
-interface McSrvStatResponse {
-    online: boolean;
-    players?: {
-        online?: number;
-        max?: number;
-        list?: Array<{ name?: string; uuid?: string }>;
-    };
-}
+import { useMinecraftPlayers } from '@/plugins/useMinecraftPlayers';
 
 const PlayersContainer = () => {
-    const serverData = ServerContext.useStoreState((state) => state.server.data);
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
-    const [players, setPlayers] = useState<Player[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [hasFetched, setHasFetched] = useState(false);
+    const { playerData, loading, error, refetch } = useMinecraftPlayers();
     const [searchTerm, setSearchTerm] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
     const [modalAction, setModalAction] = useState<'kick' | 'ban' | null>(null);
@@ -39,66 +24,7 @@ const PlayersContainer = () => {
     const [modalReason, setModalReason] = useState('');
     const [modalLoading, setModalLoading] = useState(false);
 
-    const fetchPlayers = async () => {
-        if (!serverData) {
-            setError('Server data not available');
-            return;
-        }
-
-        // Get the default allocation (primary IP and port)
-        const defaultAllocation = serverData.allocations?.find((alloc) => alloc.isDefault);
-        if (!defaultAllocation) {
-            setError('Server allocation not found');
-            return;
-        }
-
-        // Use alias if available, otherwise fall back to IP
-        const serverAddress = defaultAllocation.alias || defaultAllocation.ip;
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            // Use mcsrvstat.us API to get player list
-            const response = await fetch(`https://api.mcsrvstat.us/3/${serverAddress}:${defaultAllocation.port}`);
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch server status');
-            }
-
-            const data: McSrvStatResponse = await response.json();
-
-            if (!data.online) {
-                setError('Server is offline');
-                setPlayers([]);
-            } else if (data.players?.list && data.players.list.length > 0) {
-                // Extract player names from the API response
-                const playerNames = data.players.list
-                    .map((player) => player.name)
-                    .filter((name): name is string => !!name)
-                    .map((name) => ({ name }));
-                setPlayers(playerNames);
-                setError(null);
-            } else {
-                setPlayers([]);
-                setError(null);
-            }
-        } catch (err: any) {
-            setError(err.message || 'Failed to fetch player list');
-            setPlayers([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Fetch players once on component mount
-    useEffect(() => {
-        if (!hasFetched && serverData) {
-            setHasFetched(true);
-            fetchPlayers();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [serverData, hasFetched]);
+    const players = playerData?.players || [];
 
     const getMinecraftHeadUrl = (username: string): string => {
         // Using mc-heads.net API
@@ -129,7 +55,7 @@ const PlayersContainer = () => {
             setModalReason('');
             // Refresh player list after a short delay
             setTimeout(() => {
-                fetchPlayers();
+                refetch();
             }, 1000);
         } catch (err: any) {
             setError(err.message || `Failed to ${modalAction} player`);
@@ -146,7 +72,7 @@ const PlayersContainer = () => {
                     description={'View players currently online on your Minecraft server.'}
                 >
                     <button
-                        onClick={fetchPlayers}
+                        onClick={refetch}
                         disabled={loading}
                         className='px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
                     >
