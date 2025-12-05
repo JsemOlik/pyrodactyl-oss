@@ -106,8 +106,8 @@ class VpsCreationService
      */
     private function buildVmConfig(array $data, string $template, string $storage, int $vmId): array
     {
-        // Convert memory from MB to bytes for Proxmox
-        $memoryBytes = ($data['memory'] ?? 1024) * 1024 * 1024;
+        // Proxmox expects memory in MB (not bytes)
+        $memoryMb = $data['memory'] ?? 1024;
         
         // Convert disk from MB to GB for Proxmox
         $diskGb = round(($data['disk'] ?? 10240) / 1024, 2);
@@ -119,7 +119,7 @@ class VpsCreationService
         $config = [
             'vmid' => $vmId,
             'name' => $vmName,
-            'memory' => $memoryBytes,
+            'memory' => $memoryMb,
             'cores' => $data['cpu_cores'] ?? 1,
             'sockets' => $data['cpu_sockets'] ?? 1,
             'net0' => 'virtio,bridge=vmbr0,firewall=1',

@@ -73,7 +73,7 @@ const VpsRow = ({ vps, className }: { vps: Vps; className?: string }) => {
         if (vps.isSuspended || !vps.isRunning) return;
 
         getMetrics().then(() => {
-            interval.current = setInterval(() => getMetrics(), 30000);
+            interval.current = setInterval(() => getMetrics(), 1000); // Update every 1 second
         });
 
         return () => {

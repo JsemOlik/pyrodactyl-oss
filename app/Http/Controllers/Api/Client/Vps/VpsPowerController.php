@@ -3,6 +3,7 @@
 namespace Pterodactyl\Http\Controllers\Api\Client\Vps;
 
 use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Pterodactyl\Models\Vps;
 use Pterodactyl\Facades\Activity;
 use Pterodactyl\Services\Vps\VpsPowerService;
@@ -20,7 +21,7 @@ class VpsPowerController extends ClientApiController
     /**
      * Send a power action to a VPS.
      */
-    public function send(SendPowerRequest $request, Vps $vps): Response
+    public function send(SendPowerRequest $request, Vps $vps): Response|JsonResponse
     {
         $signal = $request->input('signal');
 

@@ -74,12 +74,23 @@ class ProxmoxApiClient
 
             $response = $this->getHttpClient()->request($method, $endpoint, $options);
             $body = $response->getBody()->getContents();
+            
+            // Handle empty responses (common for power actions)
+            if (empty(trim($body))) {
+                return [];
+            }
+            
             $decoded = json_decode($body, true);
 
-            if ($decoded === null) {
-                Log::warning('Proxmox API returned invalid JSON', [
+            if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+                // If it's not valid JSON, check if it's an error message
+                if (str_contains(strtolower($body), 'error') || str_contains(strtolower($body), 'failed')) {
+                    throw new ProxmoxApiException('Proxmox API error: ' . $body);
+                }
+                // For power actions, empty or non-JSON responses are often success
+                Log::debug('Proxmox API returned non-JSON response (may be normal for power actions)', [
                     'endpoint' => $endpoint,
-                    'body' => $body,
+                    'body' => substr($body, 0, 200),
                 ]);
                 return [];
             }

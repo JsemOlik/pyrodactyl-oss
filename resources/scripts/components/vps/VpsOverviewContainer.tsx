@@ -36,7 +36,7 @@ const VpsOverviewContainer = () => {
         };
 
         loadMetrics();
-        const interval = setInterval(loadMetrics, 30000); // Update every 30 seconds
+        const interval = setInterval(loadMetrics, 1000); // Update every 1 second
 
         return () => clearInterval(interval);
     }, [vps?.uuid, vps?.isRunning]);
