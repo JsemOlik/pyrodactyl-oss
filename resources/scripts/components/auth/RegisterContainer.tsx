@@ -88,7 +88,9 @@ function RegisterContainer() {
                 password_confirmation: '',
             }}
             validationSchema={object().shape({
-                email: string().required('An email address is required.').email('Please provide a valid email address.'),
+                email: string()
+                    .required('An email address is required.')
+                    .email('Please provide a valid email address.'),
                 username: string()
                     .required('A username is required.')
                     .min(3, 'Username must be at least 3 characters.')
@@ -116,10 +118,23 @@ function RegisterContainer() {
 
                     <Field id='email' type='email' label='Email' name='email' disabled={isSubmitting} />
 
-                    <Field id='username' type='text' label='Username' name='username' disabled={isSubmitting} className='mt-6' />
+                    <Field
+                        id='username'
+                        type='text'
+                        label='Username'
+                        name='username'
+                        disabled={isSubmitting}
+                        className='mt-6'
+                    />
 
                     <div className='mt-6 grid grid-cols-2 gap-4'>
-                        <Field id='name_first' type='text' label='First Name' name='name_first' disabled={isSubmitting} />
+                        <Field
+                            id='name_first'
+                            type='text'
+                            label='First Name'
+                            name='name_first'
+                            disabled={isSubmitting}
+                        />
                         <Field id='name_last' type='text' label='Last Name' name='name_last' disabled={isSubmitting} />
                     </div>
 

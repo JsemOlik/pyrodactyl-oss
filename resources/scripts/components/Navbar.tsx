@@ -1,6 +1,6 @@
 import { useInitials } from '@/hooks/use-initials';
 import { Menu, X } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import ActionButton from '@/components/elements/ActionButton';
@@ -9,7 +9,9 @@ import Logo from '@/components/elements/PyroLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserMenuContent } from '@/components/user-menu-content';
 
-import { getGravatarUrl } from '@/lib/gravatar';
+import { GravatarStyle, getGravatarUrl } from '@/lib/gravatar';
+
+import getAccountData, { AccountData } from '@/api/account/getAccountData';
 
 import { useStoreState } from '@/state/hooks';
 
@@ -27,6 +29,7 @@ const navItems: NavItem[] = [
 export default function Navbar() {
     const [open, setOpen] = React.useState(false);
     const [scrolled, setScrolled] = React.useState(false);
+    const [accountData, setAccountData] = useState<AccountData | null>(null);
     const navigate = useNavigate();
     const user = useStoreState((state) => state.user.data);
     const getInitials = useInitials();
@@ -37,7 +40,20 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
-    const userAvatarUrl = user?.email ? getGravatarUrl(user.email, 80) : null;
+    useEffect(() => {
+        if (user) {
+            getAccountData()
+                .then((data) => {
+                    setAccountData(data);
+                })
+                .catch((error) => {
+                    console.error('Failed to load account data for navbar:', error);
+                });
+        }
+    }, [user]);
+
+    const gravatarStyle = (accountData?.gravatar_style || 'identicon') as GravatarStyle;
+    const userAvatarUrl = user?.email ? getGravatarUrl(user.email, 80, gravatarStyle) : null;
     const userInitials = user?.username ? getInitials(user.username) : '?';
 
     return (

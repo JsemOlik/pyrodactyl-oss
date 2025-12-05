@@ -1,3 +1,4 @@
+import { useInitials } from '@/hooks/use-initials';
 import { Eye, EyeSlash, Key, Plus, TrashBin } from '@gravity-ui/icons';
 import { format } from 'date-fns';
 import { Actions, useStoreActions } from 'easy-peasy';
@@ -21,6 +22,8 @@ import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
 import { Dialog } from '@/components/elements/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
+import { GravatarStyle, getGravatarUrl } from '@/lib/gravatar';
+
 import createApiKey from '@/api/account/createApiKey';
 import deleteApiKey from '@/api/account/deleteApiKey';
 import getAccountData, { AccountData } from '@/api/account/getAccountData';
@@ -28,9 +31,6 @@ import getApiKeys, { ApiKey } from '@/api/account/getApiKeys';
 import { createSSHKey, deleteSSHKey, useSSHKeys } from '@/api/account/ssh-keys';
 import updateGravatarStyle from '@/api/account/updateGravatarStyle';
 import { httpErrorToHuman } from '@/api/http';
-
-import { getGravatarUrl, GravatarStyle } from '@/lib/gravatar';
-import { useInitials } from '@/hooks/use-initials';
 
 import { ApplicationStore } from '@/state';
 
@@ -326,14 +326,20 @@ const AccountOverviewContainer = () => {
                                     <AvatarImage
                                         src={
                                             accountData.email
-                                                ? getGravatarUrl(accountData.email, 128, accountData.gravatar_style as any)
+                                                ? getGravatarUrl(
+                                                      accountData.email,
+                                                      128,
+                                                      accountData.gravatar_style as any,
+                                                  )
                                                 : undefined
                                         }
                                         alt={accountData.username}
                                     />
                                     <AvatarFallback className='rounded-full bg-neutral-200 text-lg text-black dark:bg-neutral-700 dark:text-white'>
                                         {accountData.first_name || accountData.last_name
-                                            ? getInitials(`${accountData.first_name || ''} ${accountData.last_name || ''}`.trim())
+                                            ? getInitials(
+                                                  `${accountData.first_name || ''} ${accountData.last_name || ''}`.trim(),
+                                              )
                                             : getInitials(accountData.username)}
                                     </AvatarFallback>
                                 </Avatar>
@@ -362,7 +368,8 @@ const AccountOverviewContainer = () => {
                     >
                         <ContentBox title='Gravatar Style'>
                             <p className='text-sm text-zinc-400 mb-4'>
-                                Choose your preferred Gravatar style. This will be used for your profile picture when you don't have a custom Gravatar image.
+                                Choose your preferred Gravatar style. This will be used for your profile picture when
+                                you don't have a custom Gravatar image.
                             </p>
                             <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4'>
                                 {(
@@ -402,7 +409,11 @@ const AccountOverviewContainer = () => {
                                             }`}
                                         >
                                             <img
-                                                src={getGravatarUrl(accountData.email || 'example@example.com', 64, style.value as GravatarStyle)}
+                                                src={getGravatarUrl(
+                                                    accountData.email || 'example@example.com',
+                                                    64,
+                                                    style.value as GravatarStyle,
+                                                )}
                                                 alt={style.label}
                                                 className='w-12 h-12 rounded-full'
                                             />

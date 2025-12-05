@@ -8,7 +8,7 @@ type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, 
 };
 
 const LoginFormContainer = forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => (
-    <div className='w-full max-w-lg px-8'>
+    <div className='w-full max-w-[38rem] px-8'>
         {title && <h2 className={`text-3xl text-center text-zinc-100 font-medium py-4`}>{title}</h2>}
         <FlashMessageRender />
         <Form {...props} ref={ref}>
