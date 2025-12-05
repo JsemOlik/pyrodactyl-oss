@@ -5,12 +5,19 @@ const Logo = ({ className, uniqueId }: { className?: string; uniqueId?: string }
     // If custom logo is available, use it
     if (customLogoUrl) {
         return (
-            <img
-                src={customLogoUrl}
-                alt="Logo"
+            <object
+                data={customLogoUrl}
+                type="image/svg+xml"
                 className={className || 'flex h-full w-full shrink-0'}
-                style={{ maxHeight: '61px', objectFit: 'contain' }}
-            />
+                style={{ maxHeight: '61px', width: 'auto', height: 'auto' }}
+            >
+                <img
+                    src={customLogoUrl}
+                    alt="Logo"
+                    className={className || 'flex h-full w-full shrink-0'}
+                    style={{ maxHeight: '61px', objectFit: 'contain' }}
+                />
+            </object>
         );
     }
     

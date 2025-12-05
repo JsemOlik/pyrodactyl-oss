@@ -47,13 +47,19 @@ class ThemeController extends Controller
         
         // Handle logo upload
         if ($request->hasFile('logo')) {
+            // Delete old logo if it exists
+            $existingLogo = $this->settings->get('settings::theme:logo_path');
+            if ($existingLogo && Storage::disk('public')->exists($existingLogo)) {
+                Storage::disk('public')->delete($existingLogo);
+            }
+            
             $file = $request->file('logo');
             $path = $file->store('themes/logo', 'public');
             $this->settings->set('settings::theme:logo_path', $path);
         }
         
         // Handle logo removal
-        if ($request->input('remove_logo')) {
+        if ($request->input('remove_logo') == '1' || $request->input('remove_logo') === true) {
             $existingLogo = $this->settings->get('settings::theme:logo_path');
             if ($existingLogo && Storage::disk('public')->exists($existingLogo)) {
                 Storage::disk('public')->delete($existingLogo);

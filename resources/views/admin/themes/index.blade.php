@@ -74,12 +74,9 @@
                 <div>
                   @if($logoPath)
                     <div style="margin-bottom: 10px;">
-                      <img src="{{ $logoPath }}" alt="Custom Logo" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff;" id="logo-preview" />
-                    </div>
-                    <div class="checkbox">
-                      <label>
-                        <input type="checkbox" name="remove_logo" value="1" /> Remove custom logo and use default
-                      </label>
+                      <object data="{{ $logoPath }}" type="image/svg+xml" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff; display: block;" id="logo-preview">
+                        <img src="{{ $logoPath }}" alt="Custom Logo" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff;" />
+                      </object>
                     </div>
                   @else
                     <p class="text-muted"><small>No custom logo uploaded. The default Pyrodactyl logo will be used.</small></p>
@@ -90,6 +87,14 @@
           </div>
           <div class="box-footer">
             {!! csrf_field() !!}
+            @if($logoPath)
+              <form action="{{ route('admin.themes.update') }}" method="POST" style="display: inline-block; margin-right: 10px;">
+                {!! csrf_field() !!}
+                <input type="hidden" name="remove_logo" value="1" />
+                <input type="hidden" name="_method" value="PATCH" />
+                <button type="submit" class="btn btn-default btn-sm">Use Default</button>
+              </form>
+            @endif
             <button type="submit" name="_method" value="PATCH"
               class="btn btn-primary btn-sm btn-outline-primary pull-right">Save</button>
           </div>
@@ -131,18 +136,30 @@
       if (logoUpload) {
         logoUpload.addEventListener('change', function(e) {
           const file = e.target.files[0];
-          if (file && file.type === 'image/svg+xml') {
+          if (file && (file.type === 'image/svg+xml' || file.name.endsWith('.svg'))) {
             const reader = new FileReader();
             reader.onload = function(e) {
               const logoPreview = document.getElementById('logo-preview');
+              const previewContainer = document.querySelector('.form-group.col-md-6:last-child > div');
+              
               if (logoPreview) {
-                logoPreview.src = e.target.result;
-                logoPreview.style.display = 'block';
-              } else {
-                const previewDiv = document.querySelector('.form-group.col-md-6:last-child .text-muted');
-                if (previewDiv) {
-                  previewDiv.innerHTML = '<img src="' + e.target.result + '" alt="Logo Preview" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff;" id="logo-preview" />';
+                // Update existing preview
+                if (logoPreview.tagName === 'OBJECT') {
+                  logoPreview.data = e.target.result;
+                } else {
+                  logoPreview.src = e.target.result;
                 }
+                logoPreview.style.display = 'block';
+              } else if (previewContainer) {
+                // Create new preview
+                const previewDiv = document.createElement('div');
+                previewDiv.style.marginBottom = '10px';
+                previewDiv.innerHTML = '<object data="' + e.target.result + '" type="image/svg+xml" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff; display: block;" id="logo-preview"><img src="' + e.target.result + '" alt="Logo Preview" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff;" /></object>';
+                const textMuted = previewContainer.querySelector('.text-muted');
+                if (textMuted) {
+                  textMuted.remove();
+                }
+                previewContainer.insertBefore(previewDiv, previewContainer.firstChild);
               }
             };
             reader.readAsDataURL(file);
