@@ -628,12 +628,15 @@ class SubdomainManagementService
     {
         $useAlias = $server->node->trust_alias;
         foreach ($dnsRecords as &$record) {
-            if ($useAlias == 1) {
-                $record['content'] = $server->allocation->ip_alias;
-            } else if ($record['type'] === 'A' && isset($record['content']) && $useAlias == 0) {
-                // Convert localhost to 127.0.0.1 for A records
-                if (strtolower($record['content']) === 'localhost' &&  $useAlias == 0) {
-                    $record['content'] = '127.0.0.1';
+            // Only modify A records, not SRV or other record types
+            if ($record['type'] === 'A' && isset($record['content'])) {
+                if ($useAlias == 1) {
+                    $record['content'] = $server->allocation->ip_alias;
+                } else if ($useAlias == 0) {
+                    // Convert localhost to 127.0.0.1 for A records
+                    if (strtolower($record['content']) === 'localhost') {
+                        $record['content'] = '127.0.0.1';
+                    }
                 }
             }
         }
