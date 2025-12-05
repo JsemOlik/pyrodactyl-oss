@@ -79,15 +79,13 @@
           <div class="row">
             <div class="form-group col-md-12">
               <div class="checkbox checkbox-primary">
-                <label>
-                  @php
-                    $enableServerCreation = old('billing:enable_server_creation', config('billing.enable_server_creation', true));
-                    $enableServerCreationValue = is_bool($enableServerCreation) ? $enableServerCreation : ($enableServerCreation === 'true' || $enableServerCreation === true || $enableServerCreation === '1');
-                  @endphp
-                  <input type="checkbox" name="billing:enable_server_creation" value="1"
-                    {{ $enableServerCreationValue ? 'checked' : '' }} />
-                  Enable server creation through billing process
-                </label>
+                @php
+                  $enableServerCreation = old('billing:enable_server_creation', config('billing.enable_server_creation', true));
+                  $enableServerCreationValue = is_bool($enableServerCreation) ? $enableServerCreation : ($enableServerCreation === 'true' || $enableServerCreation === true || $enableServerCreation === '1');
+                @endphp
+                <input id="billingEnableServerCreation" type="checkbox" name="billing:enable_server_creation" value="1"
+                  {{ $enableServerCreationValue ? 'checked' : '' }} />
+                <label for="billingEnableServerCreation">Enable server creation through billing process</label>
               </div>
               <p class="text-muted small">When disabled, customers will be unable to create new servers through the billing process. Admins can still create servers manually through the admin dashboard.</p>
             </div>
@@ -113,15 +111,13 @@
             </div>
             <div class="form-group col-md-6">
               <div class="checkbox checkbox-primary" style="margin-top: 25px;">
-                <label>
-                  @php
-                    $showStatusButton = old('billing:show_status_page_button', config('billing.show_status_page_button', false));
-                    $showStatusButtonValue = is_bool($showStatusButton) ? $showStatusButton : ($showStatusButton === 'true' || $showStatusButton === true || $showStatusButton === '1');
-                  @endphp
-                  <input type="checkbox" name="billing:show_status_page_button" value="1"
-                    {{ $showStatusButtonValue ? 'checked' : '' }} />
-                  Show status page button
-                </label>
+                @php
+                  $showStatusButton = old('billing:show_status_page_button', config('billing.show_status_page_button', false));
+                  $showStatusButtonValue = is_bool($showStatusButton) ? $showStatusButton : ($showStatusButton === 'true' || $showStatusButton === true || $showStatusButton === '1');
+                @endphp
+                <input id="billingShowStatusPageButton" type="checkbox" name="billing:show_status_page_button" value="1"
+                  {{ $showStatusButtonValue ? 'checked' : '' }} />
+                <label for="billingShowStatusPageButton">Show status page button</label>
               </div>
               <p class="text-muted small">Display a "View our status page" button on the server creation disabled page.</p>
             </div>
