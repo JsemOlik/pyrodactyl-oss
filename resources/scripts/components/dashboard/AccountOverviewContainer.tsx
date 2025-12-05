@@ -393,6 +393,8 @@ const AccountOverviewContainer = () => {
                                                             ...accountData,
                                                             gravatar_style: style.value,
                                                         });
+                                                        // Dispatch event to notify other components (e.g., DashboardRouter)
+                                                        window.dispatchEvent(new CustomEvent('gravatar-style-updated', { detail: { gravatar_style: style.value } }));
                                                     } catch (error) {
                                                         console.error('Failed to update gravatar style:', error);
                                                         addError({

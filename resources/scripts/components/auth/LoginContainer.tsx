@@ -130,24 +130,49 @@ function LoginContainer() {
                         transform: translateY(0);
                     }
                 }
+                
+                @keyframes logoMoveDown {
+                    from {
+                        transform: translateY(0);
+                    }
+                    to {
+                        transform: translateY(120px);
+                    }
+                }
             `}</style>
 
             <div className='relative w-full max-w-[38rem]' style={{ minHeight: '500px' }}>
-                {/* Success Animation */}
+                {/* Logo - stays visible during animation */}
+                <div
+                    className={`absolute top-0 left-0 right-0 flex justify-center z-40 transition-transform duration-700 ${
+                        showSuccessAnimation ? 'translate-y-[190px]' : ''
+                    }`}
+                    style={{
+                        paddingLeft: '2rem',
+                        paddingRight: '2rem',
+                        transitionTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
+                    }}
+                >
+                    <div className='flex h-12 mb-4 items-center w-full max-w-[38rem]'>
+                        <Logo />
+                    </div>
+                </div>
+
+                {/* Success Animation - Welcome Text */}
                 {showSuccessAnimation && (
                     <div
                         className='absolute inset-0 flex flex-col items-center justify-center z-50'
                         style={{
-                            animation: 'fadeIn 0.5s ease-out forwards',
+                            animation: 'fadeIn 0.5s ease-out 0.5s both',
                         }}
                     >
                         <div
-                            className='flex flex-col items-center justify-center gap-6'
+                            className='flex flex-col items-center justify-center'
                             style={{
-                                animation: 'slideUp 0.6s ease-out 0.2s both',
+                                paddingTop: '72px',
+                                animation: 'slideUp 0.6s ease-out 0.7s both',
                             }}
                         >
-                            <Logo className='h-16 w-auto' />
                             <h2 className='text-2xl font-bold text-white text-center'>
                                 Welcome back, {userFirstName || 'there'}!
                             </h2>
@@ -156,11 +181,7 @@ function LoginContainer() {
                 )}
 
                 {/* Login Form */}
-                <div
-                    className={`transition-all duration-500 ease-in-out ${
-                        showSuccessAnimation ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                    }`}
-                >
+                <div className='relative'>
                     <Formik
                         onSubmit={onSubmit}
                         initialValues={{ user: '', password: '' }}
@@ -171,67 +192,74 @@ function LoginContainer() {
                     >
                         {({ isSubmitting }) => (
                             <LoginFormContainer className={`w-full flex`}>
-                                <div className='flex h-12 mb-4 items-center w-full'>
+                                {/* Logo placeholder - invisible but maintains spacing */}
+                                <div className='flex h-12 mb-4 items-center w-full opacity-0 pointer-events-none'>
                                     <Logo />
                                 </div>
-                                <div aria-hidden className='my-8 bg-[#ffffff33] min-h-[1px]'></div>
-                                <h2 className='text-xl font-extrabold mb-2'>Login</h2>
+                                <div
+                                    className={`transition-all duration-500 ease-in-out ${
+                                        showSuccessAnimation ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                                    }`}
+                                >
+                                    <div aria-hidden className='my-8 bg-[#ffffff33] min-h-[1px]'></div>
+                                    <h2 className='text-xl font-extrabold mb-2'>Login</h2>
 
-                                <Field
-                                    id='user'
-                                    type={'text'}
-                                    label={'Username or Email'}
-                                    name={'user'}
-                                    disabled={isSubmitting}
-                                />
-
-                                <div className={`relative mt-6`}>
                                     <Field
-                                        id='password'
-                                        type={'password'}
-                                        label={'Password'}
-                                        name={'password'}
+                                        id='user'
+                                        type={'text'}
+                                        label={'Username or Email'}
+                                        name={'user'}
                                         disabled={isSubmitting}
                                     />
-                                    <Link
-                                        to={'/auth/password'}
-                                        className={`text-xs text-zinc-500 tracking-wide no-underline hover:text-zinc-600 absolute top-1 right-0`}
-                                    >
-                                        Forgot Password?
-                                    </Link>
-                                </div>
 
-                                <Captcha
-                                    className='mt-6'
-                                    onError={(error) => {
-                                        console.error('Captcha error:', error);
-                                        clearAndAddHttpError({
-                                            error: new Error('Captcha verification failed. Please try again.'),
-                                        });
-                                    }}
-                                />
-
-                                <div className={`mt-6`}>
-                                    <Button
-                                        className={`relative mt-4 w-full rounded-full bg-brand border-0 ring-0 outline-hidden capitalize font-bold text-sm py-2 hover:cursor-pointer`}
-                                        type={'submit'}
-                                        size={'xlarge'}
-                                        isLoading={isSubmitting}
-                                        disabled={isSubmitting}
-                                    >
-                                        Login
-                                    </Button>
-                                </div>
-                                <div className='mt-6 text-center'>
-                                    <p className='text-sm text-zinc-500'>
-                                        Don&apos;t have an account?{' '}
+                                    <div className={`relative mt-6`}>
+                                        <Field
+                                            id='password'
+                                            type={'password'}
+                                            label={'Password'}
+                                            name={'password'}
+                                            disabled={isSubmitting}
+                                        />
                                         <Link
-                                            to='/auth/register'
-                                            className='text-brand hover:text-brand/80 font-medium'
+                                            to={'/auth/password'}
+                                            className={`text-xs text-zinc-500 tracking-wide no-underline hover:text-zinc-600 absolute top-1 right-0`}
                                         >
-                                            Register
+                                            Forgot Password?
                                         </Link>
-                                    </p>
+                                    </div>
+
+                                    <Captcha
+                                        className='mt-6'
+                                        onError={(error) => {
+                                            console.error('Captcha error:', error);
+                                            clearAndAddHttpError({
+                                                error: new Error('Captcha verification failed. Please try again.'),
+                                            });
+                                        }}
+                                    />
+
+                                    <div className={`mt-6`}>
+                                        <Button
+                                            className={`relative mt-4 w-full rounded-full bg-brand border-0 ring-0 outline-hidden capitalize font-bold text-sm py-2 hover:cursor-pointer`}
+                                            type={'submit'}
+                                            size={'xlarge'}
+                                            isLoading={isSubmitting}
+                                            disabled={isSubmitting}
+                                        >
+                                            Login
+                                        </Button>
+                                    </div>
+                                    <div className='mt-6 text-center'>
+                                        <p className='text-sm text-zinc-500'>
+                                            Don&apos;t have an account?{' '}
+                                            <Link
+                                                to='/auth/register'
+                                                className='text-brand hover:text-brand/80 font-medium'
+                                            >
+                                                Register
+                                            </Link>
+                                        </p>
+                                    </div>
                                 </div>
                             </LoginFormContainer>
                         )}

@@ -1,6 +1,6 @@
-import { CircleDollar, CircleQuestion, Ellipsis, Gear, House } from '@gravity-ui/icons';
+import { CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
-import { Fragment, Suspense, useEffect, useRef, useState } from 'react';
+import { Fragment, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
 import routes from '@/routers/routes';
@@ -23,14 +23,19 @@ import Logo from '@/components/elements/PyroLogo';
 import { NotFound } from '@/components/elements/ScreenBlock';
 import VpsContainer from '@/components/vps/VpsContainer';
 
+import { GravatarStyle, getGravatarUrl } from '@/lib/gravatar';
+
+import getAccountData, { AccountData } from '@/api/account/getAccountData';
 import http from '@/api/http';
 
 const DashboardRouter = () => {
     const location = useLocation();
     const rootAdmin = useStoreState((state) => state.user.data!.rootAdmin);
+    const user = useStoreState((state) => state.user.data);
 
     // Mobile menu state
     const [isMobileMenuVisible, setMobileMenuVisible] = useState(false);
+    const [accountData, setAccountData] = useState<AccountData | null>(null);
 
     const toggleMobileMenu = () => {
         setMobileMenuVisible(!isMobileMenuVisible);
@@ -92,6 +97,47 @@ const DashboardRouter = () => {
         const timeoutId = setTimeout(() => setHeight('40px'), 200);
         return () => clearTimeout(timeoutId);
     }, [top]);
+
+    const fetchAccountData = useCallback(() => {
+        if (user) {
+            getAccountData()
+                .then((data) => {
+                    setAccountData(data);
+                })
+                .catch((error) => {
+                    console.error('Failed to load account data for sidebar:', error);
+                });
+        }
+    }, [user]);
+
+    useEffect(() => {
+        fetchAccountData();
+    }, [fetchAccountData]);
+
+    // Listen for gravatar style updates from AccountOverviewContainer
+    useEffect(() => {
+        const handleGravatarStyleUpdate = (event: Event) => {
+            const customEvent = event as CustomEvent<{ gravatar_style: string }>;
+            // Update accountData instantly with the new gravatar style
+            if (accountData) {
+                setAccountData({
+                    ...accountData,
+                    gravatar_style: customEvent.detail.gravatar_style,
+                });
+            } else {
+                // If accountData isn't loaded yet, refetch it
+                fetchAccountData();
+            }
+        };
+
+        window.addEventListener('gravatar-style-updated', handleGravatarStyleUpdate);
+        return () => {
+            window.removeEventListener('gravatar-style-updated', handleGravatarStyleUpdate);
+        };
+    }, [accountData, fetchAccountData]);
+
+    const gravatarStyle = (accountData?.gravatar_style || 'identicon') as GravatarStyle;
+    const userAvatarUrl = user?.email ? getGravatarUrl(user.email, 22, gravatarStyle) : null;
 
     return (
         <Fragment key={'dashboard-router'}>
@@ -184,8 +230,12 @@ const DashboardRouter = () => {
                             <p>Support</p>
                         </NavLink>
                         <NavLink to={'/account'} end className='flex flex-row items-center' ref={NavigationSettings}>
-                            <Gear width={22} height={22} fill='currentColor' />
-                            <p>Settings</p>
+                            {userAvatarUrl ? (
+                                <img src={userAvatarUrl} alt='Account' className='w-[22px] h-[22px] rounded-full' />
+                            ) : (
+                                <div className='w-[22px] h-[22px] rounded-full bg-zinc-600' />
+                            )}
+                            <p>Account</p>
                         </NavLink>
                     </ul>
                 </MainSidebar>
