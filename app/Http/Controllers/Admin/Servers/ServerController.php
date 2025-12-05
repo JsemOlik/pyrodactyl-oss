@@ -31,22 +31,20 @@ class ServerController extends Controller
         // Calculate statistics
         $totalServers = Server::count();
         
-        // Online servers: installed (has installed_at) and not suspended, and not installing/failed
-        // A server is online if it has installed_at AND is not suspended AND is not installing/failed
-        // Handle NULL status values properly
+        // Online servers: installed and not suspended, and not installing/failed
+        // A server is "online" if: has installed_at AND status is NULL (normal installed) OR status is not in bad states
+        // NULL status means the server is installed and operational (based on migration history)
         $onlineServers = Server::query()
             ->whereNotNull('installed_at')
             ->where(function ($query) {
-                // Not suspended: status is NULL or status != 'suspended'
-                $query->where(function ($q) {
-                    $q->whereNull('status')
-                      ->orWhere('status', '!=', Server::STATUS_SUSPENDED);
-                })
-                // Not installing/failed: status is NULL or status not in bad states
-                ->where(function ($q) {
-                    $q->whereNull('status')
-                      ->orWhereNotIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
-                });
+                // Status is NULL (normal installed server) OR status is not in any bad state
+                $query->whereNull('status')
+                    ->orWhereNotIn('status', [
+                        Server::STATUS_SUSPENDED,
+                        Server::STATUS_INSTALLING,
+                        Server::STATUS_INSTALL_FAILED,
+                        Server::STATUS_REINSTALL_FAILED
+                    ]);
             })
             ->count();
         
@@ -59,10 +57,15 @@ class ServerController extends Controller
             })
             ->count();
         
-        // Count active subscriptions (subscription status is active)
+        // Count active subscriptions (subscription status is active, but exclude pending cancellation)
         $activeSubscriptions = Server::query()
             ->whereHas('subscription', function ($query) {
-                $query->where('stripe_status', 'active');
+                $query->whereIn('stripe_status', ['active', 'trialing'])
+                    ->where(function ($q) {
+                        // Not pending cancellation (no ends_at or ends_at is in the past)
+                        $q->whereNull('ends_at')
+                          ->orWhere('ends_at', '<=', now());
+                    });
             })
             ->count();
         
@@ -80,16 +83,14 @@ class ServerController extends Controller
         if ($filterType === 'online') {
             $baseQuery->whereNotNull('installed_at')
                 ->where(function ($query) {
-                    // Not suspended: status is NULL or status != 'suspended'
-                    $query->where(function ($q) {
-                        $q->whereNull('status')
-                          ->orWhere('status', '!=', Server::STATUS_SUSPENDED);
-                    })
-                    // Not installing/failed: status is NULL or status not in bad states
-                    ->where(function ($q) {
-                        $q->whereNull('status')
-                          ->orWhereNotIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
-                    });
+                    // Status is NULL (normal installed server) OR status is not in any bad state
+                    $query->whereNull('status')
+                        ->orWhereNotIn('status', [
+                            Server::STATUS_SUSPENDED,
+                            Server::STATUS_INSTALLING,
+                            Server::STATUS_INSTALL_FAILED,
+                            Server::STATUS_REINSTALL_FAILED
+                        ]);
                 });
         } elseif ($filterType === 'offline') {
             $baseQuery->where(function ($query) {
@@ -99,7 +100,12 @@ class ServerController extends Controller
             });
         } elseif ($filterType === 'active_subscription') {
             $baseQuery->whereHas('subscription', function ($query) {
-                $query->where('stripe_status', 'active');
+                $query->whereIn('stripe_status', ['active', 'trialing'])
+                    ->where(function ($q) {
+                        // Not pending cancellation (no ends_at or ends_at is in the past)
+                        $q->whereNull('ends_at')
+                          ->orWhere('ends_at', '<=', now());
+                    });
             });
         } elseif ($filterType === 'pending_cancellation') {
             $baseQuery->whereHas('subscription', function ($query) {
