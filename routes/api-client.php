@@ -37,6 +37,7 @@ Route::prefix('/nests')->group(function () {
 Route::prefix('/hosting')->group(function () {
     Route::post('/checkout', [Client\Hosting\CheckoutController::class, 'store']);
     Route::get('/verify-payment', [Client\Hosting\PaymentVerificationController::class, 'check']);
+    Route::get('/vps-distributions', [Client\Hosting\VpsDistributionController::class, 'index']);
 });
 
 Route::prefix('/billing')->group(function () {
@@ -46,6 +47,14 @@ Route::prefix('/billing')->group(function () {
     Route::post('/subscriptions/{subscription}/resume', [Client\Billing\SubscriptionController::class, 'resume']);
     Route::get('/subscriptions/{subscription}/billing-portal', [Client\Billing\SubscriptionController::class, 'billingPortal']);
     Route::get('/invoices', [Client\Billing\InvoiceController::class, 'index']);
+});
+
+Route::prefix('/vps-servers')->group(function () {
+    Route::get('/', [Client\Vps\VpsController::class, 'index']);
+    Route::get('/{vps}', [Client\Vps\VpsController::class, 'view']);
+    Route::post('/{vps}/power', [Client\Vps\VpsPowerController::class, 'send']);
+    Route::get('/{vps}/metrics', [Client\Vps\VpsMetricsController::class, 'index']);
+    Route::get('/{vps}/activity', [Client\Vps\VpsActivityController::class, '__invoke']);
 });
 
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {

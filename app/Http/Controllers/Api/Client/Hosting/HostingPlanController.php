@@ -25,11 +25,14 @@ class HostingPlanController extends Controller
     /**
      * Get all active hosting plans (predefined plans only).
      */
-    public function index(): array
+    public function index(Request $request): array
     {
+        $type = $request->query('type', 'game-server'); // Default to game-server for backward compatibility
+        
         $plans = Plan::query()
             ->active()
             ->predefined()
+            ->where('type', $type)
             ->orderBy('sort_order')
             ->orderBy('price')
             ->get();
@@ -51,6 +54,7 @@ class HostingPlanController extends Controller
                     'swap' => $plan->swap,
                     'is_custom' => $plan->is_custom,
                     'sort_order' => $plan->sort_order,
+                    'type' => $plan->type ?? 'game-server',
                     'pricing' => [
                         'monthly' => $plan->getPriceForInterval('month'),
                         'quarterly' => $plan->getPriceForInterval('quarter'),

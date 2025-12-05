@@ -11,18 +11,23 @@ import createCheckoutSession, { CheckoutSessionData } from '@/api/hosting/create
 import { httpErrorToHuman } from '@/api/http';
 import getHostingPlans, { calculateCustomPlan, CustomPlanCalculation, HostingPlan } from '@/api/hosting/getHostingPlans';
 import getNests from '@/api/nests/getNests';
+import getVpsDistributions, { VpsDistribution } from '@/api/hosting/getVpsDistributions';
+
+type HostingType = 'game-server' | 'vps';
 
 const HostingCheckoutContainer = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
     // URL params
+    const hostingType = (searchParams.get('type') || 'game-server') as HostingType;
     const planId = searchParams.get('plan');
     const isCustom = searchParams.get('custom') === 'true';
     const memory = searchParams.get('memory');
     const interval = searchParams.get('interval');
     const nestId = searchParams.get('nest');
     const eggId = searchParams.get('egg');
+    const distributionId = searchParams.get('distribution');
 
     // State
     const [serverName, setServerName] = useState('');
@@ -31,12 +36,21 @@ const HostingCheckoutContainer = () => {
 
     // Load plans if predefined plan is selected
     const { data: plans } = useSWR<HostingPlan[]>(
-        planId ? '/api/client/hosting/plans' : null,
-        () => (planId ? getHostingPlans() : Promise.resolve([])),
+        planId ? ['/api/client/hosting/plans', hostingType] : null,
+        () => (planId ? getHostingPlans(hostingType) : Promise.resolve([])),
     );
 
-    // Load nests/eggs to display selected configuration
-    const { data: nests } = useSWR('/api/client/nests', getNests);
+    // Load nests/eggs to display selected configuration (game-server only)
+    const { data: nests } = useSWR(
+        hostingType === 'game-server' ? '/api/client/nests' : null,
+        getNests,
+    );
+
+    // Load distributions to display selected configuration (vps only)
+    const { data: distributions } = useSWR(
+        hostingType === 'vps' ? '/api/client/hosting/vps-distributions' : null,
+        getVpsDistributions,
+    );
 
     // Calculate custom plan pricing
     const [customPlanCalculation, setCustomPlanCalculation] = useState<CustomPlanCalculation | null>(null);
@@ -45,7 +59,17 @@ const HostingCheckoutContainer = () => {
         document.title = 'Checkout | Pyrodactyl';
 
         // Validate required params
-        if (!nestId || !eggId || (!planId && !isCustom)) {
+        if (hostingType === 'game-server' && (!nestId || !eggId)) {
+            toast.error('Invalid checkout configuration. Please start over.');
+            navigate('/hosting');
+            return;
+        }
+        if (hostingType === 'vps' && !distributionId) {
+            toast.error('Invalid checkout configuration. Please start over.');
+            navigate('/hosting');
+            return;
+        }
+        if (!planId && !isCustom) {
             toast.error('Invalid checkout configuration. Please start over.');
             navigate('/hosting');
             return;
@@ -60,13 +84,20 @@ const HostingCheckoutContainer = () => {
                     toast.error('Failed to load pricing information.');
                 });
         }
-    }, [nestId, eggId, planId, isCustom, memory, interval, navigate]);
+    }, [hostingType, nestId, eggId, distributionId, planId, isCustom, memory, interval, navigate]);
 
     const selectedPlan = planId ? plans?.find((p) => p.attributes.id === parseInt(planId)) : null;
-    const selectedNest = nests?.find((n) => n.attributes.id === parseInt(nestId || '0'));
-    const selectedEgg = selectedNest?.attributes.relationships?.eggs?.data.find(
-        (e) => e.attributes.id === parseInt(eggId || '0'),
-    );
+    const selectedNest = hostingType === 'game-server' 
+        ? nests?.find((n) => n.attributes.id === parseInt(nestId || '0'))
+        : null;
+    const selectedEgg = hostingType === 'game-server' && selectedNest
+        ? selectedNest.attributes.relationships?.eggs?.data.find(
+            (e) => e.attributes.id === parseInt(eggId || '0'),
+        )
+        : null;
+    const selectedDistribution = hostingType === 'vps'
+        ? distributions?.find((d) => d.id === distributionId)
+        : null;
 
     const formatPrice = (price: number, currency: string = 'USD'): string => {
         return new Intl.NumberFormat('en-US', {
@@ -113,7 +144,12 @@ const HostingCheckoutContainer = () => {
             return;
         }
 
-        if (!selectedNest || !selectedEgg) {
+        if (hostingType === 'game-server' && (!selectedNest || !selectedEgg)) {
+            toast.error('Invalid configuration. Please start over.');
+            navigate('/hosting');
+            return;
+        }
+        if (hostingType === 'vps' && !selectedDistribution) {
             toast.error('Invalid configuration. Please start over.');
             navigate('/hosting');
             return;
@@ -123,11 +159,17 @@ const HostingCheckoutContainer = () => {
 
         try {
             const checkoutData: CheckoutSessionData = {
-                nest_id: parseInt(nestId!),
-                egg_id: parseInt(eggId!),
+                type: hostingType,
                 server_name: serverName.trim(),
                 server_description: serverDescription.trim() || undefined,
             };
+
+            if (hostingType === 'game-server') {
+                checkoutData.nest_id = parseInt(nestId!);
+                checkoutData.egg_id = parseInt(eggId!);
+            } else {
+                checkoutData.distribution = selectedDistribution!.id;
+            }
 
             if (selectedPlan) {
                 checkoutData.plan_id = selectedPlan.attributes.id;
@@ -150,6 +192,7 @@ const HostingCheckoutContainer = () => {
 
     const handleBack = () => {
         const params = new URLSearchParams();
+        params.set('type', hostingType);
         if (planId) {
             params.set('plan', planId);
         } else if (isCustom && memory) {
@@ -161,11 +204,26 @@ const HostingCheckoutContainer = () => {
     };
 
     // Validation checks
-    if (!nestId || !eggId || (!planId && !isCustom)) {
+    if (hostingType === 'game-server' && (!nestId || !eggId)) {
+        return null; // Will redirect in useEffect
+    }
+    if (hostingType === 'vps' && !distributionId) {
+        return null; // Will redirect in useEffect
+    }
+    if (!planId && !isCustom) {
         return null; // Will redirect in useEffect
     }
 
-    if (!selectedNest || !selectedEgg) {
+    if (hostingType === 'game-server' && (!selectedNest || !selectedEgg)) {
+        return (
+            <PageContentBlock title='Checkout'>
+                <div className='flex items-center justify-center min-h-[400px]'>
+                    <div className='text-white/70'>Loading configuration...</div>
+                </div>
+            </PageContentBlock>
+        );
+    }
+    if (hostingType === 'vps' && !selectedDistribution) {
         return (
             <PageContentBlock title='Checkout'>
                 <div className='flex items-center justify-center min-h-[400px]'>
@@ -228,15 +286,23 @@ const HostingCheckoutContainer = () => {
                             </div>
                         )}
 
-                        {/* Game Configuration */}
-                        <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm'>
-                            <div className='text-white/70'>
-                                <span className='font-medium text-white'>Game Type:</span> {selectedNest.attributes.name}
+                        {/* Game/VPS Configuration */}
+                        {hostingType === 'game-server' ? (
+                            <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm'>
+                                <div className='text-white/70'>
+                                    <span className='font-medium text-white'>Game Type:</span> {selectedNest?.attributes.name}
+                                </div>
+                                <div className='text-white/70'>
+                                    <span className='font-medium text-white'>Game:</span> {selectedEgg?.attributes.name}
+                                </div>
                             </div>
-                            <div className='text-white/70'>
-                                <span className='font-medium text-white'>Game:</span> {selectedEgg.attributes.name}
+                        ) : (
+                            <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm'>
+                                <div className='text-white/70'>
+                                    <span className='font-medium text-white'>Distribution:</span> {selectedDistribution?.name}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 

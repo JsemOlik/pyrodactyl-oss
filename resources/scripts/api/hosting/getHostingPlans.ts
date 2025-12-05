@@ -36,9 +36,10 @@ export interface CustomPlanCalculation {
     discount_months: number;
 }
 
-export default (): Promise<HostingPlan[]> => {
+export default (type?: 'game-server' | 'vps'): Promise<HostingPlan[]> => {
     return new Promise((resolve, reject) => {
-        http.get('/api/client/hosting/plans')
+        const params = type ? { type } : {};
+        http.get('/api/client/hosting/plans', { params })
             .then(({ data }) => resolve(data.data))
             .catch(reject);
     });

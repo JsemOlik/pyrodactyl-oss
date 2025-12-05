@@ -83,14 +83,24 @@ class CheckoutController extends Controller
                 );
             }
 
+            // Determine type from request or plan
+            $type = $request->input('type', $plan?->type ?? 'game-server');
+            
             // Build metadata for webhook handler
             $metadata = [
                 'user_id' => $user->id,
-                'nest_id' => $request->input('nest_id'),
-                'egg_id' => $request->input('egg_id'),
+                'type' => $type,
                 'server_name' => $request->input('server_name'),
                 'server_description' => $request->input('server_description', ''),
             ];
+
+            // Add type-specific metadata
+            if ($type === 'vps') {
+                $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
+            } else {
+                $metadata['nest_id'] = $request->input('nest_id');
+                $metadata['egg_id'] = $request->input('egg_id');
+            }
 
             if ($plan) {
                 $metadata['plan_id'] = $plan->id;

@@ -35,6 +35,12 @@ class SettingsServiceProvider extends ServiceProvider
     'pterodactyl:captcha:hcaptcha:secret_key',
     'pterodactyl:captcha:recaptcha:site_key',
     'pterodactyl:captcha:recaptcha:secret_key',
+    'proxmox:url',
+    'proxmox:api_token',
+    'proxmox:realm',
+    'proxmox:node',
+    'proxmox:storage',
+    'proxmox:template',
   ];
 
 
@@ -61,6 +67,7 @@ class SettingsServiceProvider extends ServiceProvider
     'pterodactyl:captcha:turnstile:secret_key',
     'pterodactyl:captcha:hcaptcha:secret_key',
     'pterodactyl:captcha:recaptcha:secret_key',
+    'proxmox:api_token',
   ];
 
   /**

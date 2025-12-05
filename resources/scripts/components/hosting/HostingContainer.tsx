@@ -17,9 +17,15 @@ import getHostingPlans, {
 import { httpErrorToHuman } from '@/api/http';
 import { useStoreState } from '@/state/hooks';
 
+type HostingType = 'game-server' | 'vps';
+
 const HostingContainer = () => {
     const navigate = useNavigate();
-    const { data: plans, error, isLoading } = useSWR<HostingPlan[]>('/api/client/hosting/plans', getHostingPlans);
+    const [hostingType, setHostingType] = useState<HostingType>('game-server');
+    const { data: plans, error, isLoading } = useSWR<HostingPlan[]>(
+        ['/api/client/hosting/plans', hostingType],
+        () => getHostingPlans(hostingType),
+    );
     const isAuthenticated = useStoreState((state) => !!state.user.data?.uuid);
 
     const [customMemory, setCustomMemory] = useState<number>(2048); // Default 2GB
@@ -80,13 +86,13 @@ const HostingContainer = () => {
         // Check if user is authenticated
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
-                state: { from: `/hosting/configure?plan=${plan.attributes.id}` },
+                state: { from: `/hosting/configure?plan=${plan.attributes.id}&type=${hostingType}` },
                 replace: false,
             });
             return;
         }
         // Navigate to configuration page with plan selected
-        navigate(`/hosting/configure?plan=${plan.attributes.id}`);
+        navigate(`/hosting/configure?plan=${plan.attributes.id}&type=${hostingType}`);
     };
 
     const handleCustomPlanSelect = () => {
@@ -97,14 +103,14 @@ const HostingContainer = () => {
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
-                    from: `/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}`,
+                    from: `/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
                 },
                 replace: false,
             });
             return;
         }
         // Navigate to configuration page with custom plan
-        navigate(`/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}`);
+        navigate(`/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`);
     };
 
     if (isLoading) {
@@ -130,6 +136,32 @@ const HostingContainer = () => {
     return (
         <PageContentBlock title='Hosting'>
             <MainPageHeader title='Choose Your Plan' />
+
+            {/* Hosting Type Selector */}
+            <div className='mb-8'>
+                <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-1 inline-flex gap-1'>
+                    <button
+                        onClick={() => setHostingType('game-server')}
+                        className={`px-6 py-2 rounded-md font-medium transition-all ${
+                            hostingType === 'game-server'
+                                ? 'bg-brand text-white'
+                                : 'text-white/70 hover:text-white'
+                        }`}
+                    >
+                        Game Server
+                    </button>
+                    <button
+                        onClick={() => setHostingType('vps')}
+                        className={`px-6 py-2 rounded-md font-medium transition-all ${
+                            hostingType === 'vps'
+                                ? 'bg-brand text-white'
+                                : 'text-white/70 hover:text-white'
+                        }`}
+                    >
+                        VPS
+                    </button>
+                </div>
+            </div>
 
             <div className='space-y-8'>
                 {/* Predefined Plans */}
