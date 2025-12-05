@@ -37,6 +37,9 @@
     @show
     <style>
         @import url('https://fonts.bunny.net/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap')
+        :root {
+            --color-brand: {{ config('theme.primary_color', '#fa4e49') }};
+        }
     </style>
 
     @yield('assets')

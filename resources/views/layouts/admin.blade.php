@@ -20,6 +20,12 @@
 
     @include('layouts.scripts')
 
+    <style>
+        :root {
+            --color-brand: {{ config('theme.primary_color', '#fa4e49') }};
+        }
+    </style>
+
     @section('scripts')
     {!! Theme::css('vendor/select2/select2.min.css?t={cache-version}') !!}
     {!! Theme::css('vendor/bootstrap/bootstrap.min.css?t={cache-version}') !!}
@@ -109,6 +115,11 @@
                     <li class="{{ !starts_with(Route::currentRouteName(), 'admin.api') ?: 'active' }}">
                         <a href="{{ route('admin.api.index')}}">
                             <i class="bi bi-globe"></i> <span>Application API</span>
+                        </a>
+                    </li>
+                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.themes') ?: 'active' }}">
+                        <a href="{{ route('admin.themes.index')}}">
+                            <i class="bi bi-palette-fill"></i> <span>Theme</span>
                         </a>
                     </li>
                     <li class="{{ !starts_with(Route::currentRouteName(), 'admin.announcements') ?: 'active' }}">
