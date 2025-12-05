@@ -25,4 +25,3 @@ export default (sessionId: string): Promise<PaymentVerificationResponse> => {
             .catch(reject);
     });
 };
-

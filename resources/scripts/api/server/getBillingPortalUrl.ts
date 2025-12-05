@@ -11,4 +11,3 @@ export default (serverUuid: string): Promise<BillingPortalUrlResponse> => {
             .catch(reject);
     });
 };
-

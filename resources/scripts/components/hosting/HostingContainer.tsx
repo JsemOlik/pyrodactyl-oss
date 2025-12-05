@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 
+import Navbar from '@/components/Navbar';
 import ActionButton from '@/components/elements/ActionButton';
-import { MainPageHeader } from '@/components/elements/MainPageHeader';
-import PageContentBlock from '@/components/elements/PageContentBlock';
 
 import getHostingPlans, {
     CustomPlanCalculation,
@@ -121,6 +120,7 @@ const HostingContainer = () => {
 
     return (
         <div className='h-full min-h-screen bg-[#0a0a0a] overflow-y-auto -mx-2 -my-2 w-[calc(100%+1rem)]'>
+            <Navbar />
             {/* Hero Section */}
             <section className='relative overflow-hidden'>
                 <div className='absolute inset-0 bg-gradient-to-b from-brand/10 via-transparent to-transparent' />
@@ -139,7 +139,7 @@ const HostingContainer = () => {
                             <ActionButton variant='primary' size='lg' onClick={scrollToPricing}>
                                 Get Started Now
                             </ActionButton>
-                            <ActionButton variant='secondary' size='lg' onClick={() => navigate('/dashboard')}>
+                            <ActionButton variant='secondary' size='lg' onClick={() => navigate('/')}>
                                 Manage your Servers
                             </ActionButton>
                         </div>

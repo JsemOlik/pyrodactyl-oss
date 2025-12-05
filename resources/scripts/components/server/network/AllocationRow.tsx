@@ -121,119 +121,132 @@ const AllocationRow = ({ allocation }: Props) => {
 
             <PageListItem>
                 <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full'>
-                <div className='flex-1 min-w-0'>
-                    <div className='flex items-center gap-3 mb-3'>
-                        <div className='flex-shrink-0 w-8 h-8 rounded-lg bg-[#ffffff11] flex items-center justify-center'>
-                            <AntennaSignal width={22} height={22} fill='currentColor' className='text-zinc-400' />
+                    <div className='flex-1 min-w-0'>
+                        <div className='flex items-center gap-3 mb-3'>
+                            <div className='flex-shrink-0 w-8 h-8 rounded-lg bg-[#ffffff11] flex items-center justify-center'>
+                                <AntennaSignal width={22} height={22} fill='currentColor' className='text-zinc-400' />
+                            </div>
+                            <div className='min-w-0 flex-1'>
+                                <div className='flex items-center flex-wrap gap-2'>
+                                    <CopyOnClick text={allocationString}>
+                                        <div className='flex items-center gap-2 cursor-pointer hover:text-zinc-50 transition-colors group'>
+                                            <h3 className='text-base font-medium text-zinc-100 font-mono truncate'>
+                                                {allocation.alias ? allocation.alias : ip(allocation.ip)}:
+                                                {allocation.port}
+                                            </h3>
+                                            <Copy
+                                                fill='currentColor'
+                                                width={22}
+                                                height={22}
+                                                className='text-zinc-500 group-hover:text-zinc-400 transition-colors'
+                                            />
+                                        </div>
+                                    </CopyOnClick>
+                                    {allocation.isDefault && (
+                                        <span className='flex items-center gap-1 text-xs text-brand font-medium bg-brand/10 px-2 py-1 rounded'>
+                                            <CrownDiamond width={22} height={22} fill='currentColor' className='' />
+                                            Primary
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                        <div className='min-w-0 flex-1'>
-                            <div className='flex items-center flex-wrap gap-2'>
-                                <CopyOnClick text={allocationString}>
-                                    <div className='flex items-center gap-2 cursor-pointer hover:text-zinc-50 transition-colors group'>
-                                        <h3 className='text-base font-medium text-zinc-100 font-mono truncate'>
-                                            {allocation.alias ? allocation.alias : ip(allocation.ip)}:{allocation.port}
-                                        </h3>
-                                        <Copy
-                                            fill='currentColor'
-                                            width={22}
-                                            height={22}
-                                            className='text-zinc-500 group-hover:text-zinc-400 transition-colors'
+
+                        {/* Notes Section - Inline Editable */}
+                        <div className='mt-3'>
+                            <p className='text-xs text-zinc-500 uppercase tracking-wide mb-2'>Notes</p>
+
+                            {isEditingNotes ? (
+                                <div className='space-y-2'>
+                                    <InputSpinner visible={loading}>
+                                        <Textarea
+                                            ref={textareaRef}
+                                            className='w-full bg-[#ffffff06] border border-[#ffffff08] rounded-lg p-3 text-sm text-zinc-300 placeholder-zinc-500 resize-none focus:ring-1 focus:ring-[#ffffff20] focus:border-[#ffffff20] transition-all'
+                                            placeholder='Add notes for this allocation...'
+                                            value={notesValue}
+                                            onChange={(e) => setNotesValue(e.currentTarget.value)}
+                                            rows={3}
                                         />
+                                    </InputSpinner>
+                                    <div className='flex items-center gap-2'>
+                                        <ActionButton
+                                            variant='primary'
+                                            size='sm'
+                                            onClick={saveNotes}
+                                            disabled={loading}
+                                        >
+                                            {loading ? (
+                                                <Spinner size='small' />
+                                            ) : (
+                                                <Check fill='currentColor' className='w-3 h-3 mr-1' />
+                                            )}
+                                            Save
+                                        </ActionButton>
+                                        <ActionButton
+                                            variant='secondary'
+                                            size='sm'
+                                            onClick={cancelEdit}
+                                            disabled={loading}
+                                        >
+                                            <Xmark width={22} height={22} fill='currentColor' className='mr-1' />
+                                            Cancel
+                                        </ActionButton>
                                     </div>
-                                </CopyOnClick>
-                                {allocation.isDefault && (
-                                    <span className='flex items-center gap-1 text-xs text-brand font-medium bg-brand/10 px-2 py-1 rounded'>
-                                        <CrownDiamond width={22} height={22} fill='currentColor' className='' />
-                                        Primary
-                                    </span>
-                                )}
-                            </div>
+                                </div>
+                            ) : (
+                                <Can action={'allocation.update'}>
+                                    <div
+                                        className={`min-h-[2.5rem] p-3 rounded-lg border border-[#ffffff08] bg-[#ffffff03] cursor-pointer hover:border-[#ffffff15] transition-colors ${allocation.notes ? 'text-sm text-zinc-300' : 'text-sm text-zinc-500 italic'}`}
+                                        onClick={startEdit}
+                                    >
+                                        {allocation.notes || 'Click to add notes...'}
+                                    </div>
+                                </Can>
+                            )}
                         </div>
                     </div>
 
-                    {/* Notes Section - Inline Editable */}
-                    <div className='mt-3'>
-                        <p className='text-xs text-zinc-500 uppercase tracking-wide mb-2'>Notes</p>
-
-                        {isEditingNotes ? (
-                            <div className='space-y-2'>
-                                <InputSpinner visible={loading}>
-                                    <Textarea
-                                        ref={textareaRef}
-                                        className='w-full bg-[#ffffff06] border border-[#ffffff08] rounded-lg p-3 text-sm text-zinc-300 placeholder-zinc-500 resize-none focus:ring-1 focus:ring-[#ffffff20] focus:border-[#ffffff20] transition-all'
-                                        placeholder='Add notes for this allocation...'
-                                        value={notesValue}
-                                        onChange={(e) => setNotesValue(e.currentTarget.value)}
-                                        rows={3}
-                                    />
-                                </InputSpinner>
-                                <div className='flex items-center gap-2'>
-                                    <ActionButton variant='primary' size='sm' onClick={saveNotes} disabled={loading}>
-                                        {loading ? (
-                                            <Spinner size='small' />
-                                        ) : (
-                                            <Check fill='currentColor' className='w-3 h-3 mr-1' />
-                                        )}
-                                        Save
-                                    </ActionButton>
-                                    <ActionButton variant='secondary' size='sm' onClick={cancelEdit} disabled={loading}>
-                                        <Xmark width={22} height={22} fill='currentColor' className='mr-1' />
-                                        Cancel
-                                    </ActionButton>
-                                </div>
-                            </div>
-                        ) : (
-                            <Can action={'allocation.update'}>
-                                <div
-                                    className={`min-h-[2.5rem] p-3 rounded-lg border border-[#ffffff08] bg-[#ffffff03] cursor-pointer hover:border-[#ffffff15] transition-colors ${allocation.notes ? 'text-sm text-zinc-300' : 'text-sm text-zinc-500 italic'}`}
-                                    onClick={startEdit}
-                                >
-                                    {allocation.notes || 'Click to add notes...'}
-                                </div>
-                            </Can>
-                        )}
+                    <div className='flex items-center justify-center gap-2 sm:flex-col sm:gap-3'>
+                        <Can action={'allocation.update'}>
+                            <ActionButton
+                                variant='secondary'
+                                size='sm'
+                                onClick={setPrimaryAllocation}
+                                disabled={allocation.isDefault}
+                                title={
+                                    allocation.isDefault
+                                        ? 'This is already the primary allocation'
+                                        : 'Make this the primary allocation'
+                                }
+                            >
+                                <CrownDiamond width={22} height={22} fill='currentColor' className='mr-1' />
+                                <span className='hidden sm:inline'>Make Primary</span>
+                                <span className='sm:hidden'>Primary</span>
+                            </ActionButton>
+                        </Can>
+                        <Can action={'allocation.delete'}>
+                            <ActionButton
+                                variant='danger'
+                                size='sm'
+                                onClick={() => setShowDeleteDialog(true)}
+                                disabled={allocation.isDefault || deleteLoading}
+                                title={
+                                    allocation.isDefault
+                                        ? 'Cannot delete the primary allocation'
+                                        : 'Delete this allocation'
+                                }
+                            >
+                                {deleteLoading ? (
+                                    <Spinner size='small' />
+                                ) : (
+                                    <TrashBin width={22} height={22} fill='currentColor' className='mr-1' />
+                                )}
+                                <span className='hidden sm:inline'>Delete</span>
+                            </ActionButton>
+                        </Can>
                     </div>
                 </div>
-
-                <div className='flex items-center justify-center gap-2 sm:flex-col sm:gap-3'>
-                    <Can action={'allocation.update'}>
-                        <ActionButton
-                            variant='secondary'
-                            size='sm'
-                            onClick={setPrimaryAllocation}
-                            disabled={allocation.isDefault}
-                            title={
-                                allocation.isDefault
-                                    ? 'This is already the primary allocation'
-                                    : 'Make this the primary allocation'
-                            }
-                        >
-                            <CrownDiamond width={22} height={22} fill='currentColor' className='mr-1' />
-                            <span className='hidden sm:inline'>Make Primary</span>
-                            <span className='sm:hidden'>Primary</span>
-                        </ActionButton>
-                    </Can>
-                    <Can action={'allocation.delete'}>
-                        <ActionButton
-                            variant='danger'
-                            size='sm'
-                            onClick={() => setShowDeleteDialog(true)}
-                            disabled={allocation.isDefault || deleteLoading}
-                            title={
-                                allocation.isDefault ? 'Cannot delete the primary allocation' : 'Delete this allocation'
-                            }
-                        >
-                            {deleteLoading ? (
-                                <Spinner size='small' />
-                            ) : (
-                                <TrashBin width={22} height={22} fill='currentColor' className='mr-1' />
-                            )}
-                            <span className='hidden sm:inline'>Delete</span>
-                        </ActionButton>
-                    </Can>
-                </div>
-            </div>
-        </PageListItem>
+            </PageListItem>
         </>
     );
 };

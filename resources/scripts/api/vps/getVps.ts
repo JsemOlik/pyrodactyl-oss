@@ -1,5 +1,5 @@
 import http, { FractalResponseData } from '@/api/http';
-import { Vps, VpsLimits, VpsProxmox, VpsNetwork } from '@/api/vps/types';
+import { Vps, VpsLimits, VpsNetwork, VpsProxmox } from '@/api/vps/types';
 
 export const rawDataToVpsObject = ({ attributes: data }: FractalResponseData): Vps => ({
     id: data.identifier,
@@ -40,4 +40,3 @@ export default (uuid: string): Promise<Vps> => {
             .catch(reject);
     });
 };
-

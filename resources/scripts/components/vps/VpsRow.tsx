@@ -4,10 +4,10 @@ import styled from 'styled-components';
 
 import { bytesToString, ip } from '@/lib/formatters';
 
-import { Vps } from '@/api/vps/types';
 import getVpsMetrics from '@/api/vps/getVpsMetrics';
-import { VpsMetrics } from '@/api/vps/types';
 import sendVpsPower from '@/api/vps/sendVpsPower';
+import { Vps } from '@/api/vps/types';
+import { VpsMetrics } from '@/api/vps/types';
 
 // Determines if the current value is in an alarm threshold
 const isAlarmState = (current: number, limit: number): boolean => limit > 0 && current / limit >= 0.9;
@@ -220,4 +220,3 @@ const VpsRow = ({ vps, className }: { vps: Vps; className?: string }) => {
 };
 
 export default VpsRow;
-

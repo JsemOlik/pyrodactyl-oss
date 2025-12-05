@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import useSWR from 'swr';
 
-import VpsRow from '@/components/vps/VpsRow';
 import PageContentBlock from '@/components/elements/PageContentBlock';
 import Pagination from '@/components/elements/Pagination';
 import { PageListContainer } from '@/components/elements/pages/PageList';
+import VpsRow from '@/components/vps/VpsRow';
 
-import getVpsServers from '@/api/vps/getVpsServers';
 import { PaginatedResult } from '@/api/http';
+import getVpsServers from '@/api/vps/getVpsServers';
 import { Vps } from '@/api/vps/types';
 
 import useFlash from '@/plugins/useFlash';
@@ -46,7 +46,11 @@ const VpsContainer = () => {
 
     return (
         <PageContentBlock title={'Your VPS Servers'} showFlashKey={'vps'}>
-            <MainPageHeader icon={House} title={'Your VPS Servers'} description={'Manage your virtual private servers'} />
+            <MainPageHeader
+                icon={House}
+                title={'Your VPS Servers'}
+                description={'Manage your virtual private servers'}
+            />
 
             {!vpsServers ? (
                 <div className='flex justify-center items-center py-12'>
@@ -72,10 +76,7 @@ const VpsContainer = () => {
                     </PageListContainer>
 
                     {vpsServers.pagination.totalPages > 1 && (
-                        <Pagination
-                            pagination={vpsServers.pagination}
-                            onPageSelect={(page) => setPage(page)}
-                        />
+                        <Pagination pagination={vpsServers.pagination} onPageSelect={(page) => setPage(page)} />
                     )}
                 </>
             )}
@@ -84,4 +85,3 @@ const VpsContainer = () => {
 };
 
 export default VpsContainer;
-

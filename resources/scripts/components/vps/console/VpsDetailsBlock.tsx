@@ -5,9 +5,10 @@ import StatBlock from '@/components/server/console/StatBlock';
 
 import { bytesToString, mbToBytes } from '@/lib/formatters';
 
-import { VpsContext } from '@/state/vps';
 import getVpsMetrics from '@/api/vps/getVpsMetrics';
 import { VpsMetrics } from '@/api/vps/types';
+
+import { VpsContext } from '@/state/vps';
 
 // @ts-expect-error - Unused parameter in component definition
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -84,9 +85,7 @@ const VpsDetailsBlock = ({ className }: { className?: string }) => {
             >
                 <StatBlock title={'CPU'}>
                     {currentStatus === 'offline' || isLoading ? (
-                        <span className={'text-zinc-400'}>
-                            {isLoading ? 'Loading...' : 'Offline'}
-                        </span>
+                        <span className={'text-zinc-400'}>{isLoading ? 'Loading...' : 'Offline'}</span>
                     ) : metrics ? (
                         <Limit limit={textLimits.cpu}>
                             {`${metrics.cpu.usage_percent.toFixed(2)}% / ${textLimits.cpu ?? 'Unlimited'}`}
@@ -106,9 +105,7 @@ const VpsDetailsBlock = ({ className }: { className?: string }) => {
             >
                 <StatBlock title={'RAM'}>
                     {currentStatus === 'offline' || isLoading ? (
-                        <span className={'text-zinc-400'}>
-                            {isLoading ? 'Loading...' : 'Offline'}
-                        </span>
+                        <span className={'text-zinc-400'}>{isLoading ? 'Loading...' : 'Offline'}</span>
                     ) : metrics ? (
                         <Limit limit={textLimits.memory}>
                             {`${bytesToString(metrics.memory.used_bytes)} / ${textLimits.memory ?? 'Unlimited'}`}
@@ -143,4 +140,3 @@ const VpsDetailsBlock = ({ className }: { className?: string }) => {
 };
 
 export default VpsDetailsBlock;
-

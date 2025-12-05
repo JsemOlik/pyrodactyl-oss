@@ -3,9 +3,10 @@ import { toast } from 'sonner';
 
 import { Dialog } from '@/components/elements/dialog';
 
-import { VpsContext } from '@/state/vps';
 import sendVpsPower from '@/api/vps/sendVpsPower';
 import type { VpsPowerSignal } from '@/api/vps/sendVpsPower';
+
+import { VpsContext } from '@/state/vps';
 
 interface PowerButtonProps {
     className?: string;
@@ -148,4 +149,3 @@ const PowerButtons = ({ className }: PowerButtonProps) => {
 };
 
 export default PowerButtons;
-

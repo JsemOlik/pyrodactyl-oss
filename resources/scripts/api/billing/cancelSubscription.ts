@@ -12,4 +12,3 @@ export default (subscriptionId: number, immediate: boolean = false): Promise<Can
             .catch(reject);
     });
 };
-

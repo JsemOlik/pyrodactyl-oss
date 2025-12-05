@@ -5,9 +5,10 @@ import ActionButton from '@/components/elements/ActionButton';
 import TitledGreyBox from '@/components/elements/TitledGreyBox';
 import { Input } from '@/components/elements/inputs';
 
-import { VpsContext } from '@/state/vps';
 import http from '@/api/http';
 import { httpErrorToHuman } from '@/api/http';
+
+import { VpsContext } from '@/state/vps';
 
 const RenameVpsBox = () => {
     const vps = VpsContext.useStoreState((state) => state.vps.data);
@@ -82,4 +83,3 @@ const RenameVpsBox = () => {
 };
 
 export default RenameVpsBox;
-

@@ -30,4 +30,3 @@ export default (): Promise<Subscription[]> => {
             .catch(reject);
     });
 };
-

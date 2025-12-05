@@ -235,160 +235,165 @@ const HostingCheckoutContainer = () => {
             <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
                 <MainPageHeader title='Complete Your Purchase' />
 
-                <div className='space-y-6'>
-                    {/* Order Summary */}
-                    <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
-                        <h3 className='text-lg font-semibold text-white mb-4'>Order Summary</h3>
+                <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                    {/* Left Column: Server Configuration */}
+                    <div className='lg:col-span-2 space-y-6'>
+                        {/* Server Configuration */}
+                        <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
+                            <h3 className='text-lg font-semibold text-white mb-4'>Server Configuration</h3>
 
-                        <div className='space-y-4'>
-                            {/* Plan Details */}
-                            <div className='flex justify-between items-start'>
+                            <div className='space-y-4'>
+                                {/* Server Name */}
                                 <div>
-                                    <div className='font-medium text-white'>
-                                        {selectedPlan ? selectedPlan.attributes.name : 'Custom Plan'}
-                                    </div>
-                                    {selectedPlan?.attributes.description && (
-                                        <div className='text-sm text-white/60'>
-                                            {selectedPlan.attributes.description}
+                                    <label
+                                        htmlFor='server-name'
+                                        className='block text-sm font-medium text-white/70 mb-2'
+                                    >
+                                        Server Name <span className='text-red-400'>*</span>
+                                    </label>
+                                    <input
+                                        id='server-name'
+                                        type='text'
+                                        value={serverName}
+                                        onChange={(e) => setServerName(e.target.value)}
+                                        placeholder='My Awesome Server'
+                                        className='w-full px-4 py-2 bg-[#ffffff08] border border-[#ffffff12] rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#ffffff30] transition-colors'
+                                        maxLength={191}
+                                    />
+                                    <p className='mt-1 text-xs text-white/50'>
+                                        Only letters, numbers, spaces, dashes, underscores, and dots are allowed.
+                                    </p>
+                                </div>
+
+                                {/* Server Description */}
+                                <div>
+                                    <label
+                                        htmlFor='server-description'
+                                        className='block text-sm font-medium text-white/70 mb-2'
+                                    >
+                                        Server Description <span className='text-white/30'>(Optional)</span>
+                                    </label>
+                                    <textarea
+                                        id='server-description'
+                                        value={serverDescription}
+                                        onChange={(e) => setServerDescription(e.target.value)}
+                                        placeholder='A brief description of your server...'
+                                        rows={3}
+                                        className='w-full px-4 py-2 bg-[#ffffff08] border border-[#ffffff12] rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#ffffff30] transition-colors resize-none'
+                                        maxLength={500}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className='flex gap-4'>
+                            <ActionButton
+                                variant='secondary'
+                                size='lg'
+                                onClick={handleBack}
+                                disabled={isCreatingCheckout}
+                            >
+                                Back
+                            </ActionButton>
+                            <ActionButton
+                                variant='primary'
+                                size='lg'
+                                onClick={handleCheckout}
+                                disabled={!isReady || !serverName.trim() || isCreatingCheckout}
+                                className='flex-1'
+                            >
+                                {isCreatingCheckout ? 'Processing...' : 'Proceed to Payment'}
+                            </ActionButton>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Order Summary */}
+                    <div className='lg:col-span-1'>
+                        <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6 sticky top-6'>
+                            <h3 className='text-lg font-semibold text-white mb-4'>Order Summary</h3>
+
+                            <div className='space-y-4'>
+                                {/* Plan Details */}
+                                <div className='flex justify-between items-start'>
+                                    <div>
+                                        <div className='font-medium text-white'>
+                                            {selectedPlan ? selectedPlan.attributes.name : 'Custom Plan'}
                                         </div>
-                                    )}
-                                </div>
-                                <div className='text-right'>
-                                    <div className='font-medium text-white'>
-                                        {formatPrice(firstMonthPrice)} / first month
-                                    </div>
-                                    <div className='text-sm text-white/60'>
-                                        Then {formatPrice(monthlyPrice)} / {getInterval()}
+                                        {selectedPlan?.attributes.description && (
+                                            <div className='text-sm text-white/60'>
+                                                {selectedPlan.attributes.description}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Resources */}
-                            {selectedPlan && (
-                                <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm text-white/70'>
-                                    {selectedPlan.attributes.memory && (
-                                        <div>RAM: {formatMemory(selectedPlan.attributes.memory)}</div>
-                                    )}
-                                    {selectedPlan.attributes.disk && (
-                                        <div>Storage: {formatMemory(selectedPlan.attributes.disk)}</div>
-                                    )}
-                                    {selectedPlan.attributes.cpu && <div>CPU: {selectedPlan.attributes.cpu}%</div>}
-                                </div>
-                            )}
-
-                            {isCustom && customPlanCalculation && (
-                                <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm text-white/70'>
-                                    <div>RAM: {formatMemory(customPlanCalculation.memory)}</div>
-                                </div>
-                            )}
-
-                            {/* Game/VPS Configuration */}
-                            {hostingType === 'game-server' ? (
-                                <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm'>
-                                    <div className='text-white/70'>
-                                        <span className='font-medium text-white'>Game Type:</span>{' '}
-                                        {selectedNest?.attributes.name}
+                                {/* Resources */}
+                                {selectedPlan && (
+                                    <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm text-white/70 mb-4'>
+                                        {selectedPlan.attributes.memory && (
+                                            <div>RAM: {formatMemory(selectedPlan.attributes.memory)}</div>
+                                        )}
+                                        {selectedPlan.attributes.disk && (
+                                            <div>Storage: {formatMemory(selectedPlan.attributes.disk)}</div>
+                                        )}
+                                        {selectedPlan.attributes.cpu && <div>CPU: {selectedPlan.attributes.cpu}%</div>}
                                     </div>
-                                    <div className='text-white/70'>
-                                        <span className='font-medium text-white'>Game:</span>{' '}
-                                        {selectedEgg?.attributes.name}
+                                )}
+
+                                {isCustom && customPlanCalculation && (
+                                    <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm text-white/70'>
+                                        <div>RAM: {formatMemory(customPlanCalculation.memory)}</div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm'>
-                                    <div className='text-white/70'>
-                                        <span className='font-medium text-white'>Distribution:</span>{' '}
-                                        {selectedDistribution?.name}
+                                )}
+
+                                {/* Game/VPS Configuration */}
+                                {hostingType === 'game-server' ? (
+                                    <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm mb-4'>
+                                        <div className='text-white/70'>
+                                            <span className='font-medium text-white'>Game Type:</span>{' '}
+                                            {selectedNest?.attributes.name}
+                                        </div>
+                                        <div className='text-white/70'>
+                                            <span className='font-medium text-white'>Game:</span>{' '}
+                                            {selectedEgg?.attributes.name}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                ) : (
+                                    <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm'>
+                                        <div className='text-white/70'>
+                                            <span className='font-medium text-white'>Distribution:</span>{' '}
+                                            {selectedDistribution?.name}
+                                        </div>
+                                    </div>
+                                )}
 
-                    {/* Server Configuration */}
-                    <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
-                        <h3 className='text-lg font-semibold text-white mb-4'>Server Configuration</h3>
-
-                        <div className='space-y-4'>
-                            {/* Server Name */}
-                            <div>
-                                <label htmlFor='server-name' className='block text-sm font-medium text-white/70 mb-2'>
-                                    Server Name <span className='text-red-400'>*</span>
-                                </label>
-                                <input
-                                    id='server-name'
-                                    type='text'
-                                    value={serverName}
-                                    onChange={(e) => setServerName(e.target.value)}
-                                    placeholder='My Awesome Server'
-                                    className='w-full px-4 py-2 bg-[#ffffff08] border border-[#ffffff12] rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#ffffff30] transition-colors'
-                                    maxLength={191}
-                                />
-                                <p className='mt-1 text-xs text-white/50'>
-                                    Only letters, numbers, spaces, dashes, underscores, and dots are allowed.
-                                </p>
-                            </div>
-
-                            {/* Server Description */}
-                            <div>
-                                <label
-                                    htmlFor='server-description'
-                                    className='block text-sm font-medium text-white/70 mb-2'
-                                >
-                                    Server Description <span className='text-white/30'>(Optional)</span>
-                                </label>
-                                <textarea
-                                    id='server-description'
-                                    value={serverDescription}
-                                    onChange={(e) => setServerDescription(e.target.value)}
-                                    placeholder='A brief description of your server...'
-                                    rows={3}
-                                    className='w-full px-4 py-2 bg-[#ffffff08] border border-[#ffffff12] rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#ffffff30] transition-colors resize-none'
-                                    maxLength={500}
-                                />
+                                {/* Pricing Details */}
+                                {isReady ? (
+                                    <div className='pt-4 border-t border-[#ffffff12] space-y-3'>
+                                        <div className='flex justify-between text-white/70'>
+                                            <span>First Month (50% off)</span>
+                                            <span className='line-through text-white/50'>
+                                                {formatPrice(monthlyPrice)}
+                                            </span>
+                                        </div>
+                                        <div className='flex justify-between text-lg font-semibold text-white'>
+                                            <span>First Month Price</span>
+                                            <span>{formatPrice(firstMonthPrice)}</span>
+                                        </div>
+                                        <div className='pt-3 border-t border-[#ffffff12] flex justify-between text-white/70'>
+                                            <span>
+                                                Then {formatPrice(monthlyPrice)} per {getInterval()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className='pt-4 border-t border-[#ffffff12] text-white/50 text-sm'>
+                                        Calculating pricing...
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </div>
-
-                    {/* Pricing Summary */}
-                    <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
-                        <h3 className='text-lg font-semibold text-white mb-4'>Pricing Summary</h3>
-
-                        {isReady ? (
-                            <div className='space-y-3'>
-                                <div className='flex justify-between text-white/70'>
-                                    <span>First Month (50% off)</span>
-                                    <span className='line-through text-white/50'>{formatPrice(monthlyPrice)}</span>
-                                </div>
-                                <div className='flex justify-between text-lg font-semibold text-white'>
-                                    <span>First Month Price</span>
-                                    <span>{formatPrice(firstMonthPrice)}</span>
-                                </div>
-                                <div className='pt-3 border-t border-[#ffffff12] flex justify-between text-white/70'>
-                                    <span>
-                                        Then {formatPrice(monthlyPrice)} per {getInterval()}
-                                    </span>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className='text-white/50'>Calculating pricing...</div>
-                        )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className='flex gap-4 pt-4'>
-                        <ActionButton variant='secondary' size='lg' onClick={handleBack} disabled={isCreatingCheckout}>
-                            Back
-                        </ActionButton>
-                        <ActionButton
-                            variant='primary'
-                            size='lg'
-                            onClick={handleCheckout}
-                            disabled={!isReady || !serverName.trim() || isCreatingCheckout}
-                            className='flex-1'
-                        >
-                            {isCreatingCheckout ? 'Processing...' : 'Proceed to Payment'}
-                        </ActionButton>
                     </div>
                 </div>
             </div>

@@ -1,26 +1,27 @@
+import * as Tooltip from '@radix-ui/react-tooltip';
+import {
+    CategoryScale,
+    Chart as ChartJS,
+    type ChartOptions,
+    Filler,
+    LineElement,
+    LinearScale,
+    PointElement,
+} from 'chart.js';
 import { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
-import * as Tooltip from '@radix-ui/react-tooltip';
 
-import ChartBlock from '@/components/server/console/ChartBlock';
-import VpsContentBlock from '@/components/elements/VpsContentBlock';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
+import VpsContentBlock from '@/components/elements/VpsContentBlock';
+import ChartBlock from '@/components/server/console/ChartBlock';
 
-import { VpsContext } from '@/state/vps';
-import getVpsMetrics from '@/api/vps/getVpsMetrics';
-import { VpsMetrics } from '@/api/vps/types';
 import { bytesToString } from '@/lib/formatters';
 import { hexToRgba } from '@/lib/helpers';
 
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Filler,
-    type ChartOptions,
-} from 'chart.js';
+import getVpsMetrics from '@/api/vps/getVpsMetrics';
+import { VpsMetrics } from '@/api/vps/types';
+
+import { VpsContext } from '@/state/vps';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
@@ -273,4 +274,3 @@ const VpsMetricsContainer = () => {
 };
 
 export default VpsMetricsContainer;
-

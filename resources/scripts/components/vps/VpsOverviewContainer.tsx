@@ -3,14 +3,14 @@ import { useEffect, useState } from 'react';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import VpsContentBlock from '@/components/elements/VpsContentBlock';
 import { Alert } from '@/components/elements/alert';
-
-import { VpsContext } from '@/state/vps';
+import UptimeDuration from '@/components/server/UptimeDuration';
 import PowerButtons from '@/components/vps/console/PowerButtons';
 import VpsDetailsBlock from '@/components/vps/console/VpsDetailsBlock';
+
 import getVpsMetrics from '@/api/vps/getVpsMetrics';
 import { VpsMetrics } from '@/api/vps/types';
 
-import UptimeDuration from '@/components/server/UptimeDuration';
+import { VpsContext } from '@/state/vps';
 
 const VpsOverviewContainer = () => {
     const vps = VpsContext.useStoreState((state) => state.vps.data);
@@ -138,4 +138,3 @@ const VpsOverviewContainer = () => {
 };
 
 export default VpsOverviewContainer;
-

@@ -17,4 +17,3 @@ const VpsContentBlock: React.FC<Props> = ({ title, children, ...props }) => {
 };
 
 export default VpsContentBlock;
-

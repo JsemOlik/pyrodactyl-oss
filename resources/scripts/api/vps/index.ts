@@ -7,4 +7,3 @@ export { useVpsActivityLogs } from '@/api/vps/getVpsActivity';
 export type { Vps, VpsStatus, VpsPowerState, VpsLimits, VpsProxmox, VpsNetwork, VpsMetrics } from '@/api/vps/types';
 export type { VpsPowerSignal } from '@/api/vps/sendVpsPower';
 export type { VpsActivityLogFilters } from '@/api/vps/getVpsActivity';
-

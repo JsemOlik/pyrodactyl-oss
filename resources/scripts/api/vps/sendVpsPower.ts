@@ -9,4 +9,3 @@ export default (uuid: string, signal: VpsPowerSignal): Promise<void> => {
             .catch(reject);
     });
 };
-

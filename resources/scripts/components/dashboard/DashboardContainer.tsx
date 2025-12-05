@@ -18,12 +18,13 @@ import {
 import { Bars, ChevronDown, House, LayoutCellsLarge, SlidersVertical } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 
 import AnnouncementBanner from '@/components/dashboard/AnnouncementBanner';
 import ServerRow from '@/components/dashboard/ServerRow';
 import SortableServerRow from '@/components/dashboard/SortableServerRow';
+import ActionButton from '@/components/elements/ActionButton';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -54,6 +55,7 @@ const DashboardContainer = () => {
     };
 
     const { search } = useLocation();
+    const navigate = useNavigate();
     const defaultPage = Number(new URLSearchParams(search).get('page') || '1');
 
     const [page, setPage] = useState(!isNaN(defaultPage) && defaultPage > 0 ? defaultPage : 1);
@@ -579,11 +581,20 @@ const DashboardContainer = () => {
                                                             ? 'No other servers found'
                                                             : 'No servers found'}
                                                     </h3>
-                                                    <p className='text-sm text-zinc-400 max-w-sm'>
+                                                    <p className='text-sm text-zinc-400 max-w-sm mb-6'>
                                                         {serverViewMode === 'admin-all'
                                                             ? 'There are no other servers to display.'
                                                             : 'There are no servers associated with your account.'}
                                                     </p>
+                                                    {serverViewMode !== 'admin-all' && (
+                                                        <ActionButton
+                                                            variant='primary'
+                                                            size='lg'
+                                                            onClick={() => navigate('/hosting')}
+                                                        >
+                                                            Purchase your first server
+                                                        </ActionButton>
+                                                    )}
                                                 </div>
                                             </div>
                                         )
@@ -661,11 +672,20 @@ const DashboardContainer = () => {
                                                             ? 'No other servers found'
                                                             : 'No servers found'}
                                                     </h3>
-                                                    <p className='text-sm text-zinc-400 max-w-sm'>
+                                                    <p className='text-sm text-zinc-400 max-w-sm mb-6'>
                                                         {serverViewMode === 'admin-all'
                                                             ? 'There are no other servers to display.'
                                                             : 'There are no servers associated with your account.'}
                                                     </p>
+                                                    {serverViewMode !== 'admin-all' && (
+                                                        <ActionButton
+                                                            variant='primary'
+                                                            size='lg'
+                                                            onClick={() => navigate('/hosting')}
+                                                        >
+                                                            Purchase your first server
+                                                        </ActionButton>
+                                                    )}
                                                 </div>
                                             </div>
                                         )

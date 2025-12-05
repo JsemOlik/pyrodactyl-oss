@@ -73,4 +73,3 @@ export interface VpsMetrics {
     uptime: number;
     timestamp: number;
 }
-

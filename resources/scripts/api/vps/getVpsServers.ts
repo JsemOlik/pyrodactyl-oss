@@ -41,4 +41,3 @@ export default ({ query, filter, ...params }: QueryParams): Promise<PaginatedRes
             .catch(reject);
     });
 };
-

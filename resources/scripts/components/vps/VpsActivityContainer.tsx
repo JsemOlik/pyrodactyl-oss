@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import FlashMessageRender from '@/components/FlashMessageRender';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
-import VpsContentBlock from '@/components/elements/VpsContentBlock';
 import Spinner from '@/components/elements/Spinner';
+import VpsContentBlock from '@/components/elements/VpsContentBlock';
 import ActivityLogEntry from '@/components/elements/activity/ActivityLogEntry';
 import { Input } from '@/components/elements/inputs';
 import PaginationFooter from '@/components/elements/table/PaginationFooter';
@@ -12,6 +12,7 @@ import PaginationFooter from '@/components/elements/table/PaginationFooter';
 import { VpsActivityLogFilters, useVpsActivityLogs } from '@/api/vps/getVpsActivity';
 
 import { VpsContext } from '@/state/vps';
+
 import { useFlashKey } from '@/plugins/useFlash';
 import useLocationHash from '@/plugins/useLocationHash';
 
@@ -24,14 +25,10 @@ const VpsActivityContainer = () => {
     const [selectedEventType, setSelectedEventType] = useState('');
     const [showFilters, setShowFilters] = useState(false);
 
-    const { data, isValidating, error } = useVpsActivityLogs(
-        vps?.uuid || '',
-        filters,
-        {
-            revalidateOnMount: true,
-            revalidateOnFocus: false,
-        },
-    );
+    const { data, isValidating, error } = useVpsActivityLogs(vps?.uuid || '', filters, {
+        revalidateOnMount: true,
+        revalidateOnFocus: false,
+    });
 
     // Extract unique event types for filter dropdown
     const eventTypes = useMemo(() => {
@@ -114,10 +111,7 @@ const VpsActivityContainer = () => {
     return (
         <VpsContentBlock title={'Activity'}>
             <FlashMessageRender byKey={'vps:activity'} />
-            <MainPageHeader
-                title={'Activity Log'}
-                description={'View all activity and events related to this VPS'}
-            />
+            <MainPageHeader title={'Activity Log'} description={'View all activity and events related to this VPS'} />
 
             <div className='mb-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between'>
                 <div className='flex-1 flex gap-2 w-full sm:w-auto'>
@@ -216,4 +210,3 @@ const VpsActivityContainer = () => {
 };
 
 export default VpsActivityContainer;
-

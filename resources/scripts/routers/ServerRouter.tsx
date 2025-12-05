@@ -17,6 +17,7 @@ import {
 import { useStoreState } from 'easy-peasy';
 import React, { Fragment, Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import routes from '@/routers/routes';
 
@@ -46,11 +47,10 @@ import StatBlock from '@/components/server/console/StatBlock';
 
 import { httpErrorToHuman } from '@/api/http';
 import http from '@/api/http';
-import { SubdomainInfo, getSubdomainInfo } from '@/api/server/network/subdomain';
 import getBillingPortalUrl from '@/api/server/getBillingPortalUrl';
+import { SubdomainInfo, getSubdomainInfo } from '@/api/server/network/subdomain';
 
 import { ServerContext } from '@/state/server';
-import { toast } from 'sonner';
 
 // Sidebar item components that check both permissions and feature limits
 const DatabasesSidebarItem = React.forwardRef<HTMLAnchorElement, { id: string; onClick: () => void }>(
@@ -209,7 +209,7 @@ const ServerRouter = () => {
 
     const onOpenBilling = async () => {
         if (!uuid) return;
-        
+
         try {
             const response = await getBillingPortalUrl(uuid);
             window.location.href = response.url;

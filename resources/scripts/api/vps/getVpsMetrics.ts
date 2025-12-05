@@ -34,4 +34,3 @@ export default (uuid: string, timeframe: 'hour' | 'day' | 'week' = 'hour'): Prom
             .catch(reject);
     });
 };
-

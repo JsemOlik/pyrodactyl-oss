@@ -234,14 +234,17 @@ export function BillingServiceRow({
                                 Cancel
                             </button>
                         )}
-                        {service.canResume && (service.status === 'paused' || service.status === 'canceled' || service.status === 'pending_cancellation') && (
-                            <button
-                                onClick={handleResume}
-                                className='inline-flex items-center gap-2 rounded-full bg-[#3f3f46] hover:bg-[#52525b] text-white px-3 py-1.5 text-xs font-semibold transition-colors'
-                            >
-                                Resume
-                            </button>
-                        )}
+                        {service.canResume &&
+                            (service.status === 'paused' ||
+                                service.status === 'canceled' ||
+                                service.status === 'pending_cancellation') && (
+                                <button
+                                    onClick={handleResume}
+                                    className='inline-flex items-center gap-2 rounded-full bg-[#3f3f46] hover:bg-[#52525b] text-white px-3 py-1.5 text-xs font-semibold transition-colors'
+                                >
+                                    Resume
+                                </button>
+                            )}
                     </div>
                 </div>
             </div>

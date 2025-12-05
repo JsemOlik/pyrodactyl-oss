@@ -38,7 +38,7 @@ const HostingPaymentVerifyingContainer = () => {
                     if (response.status === 'completed' && response.server) {
                         clearInterval(pollInterval);
                         toast.success('Payment verified! Your server is being created...');
-                        
+
                         // Redirect to server page after a brief delay
                         setTimeout(() => {
                             navigate(`/server/${response.server.uuid}`);
@@ -49,15 +49,17 @@ const HostingPaymentVerifyingContainer = () => {
                     // Increment poll count
                     setPollCount((prev) => {
                         const newCount = prev + 1;
-                        
+
                         // If we've exceeded max polls, show error
                         if (newCount >= maxPolls) {
                             clearInterval(pollInterval);
                             setStatus('error');
-                            setMessage('Payment verification is taking longer than expected. Please check your dashboard or contact support.');
+                            setMessage(
+                                'Payment verification is taking longer than expected. Please check your dashboard or contact support.',
+                            );
                             toast.error('Payment verification timeout. Please check your dashboard.');
                         }
-                        
+
                         return newCount;
                     });
                 })
@@ -122,4 +124,3 @@ const HostingPaymentVerifyingContainer = () => {
 };
 
 export default HostingPaymentVerifyingContainer;
-

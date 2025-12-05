@@ -2,8 +2,8 @@ import type { Action, Computed, Thunk } from 'easy-peasy';
 import { action, computed, createContextStore, thunk } from 'easy-peasy';
 import isEqual from 'react-fast-compare';
 
-import type { Vps } from '@/api/vps/types';
 import getVps from '@/api/vps/getVps';
+import type { Vps } from '@/api/vps/types';
 
 export type VpsStatus = 'offline' | 'starting' | 'stopping' | 'running' | null;
 
@@ -94,4 +94,3 @@ export const VpsContext = createContextStore<VpsStore>({
         state.status.value = null;
     }),
 });
-

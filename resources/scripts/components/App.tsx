@@ -16,8 +16,8 @@ import Spinner from '@/components/elements/Spinner';
 
 import { store } from '@/state';
 import { ServerContext } from '@/state/server';
-import { VpsContext } from '@/state/vps';
 import { SiteSettings } from '@/state/settings';
+import { VpsContext } from '@/state/vps';
 
 import PyrodactylProvider from './PyrodactylProvider';
 

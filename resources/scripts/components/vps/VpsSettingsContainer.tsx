@@ -1,8 +1,8 @@
 import FlashMessageRender from '@/components/FlashMessageRender';
 import CopyOnClick from '@/components/elements/CopyOnClick';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
-import VpsContentBlock from '@/components/elements/VpsContentBlock';
 import TitledGreyBox from '@/components/elements/TitledGreyBox';
+import VpsContentBlock from '@/components/elements/VpsContentBlock';
 
 import { VpsContext } from '@/state/vps';
 
@@ -35,27 +35,19 @@ const VpsSettingsContainer = () => {
                 <TitledGreyBox title={'Resource Limits'}>
                     <div className={`flex items-center justify-between text-sm`}>
                         <p>Memory</p>
-                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>
-                            {limits?.memory} MB
-                        </code>
+                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>{limits?.memory} MB</code>
                     </div>
                     <div className={`flex items-center justify-between mt-2 text-sm`}>
                         <p>Disk</p>
-                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>
-                            {limits?.disk} MB
-                        </code>
+                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>{limits?.disk} MB</code>
                     </div>
                     <div className={`flex items-center justify-between mt-2 text-sm`}>
                         <p>CPU Cores</p>
-                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>
-                            {limits?.cpu_cores}
-                        </code>
+                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>{limits?.cpu_cores}</code>
                     </div>
                     <div className={`flex items-center justify-between mt-2 text-sm`}>
                         <p>CPU Sockets</p>
-                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>
-                            {limits?.cpu_sockets}
-                        </code>
+                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>{limits?.cpu_sockets}</code>
                     </div>
                 </TitledGreyBox>
 
@@ -88,22 +80,16 @@ const VpsSettingsContainer = () => {
                 <TitledGreyBox title={'VPS Information'}>
                     <div className={`flex items-center justify-between text-sm`}>
                         <p>Distribution</p>
-                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>
-                            {vps.distribution}
-                        </code>
+                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>{vps.distribution}</code>
                     </div>
                     <div className={`flex items-center justify-between mt-2 text-sm`}>
                         <p>Proxmox Node</p>
-                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>
-                            {vps.proxmox.node}
-                        </code>
+                        <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>{vps.proxmox.node}</code>
                     </div>
                     {vps.proxmox.vm_id && (
                         <div className={`flex items-center justify-between mt-2 text-sm`}>
                             <p>Proxmox VM ID</p>
-                            <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>
-                                {vps.proxmox.vm_id}
-                            </code>
+                            <code className={`font-mono bg-zinc-900 rounded-sm py-1 px-2`}>{vps.proxmox.vm_id}</code>
                         </div>
                     )}
                 </TitledGreyBox>
@@ -128,4 +114,3 @@ const VpsSettingsContainer = () => {
 };
 
 export default VpsSettingsContainer;
-

@@ -1,5 +1,6 @@
-import http from '@/api/http';
 import { BillingInvoice } from '@/components/dashboard/BillingInvoiceRow';
+
+import http from '@/api/http';
 
 export default (): Promise<BillingInvoice[]> => {
     return new Promise((resolve, reject) => {
@@ -8,4 +9,3 @@ export default (): Promise<BillingInvoice[]> => {
             .catch(reject);
     });
 };
-

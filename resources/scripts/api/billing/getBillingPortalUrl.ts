@@ -11,4 +11,3 @@ export default (subscriptionId: number): Promise<BillingPortalUrlResponse> => {
             .catch(reject);
     });
 };
-
