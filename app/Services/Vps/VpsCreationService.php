@@ -112,10 +112,13 @@ class VpsCreationService
         // Convert disk from MB to GB for Proxmox
         $diskGb = round(($data['disk'] ?? 10240) / 1024, 2);
 
+        // Sanitize VM name to be DNS-compatible (Proxmox requirement)
+        $vmName = $this->sanitizeVmName($data['name'] ?? 'vps-' . $vmId);
+
         // Build cloud-init configuration
         $config = [
             'vmid' => $vmId,
-            'name' => $data['name'],
+            'name' => $vmName,
             'memory' => $memoryBytes,
             'cores' => $data['cpu_cores'] ?? 1,
             'sockets' => $data['cpu_sockets'] ?? 1,
@@ -155,6 +158,41 @@ class VpsCreationService
         } while ($exists);
 
         return $uuid;
+    }
+
+    /**
+     * Sanitize VM name to be DNS-compatible for Proxmox.
+     * Proxmox requires VM names to be valid DNS names (alphanumeric and hyphens only).
+     *
+     * @param string $name Original VM name
+     * @return string Sanitized DNS-compatible name
+     */
+    private function sanitizeVmName(string $name): string
+    {
+        // Convert to lowercase
+        $sanitized = strtolower(trim($name));
+        
+        // Replace spaces and invalid characters with hyphens
+        $sanitized = preg_replace('/[^a-z0-9-]/', '-', $sanitized);
+        
+        // Remove multiple consecutive hyphens
+        $sanitized = preg_replace('/-+/', '-', $sanitized);
+        
+        // Remove leading/trailing hyphens
+        $sanitized = trim($sanitized, '-');
+        
+        // Ensure it's not empty and has a max length (Proxmox typically allows up to 64 chars)
+        if (empty($sanitized)) {
+            $sanitized = 'vps';
+        }
+        
+        // Limit to 64 characters (Proxmox limit)
+        if (strlen($sanitized) > 64) {
+            $sanitized = substr($sanitized, 0, 64);
+            $sanitized = rtrim($sanitized, '-');
+        }
+        
+        return $sanitized;
     }
 }
 
