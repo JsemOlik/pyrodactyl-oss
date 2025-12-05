@@ -1,5 +1,19 @@
 // million-ignore
 const Logo = ({ className, uniqueId }: { className?: string; uniqueId?: string } = {}) => {
+    const customLogoUrl = (window as any).SiteConfiguration?.logoUrl;
+    
+    // If custom logo is available, use it
+    if (customLogoUrl) {
+        return (
+            <img
+                src={customLogoUrl}
+                alt="Logo"
+                className={className || 'flex h-full w-full shrink-0'}
+                style={{ maxHeight: '61px', objectFit: 'contain' }}
+            />
+        );
+    }
+    
     const gradientId = uniqueId
         ? `paint0_radial_${uniqueId}`
         : `paint0_radial_${Math.random().toString(36).substr(2, 9)}`;

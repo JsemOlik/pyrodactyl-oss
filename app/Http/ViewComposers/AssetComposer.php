@@ -4,6 +4,7 @@ namespace Pterodactyl\Http\ViewComposers;
 
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Pterodactyl\Services\Helpers\AssetHashService;
 use Pterodactyl\Services\Captcha\CaptchaManager;
 use Pterodactyl\Contracts\Repository\SettingsRepositoryInterface;
@@ -24,10 +25,17 @@ class AssetComposer
    */
   public function compose(View $view): void
   {
+    $logoPath = config('theme.logo_path');
+    $logoUrl = null;
+    if ($logoPath && Storage::disk('public')->exists($logoPath)) {
+      $logoUrl = Storage::disk('public')->url($logoPath);
+    }
+    
     $view->with('siteConfiguration', [
       'name' => config('app.name') ?? 'Pyrodactyl',
       'locale' => config('app.locale') ?? 'en',
       'timezone' => config('app.timezone') ?? '',
+      'logoUrl' => $logoUrl,
       'captcha' => [
         'enabled' => $this->captcha->getDefaultDriver() !== 'none',
         'provider' => $this->captcha->getDefaultDriver(),

@@ -42,6 +42,7 @@ class SettingsServiceProvider extends ServiceProvider
     'proxmox:storage',
     'proxmox:template',
     'theme:primary_color',
+    'theme:logo_path',
   ];
 
 

@@ -15,7 +15,7 @@
 @section('content')
   <div class="row">
     <div class="col-xs-12">
-      <form action="{{ route('admin.themes.update') }}" method="POST" id="theme-form">
+      <form action="{{ route('admin.themes.update') }}" method="POST" id="theme-form" enctype="multipart/form-data">
         <div class="box">
           <div class="box-header with-border">
             <h3 class="box-title">Primary Color</h3>
@@ -45,6 +45,45 @@
                       Sample Text
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="box-footer">
+            {!! csrf_field() !!}
+            <button type="submit" name="_method" value="PATCH"
+              class="btn btn-primary btn-sm btn-outline-primary pull-right">Save</button>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="box-header with-border">
+            <h3 class="box-title">Custom Logo</h3>
+          </div>
+          <div class="box-body">
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label class="control-label">Upload Custom SVG Logo</label>
+                <div>
+                  <input type="file" class="form-control" name="logo" id="logo-upload" accept=".svg" />
+                  <p class="text-muted"><small>Upload a custom SVG logo to replace the default Pyrodactyl logo. Maximum file size: 2MB.</small></p>
+                </div>
+              </div>
+              <div class="form-group col-md-6">
+                <label class="control-label">Current Logo</label>
+                <div>
+                  @if($logoPath)
+                    <div style="margin-bottom: 10px;">
+                      <img src="{{ $logoPath }}" alt="Custom Logo" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff;" id="logo-preview" />
+                    </div>
+                    <div class="checkbox">
+                      <label>
+                        <input type="checkbox" name="remove_logo" value="1" /> Remove custom logo and use default
+                      </label>
+                    </div>
+                  @else
+                    <p class="text-muted"><small>No custom logo uploaded. The default Pyrodactyl logo will be used.</small></p>
+                  @endif
                 </div>
               </div>
             </div>
@@ -86,6 +125,30 @@
 
       // Initialize preview on load
       updatePreview(colorInput.value);
+
+      // Logo preview
+      const logoUpload = document.getElementById('logo-upload');
+      if (logoUpload) {
+        logoUpload.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (file && file.type === 'image/svg+xml') {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const logoPreview = document.getElementById('logo-preview');
+              if (logoPreview) {
+                logoPreview.src = e.target.result;
+                logoPreview.style.display = 'block';
+              } else {
+                const previewDiv = document.querySelector('.form-group.col-md-6:last-child .text-muted');
+                if (previewDiv) {
+                  previewDiv.innerHTML = '<img src="' + e.target.result + '" alt="Logo Preview" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff;" id="logo-preview" />';
+                }
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
     });
   </script>
 @endsection
