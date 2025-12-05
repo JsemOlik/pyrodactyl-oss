@@ -117,7 +117,6 @@
                                 <th>Node</th>
                                 <th>Connection</th>
                                 <th>Subscription</th>
-                                <th>Next Billing Date</th>
                                 <th>Subscription Status</th>
                                 <th>Status</th>
                                 <th></th>
@@ -153,20 +152,6 @@
                                             @endif
                                         @else
                                             <span class="text-muted">No subscription</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        @if($server->subscription)
-                                            @php
-                                                $statusInfo = $server->subscription->getSubscriptionStatusInfo();
-                                            @endphp
-                                            @if($statusInfo['next_billing_date'])
-                                                {{ $statusInfo['next_billing_date']->format('M j, Y') }}
-                                            @else
-                                                <span class="text-muted">N/A</span>
-                                            @endif
-                                        @else
-                                            <span class="text-muted">N/A</span>
                                         @endif
                                     </td>
                                     <td class="text-center">

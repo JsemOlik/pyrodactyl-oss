@@ -15,11 +15,65 @@
 @section('content')
 <div class="row">
     <div class="col-xs-12">
+        <div class="row">
+            <div class="col-lg-3 col-xs-6">
+                <div class="small-box bg-aqua">
+                    <div class="inner">
+                        <h3>{{ $stats['total'] }}</h3>
+                        <p>Total Servers</p>
+                    </div>
+                    <a href="{{ route('admin.servers') }}" class="small-box-footer">View all <i class="fa fa-arrow-circle-right"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-3 col-xs-6">
+                <div class="small-box bg-green {{ request()->input('filter_type') === 'online' ? 'active' : '' }}">
+                    <div class="inner">
+                        <h3>{{ $stats['online'] }}</h3>
+                        <p>Online Servers</p>
+                    </div>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'online']) }}" class="small-box-footer">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-3 col-xs-6">
+                <div class="small-box bg-red {{ request()->input('filter_type') === 'offline' ? 'active' : '' }}">
+                    <div class="inner">
+                        <h3>{{ $stats['offline'] }}</h3>
+                        <p>Offline Servers</p>
+                    </div>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'offline']) }}" class="small-box-footer">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-3 col-xs-6">
+                <div class="small-box bg-blue {{ request()->input('filter_type') === 'active_subscription' ? 'active' : '' }}">
+                    <div class="inner">
+                        <h3>{{ $stats['active_subscription'] }}</h3>
+                        <p>Active Subscriptions</p>
+                    </div>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'active_subscription']) }}" class="small-box-footer">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-3 col-xs-6">
+                <div class="small-box bg-yellow {{ request()->input('filter_type') === 'pending_cancellation' ? 'active' : '' }}">
+                    <div class="inner">
+                        <h3>{{ $stats['pending_cancellation'] }}</h3>
+                        <p>Pending Cancellation</p>
+                    </div>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'pending_cancellation']) }}" class="small-box-footer">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-xs-12">
         <div class="box box-primary">
             <div class="box-header with-border">
-                <h3 class="box-title">Server List</h3>
+                <h3 class="box-title">Server List @if($current_filter)<small class="text-muted">(Filtered: {{ ucfirst(str_replace('_', ' ', $current_filter)) }})</small>@endif</h3>
                 <div class="box-tools search01">
                     <form action="{{ route('admin.servers') }}" method="GET">
+                        @if(request()->input('filter_type'))
+                            <input type="hidden" name="filter_type" value="{{ request()->input('filter_type') }}">
+                        @endif
                         <div class="input-group input-group-sm">
                             <input type="text" name="filter[*]" class="form-control pull-right" value="{{ request()->input()['filter']['*'] ?? '' }}" placeholder="Search Servers">
                             <div class="input-group-btn">
@@ -40,7 +94,6 @@
                             <th>Node</th>
                             <th>Connection</th>
                             <th>Subscription</th>
-                            <th>Next Billing Date</th>
                             <th>Subscription Status</th>
                             <th></th>
                             <th></th>
@@ -67,20 +120,6 @@
                                         @endif
                                     @else
                                         <span class="text-muted">No subscription</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    @if($server->subscription)
-                                        @php
-                                            $statusInfo = $server->subscription->getSubscriptionStatusInfo();
-                                        @endphp
-                                        @if($statusInfo['next_billing_date'])
-                                            {{ $statusInfo['next_billing_date']->format('M j, Y') }}
-                                        @else
-                                            <span class="text-muted">N/A</span>
-                                        @endif
-                                    @else
-                                        <span class="text-muted">N/A</span>
                                     @endif
                                 </td>
                                 <td class="text-center">
@@ -131,7 +170,7 @@
             </div>
             @if($servers->hasPages())
                 <div class="box-footer with-border">
-                    <div class="col-md-12 text-center">{!! $servers->appends(['filter' => Request::input('filter')])->render() !!}</div>
+                    <div class="col-md-12 text-center">{!! $servers->appends(array_merge(['filter' => Request::input('filter')], request()->input('filter_type') ? ['filter_type' => request()->input('filter_type')] : []))->render() !!}</div>
                 </div>
             @endif
         </div>
