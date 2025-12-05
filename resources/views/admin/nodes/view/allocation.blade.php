@@ -374,15 +374,14 @@
             }
         }
         
-        // When modal is shown - attach event handlers and initialize
-        modal.on('show.bs.modal', function() {
-            // Attach change handler directly to radio buttons in this modal
-            modal.find('input[name="restriction_type"]').off('change.modal-restriction').on('change.modal-restriction', function() {
-                var restrictionType = $(this).val();
-                toggleRestrictionFields(restrictionType);
-            });
+        // Attach event handler immediately when DOM is ready, not just when modal opens
+        // This ensures the handler is always available
+        modal.find('input[name="restriction_type"]').on('change', function() {
+            var restrictionType = $(this).val();
+            toggleRestrictionFields(restrictionType);
         });
         
+        // When modal is shown - initialize fields based on current selection
         modal.on('shown.bs.modal', function() {
             var checkedRadio = modal.find('input[name="restriction_type"]:checked');
             var restrictionType = checkedRadio.length ? checkedRadio.val() : 'none';
@@ -402,9 +401,6 @@
                 }
             } catch(e) {}
             select2Initialized = false;
-            
-            // Remove event handlers
-            modal.find('input[name="restriction_type"]').off('change.modal-restriction');
         });
     })();
     </script>
