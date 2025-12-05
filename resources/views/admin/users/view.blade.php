@@ -117,6 +117,7 @@
                                 <th>Node</th>
                                 <th>Connection</th>
                                 <th>Subscription</th>
+                                <th>Subscription Status</th>
                                 <th>Status</th>
                                 <th></th>
                             </tr>
@@ -151,6 +152,29 @@
                                             @endif
                                         @else
                                             <span class="text-muted">No subscription</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($server->subscription)
+                                            @php
+                                                $statusInfo = $server->subscription->getSubscriptionStatusInfo();
+                                            @endphp
+                                            @if($statusInfo['is_pending_cancellation'])
+                                                <span class="label label-warning">Pending Cancellation</span>
+                                            @elseif($statusInfo['status'] === 'active')
+                                                <span class="label label-success">Active</span>
+                                            @elseif($statusInfo['status'] === 'past_due')
+                                                <span class="label label-danger">Past Due</span>
+                                            @elseif($statusInfo['status'] === 'canceled')
+                                                <span class="label bg-maroon">Canceled</span>
+                                            @else
+                                                <span class="label label-default">{{ ucfirst($statusInfo['status']) }}</span>
+                                            @endif
+                                            @if($statusInfo['next_billing_date'])
+                                                <br><small class="text-muted">Next: {{ $statusInfo['next_billing_date']->format('M j, Y') }}</small>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">N/A</span>
                                         @endif
                                     </td>
                                     <td class="text-center">

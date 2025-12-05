@@ -39,6 +39,8 @@
                             <th>Owner</th>
                             <th>Node</th>
                             <th>Connection</th>
+                            <th>Subscription</th>
+                            <th>Subscription Status</th>
                             <th></th>
                             <th></th>
                         </tr>
@@ -50,6 +52,44 @@
                                 <td><a href="{{ route('admin.nodes.view', $server->node->id) }}">{{ $server->node->name }}</a></td>
                                 <td>
                                     <code>{{ $server->allocation->alias }}:{{ $server->allocation->port }}</code>
+                                </td>
+                                <td>
+                                    @if($server->subscription)
+                                        @php
+                                            $priceInfo = $server->subscription->getMonthlyPriceInfo();
+                                        @endphp
+                                        @if($priceInfo['monthly_price'] !== null)
+                                            <strong>{{ number_format($priceInfo['monthly_price'], 2) }} {{ $priceInfo['currency'] }}</strong> / month<br>
+                                            <small class="text-muted">{{ $priceInfo['billing_cycle'] }}</small>
+                                        @else
+                                            <span class="text-muted">Custom Plan</span>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">No subscription</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @if($server->subscription)
+                                        @php
+                                            $statusInfo = $server->subscription->getSubscriptionStatusInfo();
+                                        @endphp
+                                        @if($statusInfo['is_pending_cancellation'])
+                                            <span class="label label-warning">Pending Cancellation</span>
+                                        @elseif($statusInfo['status'] === 'active')
+                                            <span class="label label-success">Active</span>
+                                        @elseif($statusInfo['status'] === 'past_due')
+                                            <span class="label label-danger">Past Due</span>
+                                        @elseif($statusInfo['status'] === 'canceled')
+                                            <span class="label bg-maroon">Canceled</span>
+                                        @else
+                                            <span class="label label-default">{{ ucfirst($statusInfo['status']) }}</span>
+                                        @endif
+                                        @if($statusInfo['next_billing_date'])
+                                            <br><small class="text-muted">Next: {{ $statusInfo['next_billing_date']->format('M j, Y') }}</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
                                 </td>
                                 <td class="text-center">
                                     @if($server->isSuspended())
@@ -65,7 +105,12 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <a class="btn btn-xs btn-default" href="/server/{{ $server->uuidShort }}"><i class="fa fa-wrench"></i></a>
+                                    <a class="btn btn-xs btn-default" href="/server/{{ $server->uuidShort }}" title="Manage Server"><i class="fa fa-wrench"></i></a>
+                                    @if($server->subscription && $server->subscription->stripe_id)
+                                        <a class="btn btn-xs" href="https://dashboard.stripe.com/subscriptions/{{ $server->subscription->stripe_id }}" target="_blank" title="Open in Stripe" style="background-color: #635bff; border-color: #635bff; color: white; margin-left: 5px;">
+                                            <i class="fa fa-credit-card"></i>
+                                        </a>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach

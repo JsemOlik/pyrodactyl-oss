@@ -159,5 +159,62 @@ class Subscription extends CashierSubscription
             'billing_cycle' => 'N/A',
         ];
     }
+
+    /**
+     * Get subscription status and next billing date.
+     *
+     * @return array{status: string, next_billing_date: \Carbon\Carbon|null, is_pending_cancellation: bool}
+     */
+    public function getSubscriptionStatusInfo(): array
+    {
+        // Map Stripe status to our billing status
+        $statusMap = [
+            'active' => 'active',
+            'trialing' => 'active',
+            'past_due' => 'past_due',
+            'canceled' => 'canceled',
+            'unpaid' => 'past_due',
+            'incomplete' => 'incomplete',
+            'incomplete_expired' => 'canceled',
+            'paused' => 'paused',
+        ];
+
+        $billingStatus = $statusMap[$this->stripe_status] ?? 'incomplete';
+        
+        // Check if subscription is pending cancellation
+        $isPendingCancellation = false;
+        $nextBillingDate = null;
+        
+        if (in_array($this->stripe_status, ['active', 'trialing'])) {
+            try {
+                \Stripe\Stripe::setApiKey(config('cashier.secret'));
+                $stripeSubscription = \Stripe\Subscription::retrieve($this->stripe_id);
+                
+                // Check if subscription is scheduled to cancel at period end
+                if ($stripeSubscription->cancel_at_period_end ?? false) {
+                    $isPendingCancellation = true;
+                    $billingStatus = 'pending_cancellation';
+                }
+                
+                // Get next billing date (current_period_end)
+                if ($stripeSubscription->current_period_end) {
+                    $nextBillingDate = \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+                }
+            } catch (\Exception $e) {
+                // If we can't check, use ends_at as fallback
+                if ($this->ends_at && $this->ends_at->isFuture() && in_array($this->stripe_status, ['active', 'trialing'])) {
+                    $isPendingCancellation = true;
+                    $billingStatus = 'pending_cancellation';
+                    $nextBillingDate = $this->ends_at;
+                }
+            }
+        }
+        
+        return [
+            'status' => $billingStatus,
+            'next_billing_date' => $nextBillingDate,
+            'is_pending_cancellation' => $isPendingCancellation,
+        ];
+    }
 }
 
