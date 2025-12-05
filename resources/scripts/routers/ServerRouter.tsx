@@ -554,7 +554,7 @@ const ServerRouter = () => {
                                                 end
                                             >
                                                 <Gear width={22} height={22} fill='currentColor' />
-                                                <p>Properties</p>
+                                                <p>Server Properties</p>
                                             </NavLink>
                                         </Can>
                                     </>
