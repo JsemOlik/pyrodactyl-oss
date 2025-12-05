@@ -159,22 +159,16 @@
                     <div class="form-group">
                         <label class="control-label">Allocation Restrictions</label>
                         <div class="radio radio-primary">
-                            <label>
-                                <input type="radio" name="restriction_type" value="none" checked>
-                                <strong>None</strong> - Available to all nests/eggs (default)
-                            </label>
+                            <input type="radio" id="restrictionTypeNone" name="restriction_type" value="none" checked>
+                            <label for="restrictionTypeNone"><strong>None</strong> - Available to all nests/eggs (default)</label>
                         </div>
                         <div class="radio radio-primary">
-                            <label>
-                                <input type="radio" name="restriction_type" value="whitelist">
-                                <strong>Whitelist</strong> - Only allow selected nests/eggs
-                            </label>
+                            <input type="radio" id="restrictionTypeWhitelist" name="restriction_type" value="whitelist">
+                            <label for="restrictionTypeWhitelist"><strong>Whitelist</strong> - Only allow selected nests/eggs</label>
                         </div>
                         <div class="radio radio-primary">
-                            <label>
-                                <input type="radio" name="restriction_type" value="blacklist">
-                                <strong>Blacklist</strong> - Block selected nests/eggs
-                            </label>
+                            <input type="radio" id="restrictionTypeBlacklist" name="restriction_type" value="blacklist">
+                            <label for="restrictionTypeBlacklist"><strong>Blacklist</strong> - Block selected nests/eggs</label>
                         </div>
                     </div>
                     <div class="form-group" id="restrictionNestsGroup" style="display:none;">
@@ -248,22 +242,16 @@
                         <div class="form-group">
                             <label class="control-label">Restriction Type</label>
                             <div class="radio radio-primary">
-                                <label>
-                                    <input type="radio" name="restriction_type" value="none" {{ $restrictionType === 'none' ? 'checked' : '' }}>
-                                    <strong>None</strong> - Available to all nests/eggs
-                                </label>
+                                <input type="radio" id="modalRestrictionNone{{ $allocation->id }}" name="restriction_type" value="none" {{ $restrictionType === 'none' ? 'checked' : '' }}>
+                                <label for="modalRestrictionNone{{ $allocation->id }}"><strong>None</strong> - Available to all nests/eggs</label>
                             </div>
                             <div class="radio radio-primary">
-                                <label>
-                                    <input type="radio" name="restriction_type" value="whitelist" {{ $restrictionType === 'whitelist' ? 'checked' : '' }}>
-                                    <strong>Whitelist</strong> - Only allow selected nests/eggs
-                                </label>
+                                <input type="radio" id="modalRestrictionWhitelist{{ $allocation->id }}" name="restriction_type" value="whitelist" {{ $restrictionType === 'whitelist' ? 'checked' : '' }}>
+                                <label for="modalRestrictionWhitelist{{ $allocation->id }}"><strong>Whitelist</strong> - Only allow selected nests/eggs</label>
                             </div>
                             <div class="radio radio-primary">
-                                <label>
-                                    <input type="radio" name="restriction_type" value="blacklist" {{ $restrictionType === 'blacklist' ? 'checked' : '' }}>
-                                    <strong>Blacklist</strong> - Block selected nests/eggs
-                                </label>
+                                <input type="radio" id="modalRestrictionBlacklist{{ $allocation->id }}" name="restriction_type" value="blacklist" {{ $restrictionType === 'blacklist' ? 'checked' : '' }}>
+                                <label for="modalRestrictionBlacklist{{ $allocation->id }}"><strong>Blacklist</strong> - Block selected nests/eggs</label>
                             </div>
                         </div>
                         
@@ -294,6 +282,23 @@
         // Initialize select2 for this modal when it's shown
         var modal = $('#restrictionModal{{ $allocation->id }}');
         var initialized = false;
+        
+        // Set up radio button change handler (outside of modal show event so it's always attached)
+        modal.find('input[name="restriction_type"]').on('change', function() {
+            var restrictionType = $(this).val();
+            var nestsGroup = $('#modalNestsGroup{{ $allocation->id }}');
+            var eggsGroup = $('#modalEggsGroup{{ $allocation->id }}');
+            
+            if (restrictionType === 'none') {
+                nestsGroup.slideUp();
+                eggsGroup.slideUp();
+                $('#modalNests{{ $allocation->id }}').val(null).trigger('change');
+                $('#modalEggs{{ $allocation->id }}').val(null).trigger('change');
+            } else {
+                nestsGroup.slideDown();
+                eggsGroup.slideDown();
+            }
+        });
         
         modal.on('show.bs.modal', function() {
             if (!initialized) {
@@ -342,26 +347,20 @@
                 initialized = true;
             }
             
-            // Show/hide restriction fields based on restriction type within this modal only
-            modal.find('input[name="restriction_type"]').off('change.restriction{{ $allocation->id }}').on('change.restriction{{ $allocation->id }}', function() {
-                var restrictionType = $(this).val();
-                if (restrictionType === 'none') {
-                    $('#modalNestsGroup{{ $allocation->id }}').slideUp();
-                    $('#modalEggsGroup{{ $allocation->id }}').slideUp();
-                    $('#modalNests{{ $allocation->id }}').val(null).trigger('change');
-                    $('#modalEggs{{ $allocation->id }}').val(null).trigger('change');
-                } else {
-                    $('#modalNestsGroup{{ $allocation->id }}').slideDown();
-                    $('#modalEggsGroup{{ $allocation->id }}').slideDown();
-                }
-            });
+            // Trigger change on the checked radio button to show/hide fields if needed
+            var checkedRadio = modal.find('input[name="restriction_type"]:checked');
+            if (checkedRadio.length) {
+                checkedRadio.trigger('change');
+            }
         });
         
         // Cleanup select2 when modal is hidden
         modal.on('hidden.bs.modal', function() {
-            $('#modalNests{{ $allocation->id }}').select2('destroy');
-            $('#modalEggs{{ $allocation->id }}').select2('destroy');
-            initialized = false;
+            if (initialized) {
+                $('#modalNests{{ $allocation->id }}').select2('destroy');
+                $('#modalEggs{{ $allocation->id }}').select2('destroy');
+                initialized = false;
+            }
         });
     });
     </script>
