@@ -19,46 +19,46 @@
             <div class="col-lg-3 col-xs-6">
                 <div class="small-box bg-aqua">
                     <div class="inner">
-                        <h3>{{ $stats['total'] }}</h3>
-                        <p>Total Servers</p>
+                        <h3 style="color: white;">{{ $stats['total'] }}</h3>
+                        <p style="color: white;">Total Servers</p>
                     </div>
-                    <a href="{{ route('admin.servers') }}" class="small-box-footer">View all <i class="fa fa-arrow-circle-right"></i></a>
+                    <a href="{{ route('admin.servers') }}" class="small-box-footer" style="color: white !important;">View all <i class="fa fa-arrow-circle-right"></i></a>
                 </div>
             </div>
             <div class="col-lg-3 col-xs-6">
                 <div class="small-box bg-green {{ request()->input('filter_type') === 'online' ? 'active' : '' }}">
                     <div class="inner">
-                        <h3>{{ $stats['online'] }}</h3>
-                        <p>Online Servers</p>
+                        <h3 style="color: white;">{{ $stats['online'] }}</h3>
+                        <p style="color: white;">Online Servers</p>
                     </div>
-                    <a href="{{ route('admin.servers', ['filter_type' => 'online']) }}" class="small-box-footer">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'online']) }}" class="small-box-footer" style="color: white !important;">Filter <i class="fa fa-arrow-circle-right"></i></a>
                 </div>
             </div>
             <div class="col-lg-3 col-xs-6">
                 <div class="small-box bg-red {{ request()->input('filter_type') === 'offline' ? 'active' : '' }}">
                     <div class="inner">
-                        <h3>{{ $stats['offline'] }}</h3>
-                        <p>Offline Servers</p>
+                        <h3 style="color: white;">{{ $stats['offline'] }}</h3>
+                        <p style="color: white;">Offline Servers</p>
                     </div>
-                    <a href="{{ route('admin.servers', ['filter_type' => 'offline']) }}" class="small-box-footer">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'offline']) }}" class="small-box-footer" style="color: white !important;">Filter <i class="fa fa-arrow-circle-right"></i></a>
                 </div>
             </div>
             <div class="col-lg-3 col-xs-6">
                 <div class="small-box bg-blue {{ request()->input('filter_type') === 'active_subscription' ? 'active' : '' }}">
                     <div class="inner">
-                        <h3>{{ $stats['active_subscription'] }}</h3>
-                        <p>Active Subscriptions</p>
+                        <h3 style="color: white;">{{ $stats['active_subscription'] }}</h3>
+                        <p style="color: white;">Active Subscriptions</p>
                     </div>
-                    <a href="{{ route('admin.servers', ['filter_type' => 'active_subscription']) }}" class="small-box-footer">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'active_subscription']) }}" class="small-box-footer" style="color: white !important;">Filter <i class="fa fa-arrow-circle-right"></i></a>
                 </div>
             </div>
             <div class="col-lg-3 col-xs-6">
                 <div class="small-box bg-yellow {{ request()->input('filter_type') === 'pending_cancellation' ? 'active' : '' }}">
                     <div class="inner">
-                        <h3>{{ $stats['pending_cancellation'] }}</h3>
-                        <p>Pending Cancellation</p>
+                        <h3 style="color: white;">{{ $stats['pending_cancellation'] }}</h3>
+                        <p style="color: white;">Pending Cancellation</p>
                     </div>
-                    <a href="{{ route('admin.servers', ['filter_type' => 'pending_cancellation']) }}" class="small-box-footer">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'pending_cancellation']) }}" class="small-box-footer" style="color: white !important;">Filter <i class="fa fa-arrow-circle-right"></i></a>
                 </div>
             </div>
         </div>
