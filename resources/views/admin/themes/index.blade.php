@@ -71,15 +71,13 @@
               </div>
               <div class="form-group col-md-6">
                 <label class="control-label">Current Logo</label>
-                <div>
+                <div id="logo-preview-container">
                   @if($logoPath)
-                    <div style="margin-bottom: 10px;">
-                      <object data="{{ $logoPath }}" type="image/svg+xml" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff; display: block;" id="logo-preview">
-                        <img src="{{ $logoPath }}" alt="Custom Logo" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff;" />
-                      </object>
+                    <div style="margin-bottom: 10px;" id="logo-preview-wrapper">
+                      <img src="{{ $logoPath }}" alt="Custom Logo" id="logo-preview" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff; display: block;" />
                     </div>
                   @else
-                    <p class="text-muted"><small>No custom logo uploaded. The default Pyrodactyl logo will be used.</small></p>
+                    <p class="text-muted" id="logo-preview-text"><small>No custom logo uploaded. The default Pyrodactyl logo will be used.</small></p>
                   @endif
                 </div>
               </div>
@@ -133,33 +131,43 @@
 
       // Logo preview
       const logoUpload = document.getElementById('logo-upload');
-      if (logoUpload) {
+      const logoPreviewContainer = document.getElementById('logo-preview-container');
+      
+      if (logoUpload && logoPreviewContainer) {
         logoUpload.addEventListener('change', function(e) {
           const file = e.target.files[0];
           if (file && (file.type === 'image/svg+xml' || file.name.endsWith('.svg'))) {
             const reader = new FileReader();
             reader.onload = function(e) {
               const logoPreview = document.getElementById('logo-preview');
-              const previewContainer = document.querySelector('.form-group.col-md-6:last-child > div');
+              const logoPreviewText = document.getElementById('logo-preview-text');
+              const logoPreviewWrapper = document.getElementById('logo-preview-wrapper');
               
               if (logoPreview) {
-                // Update existing preview
-                if (logoPreview.tagName === 'OBJECT') {
-                  logoPreview.data = e.target.result;
-                } else {
-                  logoPreview.src = e.target.result;
+                // Update existing preview image
+                logoPreview.src = e.target.result;
+                if (logoPreviewWrapper) {
+                  logoPreviewWrapper.style.display = 'block';
                 }
-                logoPreview.style.display = 'block';
-              } else if (previewContainer) {
-                // Create new preview
-                const previewDiv = document.createElement('div');
-                previewDiv.style.marginBottom = '10px';
-                previewDiv.innerHTML = '<object data="' + e.target.result + '" type="image/svg+xml" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff; display: block;" id="logo-preview"><img src="' + e.target.result + '" alt="Logo Preview" style="max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff;" /></object>';
-                const textMuted = previewContainer.querySelector('.text-muted');
-                if (textMuted) {
-                  textMuted.remove();
+              } else {
+                // Remove text message if it exists
+                if (logoPreviewText) {
+                  logoPreviewText.remove();
                 }
-                previewContainer.insertBefore(previewDiv, previewContainer.firstChild);
+                
+                // Create new preview wrapper and image
+                const wrapper = document.createElement('div');
+                wrapper.id = 'logo-preview-wrapper';
+                wrapper.style.marginBottom = '10px';
+                
+                const img = document.createElement('img');
+                img.id = 'logo-preview';
+                img.src = e.target.result;
+                img.alt = 'Logo Preview';
+                img.style.cssText = 'max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff; display: block;';
+                
+                wrapper.appendChild(img);
+                logoPreviewContainer.appendChild(wrapper);
               }
             };
             reader.readAsDataURL(file);
