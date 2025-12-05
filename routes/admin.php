@@ -194,6 +194,7 @@ Route::group(['prefix' => 'nodes'], function () {
     Route::post('/view/{node:id}/allocation', [Admin\NodesController::class, 'createAllocation']);
     Route::post('/view/{node:id}/allocation/remove', [Admin\NodesController::class, 'allocationRemoveBlock'])->name('admin.nodes.view.allocation.removeBlock');
     Route::post('/view/{node:id}/allocation/alias', [Admin\NodesController::class, 'allocationSetAlias'])->name('admin.nodes.view.allocation.setAlias');
+    Route::post('/view/{node:id}/allocation/{allocation:id}/restrictions', [Admin\NodesController::class, 'allocationSetRestrictions'])->name('admin.nodes.view.allocation.restrictions');
     Route::post('/view/{node:id}/settings/token', Admin\NodeAutoDeployController::class)->name('admin.nodes.view.configuration.token');
 
     Route::patch('/view/{node:id}/settings', [Admin\NodesController::class, 'updateSettings']);

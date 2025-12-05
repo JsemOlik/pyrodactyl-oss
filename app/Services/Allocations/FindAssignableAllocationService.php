@@ -59,12 +59,33 @@ class FindAssignableAllocationService
         // Attempt to find a given available allocation for a server. If one cannot be found
         // we will fall back to attempting to create a new allocation that can be used for the
         // server.
-        /** @var Allocation|null $allocation */
-        $allocation = $server->node->allocations()
+        // Filter by nest/egg restrictions if the server has them
+        $query = $server->node->allocations()
             ->where('ip', $allocationIp)
-            ->whereNull('server_id')
-            ->inRandomOrder()
-            ->first();
+            ->whereNull('server_id');
+
+        // Apply nest/egg restrictions if the server has them
+        if ($server->nest_id && $server->egg_id) {
+            $query->where(function ($q) use ($server) {
+                // No nest restrictions OR nest is allowed
+                $q->where(function ($nestQuery) use ($server) {
+                    $nestQuery->whereDoesntHave('allowedNests')
+                        ->orWhereHas('allowedNests', function ($q) use ($server) {
+                            $q->where('nests.id', $server->nest_id);
+                        });
+                })
+                // AND no egg restrictions OR egg is allowed
+                ->where(function ($eggQuery) use ($server) {
+                    $eggQuery->whereDoesntHave('allowedEggs')
+                        ->orWhereHas('allowedEggs', function ($q) use ($server) {
+                            $q->where('eggs.id', $server->egg_id);
+                        });
+                });
+            });
+        }
+
+        /** @var Allocation|null $allocation */
+        $allocation = $query->inRandomOrder()->first();
 
         $allocation = $allocation ?? $this->createNewAllocation($server, $allocationIp);
 

@@ -42,6 +42,25 @@ class ServerFormRequest extends AdminFormRequest
                 return !$input->auto_deploy;
             });
 
+            // Validate that allocation is allowed for the selected nest/egg
+            $validator->after(function ($validator) {
+                $nestId = $this->input('nest_id');
+                $eggId = $this->input('egg_id');
+                $allocationId = $this->input('allocation_id');
+
+                if ($nestId && $eggId && $allocationId && !$this->input('auto_deploy')) {
+                    $allocation = \Pterodactyl\Models\Allocation::with(['allowedNests', 'allowedEggs'])
+                        ->find($allocationId);
+
+                    if ($allocation && !$allocation->isAllowedForServer((int) $nestId, (int) $eggId)) {
+                        $validator->errors()->add(
+                            'allocation_id',
+                            'This allocation is not allowed for the selected nest/egg combination.'
+                        );
+                    }
+                }
+            });
+
             $validator->sometimes('allocation_additional.*', [
                 'sometimes',
                 'required',
@@ -52,6 +71,27 @@ class ServerFormRequest extends AdminFormRequest
                 }),
             ], function ($input) {
                 return !$input->auto_deploy;
+            });
+
+            // Validate that additional allocations are allowed for the selected nest/egg
+            $validator->after(function ($validator) {
+                $nestId = $this->input('nest_id');
+                $eggId = $this->input('egg_id');
+                $additionalAllocations = $this->input('allocation_additional', []);
+
+                if ($nestId && $eggId && !empty($additionalAllocations) && !$this->input('auto_deploy')) {
+                    foreach ($additionalAllocations as $key => $allocationId) {
+                        $allocation = \Pterodactyl\Models\Allocation::with(['allowedNests', 'allowedEggs'])
+                            ->find($allocationId);
+
+                        if ($allocation && !$allocation->isAllowedForServer((int) $nestId, (int) $eggId)) {
+                            $validator->errors()->add(
+                                "allocation_additional.{$key}",
+                                'This allocation is not allowed for the selected nest/egg combination.'
+                            );
+                        }
+                    }
+                }
             });
         });
     }

@@ -153,6 +153,25 @@ class NodesController extends Controller
     }
 
     /**
+     * Sets nest and egg restrictions for a specific allocation.
+     */
+    public function allocationSetRestrictions(Request $request, Node $node, Allocation $allocation): RedirectResponse
+    {
+        $nests = $request->input('nests', []);
+        $eggs = $request->input('eggs', []);
+
+        // Sync the allowed nests
+        $allocation->allowedNests()->sync($nests);
+
+        // Sync the allowed eggs
+        $allocation->allowedEggs()->sync($eggs);
+
+        $this->alert->success('Allocation restrictions updated successfully.')->flash();
+
+        return redirect()->route('admin.nodes.view.allocation', $node->id);
+    }
+
+    /**
      * Creates new allocations on a node.
      *
      * @throws \Pterodactyl\Exceptions\Service\Allocation\CidrOutOfRangeException

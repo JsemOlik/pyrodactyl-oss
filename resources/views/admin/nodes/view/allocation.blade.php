@@ -43,6 +43,7 @@
                         <th>IP Address <i class="fa fa-fw fa-minus-square" style="font-weight:normal;color:#d9534f;cursor:pointer;" data-toggle="modal" data-target="#allocationModal"></i></th>
                         <th>IP Alias</th>
                         <th>Port</th>
+                        <th>Restrictions</th>
                         <th>Assigned To</th>
                         <th>
                             <div class="btn-group hidden-xs">
@@ -56,6 +57,12 @@
                         </th>
                     </tr>
                     @foreach($node->allocations as $allocation)
+                        @php
+                            $allocationRestrictions = isset($allocationsWithRestrictions) ? $allocationsWithRestrictions->firstWhere('id', $allocation->id) : null;
+                            $allowedNests = $allocationRestrictions ? $allocationRestrictions->allowedNests->pluck('id')->toArray() : [];
+                            $allowedEggs = $allocationRestrictions ? $allocationRestrictions->allowedEggs->pluck('id')->toArray() : [];
+                            $hasRestrictions = !empty($allowedNests) || !empty($allowedEggs);
+                        @endphp
                         <tr>
                             <td class="middle min-size" data-identifier="type">
                                 @if(is_null($allocation->server_id))
@@ -64,13 +71,32 @@
                                 <input disabled="disabled" type="checkbox" class="select-file hidden-xs" data-action="addSelection">
                                 @endif
                             </td>
-                            <td class="col-sm-3 middle" data-identifier="ip">{{ $allocation->ip }}</td>
-                            <td class="col-sm-3 middle">
+                            <td class="col-sm-2 middle" data-identifier="ip">{{ $allocation->ip }}</td>
+                            <td class="col-sm-2 middle">
                                 <input class="form-control input-sm" type="text" value="{{ $allocation->ip_alias }}" data-action="set-alias" data-id="{{ $allocation->id }}" placeholder="none" />
                                 <span class="input-loader"><i class="fa fa-refresh fa-spin fa-fw"></i></span>
                             </td>
-                            <td class="col-sm-2 middle" data-identifier="port">{{ $allocation->port }}</td>
-                            <td class="col-sm-3 middle">
+                            <td class="col-sm-1 middle" data-identifier="port">{{ $allocation->port }}</td>
+                            <td class="col-sm-2 middle">
+                                @if($hasRestrictions)
+                                    <span class="label label-info" data-toggle="tooltip" title="Restricted">
+                                        <i class="fa fa-lock"></i> Restricted
+                                    </span>
+                                @else
+                                    <span class="label label-success" data-toggle="tooltip" title="No restrictions - available to all nests/eggs">
+                                        <i class="fa fa-unlock"></i> Open
+                                    </span>
+                                @endif
+                                <button 
+                                    class="btn btn-xs btn-default" 
+                                    data-toggle="modal" 
+                                    data-target="#restrictionModal{{ $allocation->id }}"
+                                    style="margin-left: 5px;"
+                                >
+                                    <i class="fa fa-cog"></i> Configure
+                                </button>
+                            </td>
+                            <td class="col-sm-2 middle">
                                 @if(! is_null($allocation->server))
                                     <a href="{{ route('admin.servers.view', $allocation->server_id) }}">{{ $allocation->server->name }}</a>
                                 @endif
@@ -160,6 +186,65 @@
         </div>
     </div>
 </div>
+
+@foreach($node->allocations as $allocation)
+    @php
+        $allocationRestrictions = isset($allocationsWithRestrictions) ? $allocationsWithRestrictions->firstWhere('id', $allocation->id) : null;
+        $allowedNests = $allocationRestrictions ? $allocationRestrictions->allowedNests->pluck('id')->toArray() : [];
+        $allowedEggs = $allocationRestrictions ? $allocationRestrictions->allowedEggs->pluck('id')->toArray() : [];
+    @endphp
+    <div class="modal fade" id="restrictionModal{{ $allocation->id }}" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Configure Restrictions for {{ $allocation->ip }}:{{ $allocation->port }}</h4>
+                </div>
+                <form action="{{ route('admin.nodes.view.allocation.restrictions', ['node' => $node->id, 'allocation' => $allocation->id]) }}" method="POST">
+                    <div class="modal-body">
+                        <p class="text-muted">
+                            <strong>Leave empty to allow all nests/eggs.</strong> If you select specific nests or eggs, only servers with those nests/eggs will be able to use this allocation. 
+                            The allocation must be allowed for BOTH the nest AND the egg for a server to use it.
+                        </p>
+                        
+                        <div class="form-group">
+                            <label for="nests{{ $allocation->id }}">Allowed Nests</label>
+                            <select class="form-control" name="nests[]" id="nests{{ $allocation->id }}" multiple style="height: 150px;">
+                                @foreach($nests as $nest)
+                                    <option value="{{ $nest->id }}" {{ in_array($nest->id, $allowedNests) ? 'selected' : '' }}>
+                                        {{ $nest->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="help-block">Select which nests can use this allocation. Leave empty for no restrictions.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="eggs{{ $allocation->id }}">Allowed Eggs</label>
+                            <select class="form-control" name="eggs[]" id="eggs{{ $allocation->id }}" multiple style="height: 200px;">
+                                @foreach($nests as $nest)
+                                    <optgroup label="{{ $nest->name }}">
+                                        @foreach($nest->eggs as $egg)
+                                            <option value="{{ $egg->id }}" {{ in_array($egg->id, $allowedEggs) ? 'selected' : '' }}>
+                                                {{ $egg->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                            <p class="help-block">Select which eggs can use this allocation. Leave empty for no restrictions.</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        {{{ csrf_field() }}}
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Restrictions</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endforeach
 @endsection
 
 @section('footer-scripts')

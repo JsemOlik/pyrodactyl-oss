@@ -124,6 +124,8 @@ class ServerCreationService
         return $this->allocationSelectionService->setDedicated($deployment->isDedicated())
             ->setNodes($nodes->pluck('id')->toArray())
             ->setPorts($deployment->getPorts())
+            ->setNestId(Arr::get($data, 'nest_id'))
+            ->setEggId(Arr::get($data, 'egg_id'))
             ->handle();
     }
 
@@ -172,12 +174,28 @@ class ServerCreationService
 
     /**
      * Configure the allocations assigned to this server.
+     *
+     * @throws \Pterodactyl\Exceptions\DisplayException
      */
     private function storeAssignedAllocations(Server $server, array $data): void
     {
         $records = [$data['allocation_id']];
         if (isset($data['allocation_additional']) && is_array($data['allocation_additional'])) {
             $records = array_merge($records, $data['allocation_additional']);
+        }
+
+        // Validate that all allocations are allowed for this server's nest/egg
+        $allocations = Allocation::query()
+            ->with(['allowedNests', 'allowedEggs'])
+            ->whereIn('id', $records)
+            ->get();
+
+        foreach ($allocations as $allocation) {
+            if (!$allocation->isAllowedForServer($server->nest_id, $server->egg_id)) {
+                throw new \Pterodactyl\Exceptions\DisplayException(
+                    "Allocation {$allocation->toString()} is not allowed for this server's nest/egg combination."
+                );
+            }
         }
 
         Allocation::query()->whereIn('id', $records)->update([

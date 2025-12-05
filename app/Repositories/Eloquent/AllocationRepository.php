@@ -56,7 +56,7 @@ class AllocationRepository extends EloquentRepository implements AllocationRepos
     /**
      * Return a single allocation from those meeting the requirements.
      */
-    public function getRandomAllocation(array $nodes, array $ports, bool $dedicated = false): ?Allocation
+    public function getRandomAllocation(array $nodes, array $ports, bool $dedicated = false, ?int $nestId = null, ?int $eggId = null): ?Allocation
     {
         $query = Allocation::query()->whereNull('server_id');
 
@@ -78,6 +78,35 @@ class AllocationRepository extends EloquentRepository implements AllocationRepos
 
                 if (!empty($whereIn)) {
                     $inner->orWhereIn('port', $whereIn);
+                }
+            });
+        }
+
+        // Filter by nest/egg restrictions if provided
+        if ($nestId !== null || $eggId !== null) {
+            $query->where(function (Builder $inner) use ($nestId, $eggId) {
+                // An allocation is allowed if:
+                // 1. It has no nest restrictions OR it's in the allowed nests list
+                // 2. AND it has no egg restrictions OR it's in the allowed eggs list
+                
+                if ($nestId !== null) {
+                    $inner->where(function (Builder $nestQuery) use ($nestId) {
+                        // No nest restrictions OR nest is allowed
+                        $nestQuery->whereDoesntHave('allowedNests')
+                            ->orWhereHas('allowedNests', function (Builder $q) use ($nestId) {
+                                $q->where('nests.id', $nestId);
+                            });
+                    });
+                }
+
+                if ($eggId !== null) {
+                    $inner->where(function (Builder $eggQuery) use ($eggId) {
+                        // No egg restrictions OR egg is allowed
+                        $eggQuery->whereDoesntHave('allowedEggs')
+                            ->orWhereHas('allowedEggs', function (Builder $q) use ($eggId) {
+                                $q->where('eggs.id', $eggId);
+                            });
+                    });
                 }
             });
         }

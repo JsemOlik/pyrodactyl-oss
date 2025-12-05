@@ -9,7 +9,9 @@ use Illuminate\Support\Collection;
 use Pterodactyl\Models\Allocation;
 use Pterodactyl\Http\Controllers\Controller;
 use Illuminate\Contracts\View\Factory as ViewFactory;
+use Pterodactyl\Models\Nest;
 use Pterodactyl\Repositories\Eloquent\NodeRepository;
+use Pterodactyl\Repositories\Eloquent\NestRepository;
 use Pterodactyl\Repositories\Eloquent\ServerRepository;
 use Pterodactyl\Traits\Controllers\JavascriptInjection;
 use Pterodactyl\Services\Helpers\SoftwareVersionService;
@@ -27,6 +29,7 @@ class NodeViewController extends Controller
     public function __construct(
         private AllocationRepository $allocationRepository,
         private LocationRepository $locationRepository,
+        private NestRepository $nestRepository,
         private NodeRepository $repository,
         private ServerRepository $serverRepository,
         private SoftwareVersionService $versionService,
@@ -72,9 +75,17 @@ class NodeViewController extends Controller
     public function allocations(Request $request, Node $node): View
     {
         $node = $this->repository->loadNodeAllocations($node);
-
+        
+        // Load allocations with their restrictions
+        $allocationsQuery = $node->allocations()->with(['allowedNests', 'allowedEggs']);
+        
         $this->plainInject(['node' => Collection::wrap($node)->only(['id'])]);
 
+        // Get all nests and eggs for the restriction UI
+        $nests = $this->nestRepository->getWithEggs();
+
+        $allocationsWithRestrictionsCollection = $allocationsQuery->get();
+        
         switch (DB::getPdo()->getAttribute(DB::getPdo()::ATTR_DRIVER_NAME)) {
             case 'mysql':
                 return $this->view->make('admin.nodes.view.allocation', [
@@ -83,6 +94,8 @@ class NodeViewController extends Controller
                         ->groupBy('ip')
                         ->orderByRaw('INET_ATON(ip) ASC')
                         ->get(['ip']),
+                    'nests' => $nests,
+                    'allocationsWithRestrictions' => $allocationsWithRestrictionsCollection,
                 ]);
             case 'pgsql':
                 return $this->view->make('admin.nodes.view.allocation', [
@@ -91,6 +104,18 @@ class NodeViewController extends Controller
                         ->groupBy('ip')
                         ->orderByRaw('ip::inet ASC')
                         ->get(['ip']),
+                    'nests' => $nests,
+                    'allocationsWithRestrictions' => $allocationsWithRestrictionsCollection,
+                ]);
+            default:
+                return $this->view->make('admin.nodes.view.allocation', [
+                    'node' => $node,
+                    'allocations' => Allocation::query()->where('node_id', $node->id)
+                        ->groupBy('ip')
+                        ->orderBy('ip', 'ASC')
+                        ->get(['ip']),
+                    'nests' => $nests,
+                    'allocationsWithRestrictions' => $allocationsWithRestrictionsCollection,
                 ]);
         }
     }

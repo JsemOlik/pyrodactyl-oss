@@ -16,6 +16,10 @@ class AllocationSelectionService
 
     protected array $ports = [];
 
+    protected ?int $nestId = null;
+
+    protected ?int $eggId = null;
+
     /**
      * AllocationSelectionService constructor.
      */
@@ -78,13 +82,33 @@ class AllocationSelectionService
     }
 
     /**
+     * Set the nest ID to filter allocations by.
+     */
+    public function setNestId(?int $nestId): self
+    {
+        $this->nestId = $nestId;
+
+        return $this;
+    }
+
+    /**
+     * Set the egg ID to filter allocations by.
+     */
+    public function setEggId(?int $eggId): self
+    {
+        $this->eggId = $eggId;
+
+        return $this;
+    }
+
+    /**
      * Return a single allocation that should be used as the default allocation for a server.
      *
      * @throws NoViableAllocationException
      */
     public function handle(): Allocation
     {
-        $allocation = $this->repository->getRandomAllocation($this->nodes, $this->ports, $this->dedicated);
+        $allocation = $this->repository->getRandomAllocation($this->nodes, $this->ports, $this->dedicated, $this->nestId, $this->eggId);
 
         if (is_null($allocation)) {
             throw new NoViableAllocationException(trans('exceptions.deployment.no_viable_allocations'));

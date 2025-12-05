@@ -3,6 +3,7 @@
 namespace Pterodactyl\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
@@ -126,5 +127,70 @@ class Allocation extends Model
     public function node(): BelongsTo
     {
         return $this->belongsTo(Node::class);
+    }
+
+    /**
+     * Gets all nests that are allowed to use this allocation.
+     * If this relationship is empty, the allocation is available to all nests.
+     */
+    public function allowedNests(): BelongsToMany
+    {
+        return $this->belongsToMany(Nest::class, 'allocation_nest');
+    }
+
+    /**
+     * Gets all eggs that are allowed to use this allocation.
+     * If this relationship is empty, the allocation is available to all eggs.
+     */
+    public function allowedEggs(): BelongsToMany
+    {
+        return $this->belongsToMany(Egg::class, 'allocation_egg');
+    }
+
+    /**
+     * Checks if this allocation is allowed for a specific nest.
+     * Returns true if no restrictions are set (empty allowed_nests), or if the nest is in the allowed list.
+     */
+    public function isAllowedForNest(int $nestId): bool
+    {
+        if (!$this->relationLoaded('allowedNests')) {
+            $this->load('allowedNests');
+        }
+
+        $allowedNests = $this->allowedNests;
+        if ($allowedNests->isEmpty()) {
+            // No restrictions means all nests are allowed
+            return true;
+        }
+
+        return $allowedNests->contains('id', $nestId);
+    }
+
+    /**
+     * Checks if this allocation is allowed for a specific egg.
+     * Returns true if no restrictions are set (empty allowed_eggs), or if the egg is in the allowed list.
+     */
+    public function isAllowedForEgg(int $eggId): bool
+    {
+        if (!$this->relationLoaded('allowedEggs')) {
+            $this->load('allowedEggs');
+        }
+
+        $allowedEggs = $this->allowedEggs;
+        if ($allowedEggs->isEmpty()) {
+            // No restrictions means all eggs are allowed
+            return true;
+        }
+
+        return $allowedEggs->contains('id', $eggId);
+    }
+
+    /**
+     * Checks if this allocation is allowed for a server with the given nest and egg.
+     * The allocation must be allowed for both the nest AND the egg if restrictions exist.
+     */
+    public function isAllowedForServer(int $nestId, int $eggId): bool
+    {
+        return $this->isAllowedForNest($nestId) && $this->isAllowedForEgg($eggId);
     }
 }

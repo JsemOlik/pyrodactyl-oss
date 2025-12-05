@@ -38,7 +38,18 @@ class BuildModificationService
 
             if (isset($data['allocation_id']) && $data['allocation_id'] != $server->allocation_id) {
                 try {
-                    Allocation::query()->where('id', $data['allocation_id'])->where('server_id', $server->id)->firstOrFail();
+                    $allocation = Allocation::query()
+                        ->with(['allowedNests', 'allowedEggs'])
+                        ->where('id', $data['allocation_id'])
+                        ->where('server_id', $server->id)
+                        ->firstOrFail();
+
+                    // Validate that the new default allocation is allowed for this server's nest/egg
+                    if (!$allocation->isAllowedForServer($server->nest_id, $server->egg_id)) {
+                        throw new DisplayException(
+                            'The requested default allocation is not allowed for this server\'s nest/egg combination.'
+                        );
+                    }
                 } catch (ModelNotFoundException) {
                     throw new DisplayException('The requested default allocation is not currently assigned to this server.');
                 }
@@ -90,15 +101,28 @@ class BuildModificationService
         // assigned to a different server, and only allocations on the same node as the server.
         if (!empty($data['add_allocations'])) {
             $query = Allocation::query()
+                ->with(['allowedNests', 'allowedEggs'])
                 ->where('node_id', $server->node_id)
                 ->whereIn('id', $data['add_allocations'])
                 ->whereNull('server_id');
 
+            // Validate that all allocations are allowed for this server's nest/egg
+            $allocations = $query->get();
+            foreach ($allocations as $allocation) {
+                if (!$allocation->isAllowedForServer($server->nest_id, $server->egg_id)) {
+                    throw new DisplayException(
+                        "Allocation {$allocation->toString()} is not allowed for this server's nest/egg combination."
+                    );
+                }
+            }
+
             // Keep track of all the allocations we're just now adding so that we can use the first
             // one to reset the default allocation to.
-            $freshlyAllocated = $query->pluck('id')->first();
+            $freshlyAllocated = $allocations->first()?->id;
 
-            $query->update(['server_id' => $server->id, 'notes' => null]);
+            Allocation::query()
+                ->whereIn('id', $allocations->pluck('id')->toArray())
+                ->update(['server_id' => $server->id, 'notes' => null]);
         }
 
         if (!empty($data['remove_allocations'])) {
