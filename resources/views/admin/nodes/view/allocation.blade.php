@@ -230,7 +230,7 @@
         $allowedEggs = $allocationRestrictions ? $allocationRestrictions->allowedEggs->pluck('id')->toArray() : [];
         $restrictionType = $allocationRestrictions ? ($allocationRestrictions->restriction_type ?? 'none') : 'none';
     @endphp
-    <div class="modal fade" id="restrictionModal{{ $allocation->id }}" tabindex="-1" role="dialog">
+    <div class="modal fade" id="restrictionModal{{ $allocation->id }}" tabindex="-1" role="dialog" data-allocation-id="{{ $allocation->id }}" data-restriction-type="{{ $restrictionType }}">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -292,118 +292,6 @@
             </div>
         </div>
     </div>
-    
-    <script>
-    (function() {
-        var allocationId = {{ $allocation->id }};
-        var modal = $('#restrictionModal' + allocationId);
-        var nestsSelect = $('#modalNests' + allocationId);
-        var eggsSelect = $('#modalEggs' + allocationId);
-        var select2Initialized = false;
-        
-        function initializeSelect2() {
-            // Skip if already initialized
-            if (select2Initialized && nestsSelect.hasClass('select2-hidden-accessible')) {
-                return;
-            }
-            
-            // Destroy existing select2 if any
-            try {
-                if (nestsSelect.hasClass('select2-hidden-accessible')) {
-                    nestsSelect.select2('destroy');
-                }
-                if (eggsSelect.hasClass('select2-hidden-accessible')) {
-                    eggsSelect.select2('destroy');
-                }
-            } catch(e) {}
-            
-            // Initialize select2 with existing options (select already has options in HTML)
-            nestsSelect.select2({
-                placeholder: 'Select nests...',
-                allowClear: true,
-                dropdownParent: modal,
-                width: '100%'
-            });
-            
-            eggsSelect.select2({
-                placeholder: 'Select eggs...',
-                allowClear: true,
-                dropdownParent: modal,
-                width: '100%'
-            });
-            
-            // Set selected values if they exist
-            @if(!empty($allowedNests))
-            nestsSelect.val([{{ implode(',', $allowedNests) }}]).trigger('change');
-            @endif
-            
-            @if(!empty($allowedEggs))
-            eggsSelect.val([{{ implode(',', $allowedEggs) }}]).trigger('change');
-            @endif
-            
-            select2Initialized = true;
-        }
-        
-        function toggleRestrictionFields(restrictionType) {
-            var nestsGroup = $('#modalNestsGroup' + allocationId);
-            var eggsGroup = $('#modalEggsGroup' + allocationId);
-            
-            if (restrictionType === 'none') {
-                nestsGroup.hide();
-                eggsGroup.hide();
-                
-                // Clean up select2 when hiding
-                try {
-                    if (nestsSelect.hasClass('select2-hidden-accessible')) {
-                        nestsSelect.select2('destroy');
-                    }
-                    if (eggsSelect.hasClass('select2-hidden-accessible')) {
-                        eggsSelect.select2('destroy');
-                    }
-                } catch(e) {}
-                select2Initialized = false;
-            } else {
-                // Show immediately (no animation)
-                nestsGroup.show();
-                eggsGroup.show();
-                
-                // Initialize select2 immediately when fields are shown
-                setTimeout(function() {
-                    initializeSelect2();
-                }, 10);
-            }
-        }
-        
-        // Attach event handler immediately when DOM is ready, not just when modal opens
-        // This ensures the handler is always available
-        modal.find('input[name="restriction_type"]').on('change', function() {
-            var restrictionType = $(this).val();
-            toggleRestrictionFields(restrictionType);
-        });
-        
-        // When modal is shown - initialize fields based on current selection
-        modal.on('shown.bs.modal', function() {
-            var checkedRadio = modal.find('input[name="restriction_type"]:checked');
-            var restrictionType = checkedRadio.length ? checkedRadio.val() : 'none';
-            
-            // Show/hide fields based on current selection
-            toggleRestrictionFields(restrictionType);
-        });
-        
-        // Cleanup when modal is hidden
-        modal.on('hidden.bs.modal', function() {
-            try {
-                if (nestsSelect.hasClass('select2-hidden-accessible')) {
-                    nestsSelect.select2('destroy');
-                }
-                if (eggsSelect.hasClass('select2-hidden-accessible')) {
-                    eggsSelect.select2('destroy');
-                }
-            } catch(e) {}
-            select2Initialized = false;
-        });
-    })();
-    </script>
 @endforeach
 @endsection
 
@@ -650,5 +538,91 @@
             });
         }
     }
+
+    // Initialize restriction modals
+    $(document).ready(function() {
+        // Use event delegation for all restriction modals
+        $(document).on('change', '[id^="restrictionModal"] input[name="restriction_type"]', function() {
+            var modal = $(this).closest('.modal');
+            var allocationId = modal.data('allocation-id');
+            var restrictionType = $(this).val();
+            
+            toggleRestrictionFields(allocationId, restrictionType, modal);
+        });
+
+        // Initialize modals when they are shown
+        $(document).on('shown.bs.modal', '[id^="restrictionModal"]', function() {
+            var modal = $(this);
+            var allocationId = modal.data('allocation-id');
+            var checkedRadio = modal.find('input[name="restriction_type"]:checked');
+            var restrictionType = checkedRadio.length ? checkedRadio.val() : 'none';
+            
+            toggleRestrictionFields(allocationId, restrictionType, modal);
+        });
+
+        // Cleanup when modals are hidden
+        $(document).on('hidden.bs.modal', '[id^="restrictionModal"]', function() {
+            var modal = $(this);
+            var allocationId = modal.data('allocation-id');
+            var nestsSelect = $('#modalNests' + allocationId);
+            var eggsSelect = $('#modalEggs' + allocationId);
+            
+            try {
+                if (nestsSelect.hasClass('select2-hidden-accessible')) {
+                    nestsSelect.select2('destroy');
+                }
+                if (eggsSelect.hasClass('select2-hidden-accessible')) {
+                    eggsSelect.select2('destroy');
+                }
+            } catch(e) {}
+        });
+
+        function toggleRestrictionFields(allocationId, restrictionType, modal) {
+            var nestsGroup = $('#modalNestsGroup' + allocationId);
+            var eggsGroup = $('#modalEggsGroup' + allocationId);
+            var nestsSelect = $('#modalNests' + allocationId);
+            var eggsSelect = $('#modalEggs' + allocationId);
+            
+            if (restrictionType === 'none') {
+                nestsGroup.hide();
+                eggsGroup.hide();
+                
+                // Clean up select2 when hiding
+                try {
+                    if (nestsSelect.hasClass('select2-hidden-accessible')) {
+                        nestsSelect.select2('destroy');
+                    }
+                    if (eggsSelect.hasClass('select2-hidden-accessible')) {
+                        eggsSelect.select2('destroy');
+                    }
+                } catch(e) {}
+            } else {
+                // Show immediately (no animation)
+                nestsGroup.show();
+                eggsGroup.show();
+                
+                // Initialize select2 if not already initialized
+                setTimeout(function() {
+                    if (!nestsSelect.hasClass('select2-hidden-accessible')) {
+                        nestsSelect.select2({
+                            placeholder: 'Select nests...',
+                            allowClear: true,
+                            dropdownParent: modal,
+                            width: '100%'
+                        });
+                    }
+                    
+                    if (!eggsSelect.hasClass('select2-hidden-accessible')) {
+                        eggsSelect.select2({
+                            placeholder: 'Select eggs...',
+                            allowClear: true,
+                            dropdownParent: modal,
+                            width: '100%'
+                        });
+                    }
+                }, 10);
+            }
+        }
+    });
     </script>
 @endsection
