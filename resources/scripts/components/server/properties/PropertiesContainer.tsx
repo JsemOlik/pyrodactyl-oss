@@ -26,6 +26,7 @@ const PropertiesContainer = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const parsePropertiesFile = (content: string): Property[] => {
         const lines = content.split('\n');
@@ -147,7 +148,26 @@ const PropertiesContainer = () => {
         setProperties(updated);
     };
 
+    const formatPropertyKey = (key: string): string => {
+        return key
+            .split('-')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    };
+
     const hasChanges = formatPropertiesFile(properties) !== originalContent;
+
+    // Filter properties based on search term
+    const filteredProperties = properties.filter((prop) => {
+        if (prop.isComment || !prop.key) return false;
+        const searchLower = searchTerm.toLowerCase();
+        return (
+            prop.key.toLowerCase().includes(searchLower) ||
+            formatPropertyKey(prop.key).toLowerCase().includes(searchLower) ||
+            prop.value.toLowerCase().includes(searchLower) ||
+            (prop.comment && prop.comment.toLowerCase().includes(searchLower))
+        );
+    });
 
     useEffect(() => {
         fetchProperties();
@@ -195,38 +215,64 @@ const PropertiesContainer = () => {
                         </div>
                     )}
 
+                    {/* Search Box */}
+                    {!loading && properties.some((p) => !p.isComment && p.key) && (
+                        <div className='mb-4'>
+                            <input
+                                type='text'
+                                placeholder='Search properties...'
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className='w-full px-4 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                            />
+                        </div>
+                    )}
+
                     {loading ? (
                         <div className='flex items-center justify-center py-12'>
                             <Spinner size='large' />
                         </div>
                     ) : (
                         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                            {properties.map((prop, index) => {
+                            {filteredProperties.map((prop, index) => {
                                 // Skip comment-only lines and empty lines
                                 if (prop.isComment || !prop.key) {
                                     return null;
                                 }
 
+                                const actualIndex = properties.findIndex((p) => p === prop);
+
                                 return (
                                     <div
-                                        key={`${prop.key}-${index}`}
+                                        key={`${prop.key}-${actualIndex}`}
                                         className='p-4 bg-[#ffffff09] border border-[#ffffff12] rounded-lg hover:border-[#ffffff20] transition-colors'
                                     >
                                         <label className='block text-sm font-medium mb-2 text-neutral-300'>
-                                            {prop.key}
+                                            {formatPropertyKey(prop.key)}
                                             {prop.comment && (
                                                 <span className='block text-xs text-neutral-400 mt-1 font-normal'>
                                                     {prop.comment}
                                                 </span>
                                             )}
                                         </label>
-                                        <input
-                                            type='text'
-                                            value={prop.value}
-                                            onChange={(e) => updateProperty(index, e.target.value)}
-                                            className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
-                                            placeholder='Value'
-                                        />
+                                        {prop.key === 'online-mode' ? (
+                                            <select
+                                                value={prop.value}
+                                                onChange={(e) => updateProperty(actualIndex, e.target.value)}
+                                                className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                            >
+                                                <option value='true'>True</option>
+                                                <option value='false'>False</option>
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type='text'
+                                                value={prop.value}
+                                                onChange={(e) => updateProperty(actualIndex, e.target.value)}
+                                                className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                                placeholder='Value'
+                                            />
+                                        )}
                                     </div>
                                 );
                             })}
