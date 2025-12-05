@@ -30,16 +30,32 @@ class ServerController extends Controller
         
         // Calculate statistics
         $totalServers = Server::count();
+        
+        // Online servers: installed (has installed_at) and not suspended, and not installing/failed
+        // A server is online if it has installed_at AND is not suspended AND is not installing/failed
+        // Handle NULL status values properly
         $onlineServers = Server::query()
-            ->whereNotIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED])
-            ->where('status', '!=', Server::STATUS_SUSPENDED)
             ->whereNotNull('installed_at')
+            ->where(function ($query) {
+                // Not suspended: status is NULL or status != 'suspended'
+                $query->where(function ($q) {
+                    $q->whereNull('status')
+                      ->orWhere('status', '!=', Server::STATUS_SUSPENDED);
+                })
+                // Not installing/failed: status is NULL or status not in bad states
+                ->where(function ($q) {
+                    $q->whereNull('status')
+                      ->orWhereNotIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
+                });
+            })
             ->count();
+        
+        // Offline servers: suspended, not installed, or installing/failed
         $offlineServers = Server::query()
             ->where(function ($query) {
-                $query->whereIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED])
-                    ->orWhere('status', Server::STATUS_SUSPENDED)
-                    ->orWhereNull('installed_at');
+                $query->where('status', Server::STATUS_SUSPENDED)
+                    ->orWhereNull('installed_at')
+                    ->orWhereIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
             })
             ->count();
         
@@ -62,14 +78,24 @@ class ServerController extends Controller
         // Apply filters based on request
         $filterType = $request->input('filter_type');
         if ($filterType === 'online') {
-            $baseQuery->whereNotIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED])
-                ->where('status', '!=', Server::STATUS_SUSPENDED)
-                ->whereNotNull('installed_at');
+            $baseQuery->whereNotNull('installed_at')
+                ->where(function ($query) {
+                    // Not suspended: status is NULL or status != 'suspended'
+                    $query->where(function ($q) {
+                        $q->whereNull('status')
+                          ->orWhere('status', '!=', Server::STATUS_SUSPENDED);
+                    })
+                    // Not installing/failed: status is NULL or status not in bad states
+                    ->where(function ($q) {
+                        $q->whereNull('status')
+                          ->orWhereNotIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
+                    });
+                });
         } elseif ($filterType === 'offline') {
             $baseQuery->where(function ($query) {
-                $query->whereIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED])
-                    ->orWhere('status', Server::STATUS_SUSPENDED)
-                    ->orWhereNull('installed_at');
+                $query->where('status', Server::STATUS_SUSPENDED)
+                    ->orWhereNull('installed_at')
+                    ->orWhereIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
             });
         } elseif ($filterType === 'active_subscription') {
             $baseQuery->whereHas('subscription', function ($query) {
