@@ -162,10 +162,15 @@ const PropertiesContainer = () => {
             .join(' ');
     };
 
-    const getInputType = (key: string, value: string): 'boolean' | 'number' | 'text' => {
+    const getInputType = (key: string, value: string): 'boolean' | 'number' | 'difficulty' | 'text' => {
         // MOTD is always a text input
         if (key.toLowerCase() === 'motd') {
             return 'text';
+        }
+
+        // Difficulty has its own dropdown
+        if (key.toLowerCase() === 'difficulty') {
+            return 'difficulty';
         }
 
         // Check if value is boolean (true/false, case-insensitive)
@@ -289,6 +294,21 @@ const PropertiesContainer = () => {
                                                     >
                                                         <option value='true'>True</option>
                                                         <option value='false'>False</option>
+                                                    </select>
+                                                );
+                                            }
+
+                                            if (inputType === 'difficulty') {
+                                                return (
+                                                    <select
+                                                        value={prop.value}
+                                                        onChange={(e) => updateProperty(actualIndex, e.target.value)}
+                                                        className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                                    >
+                                                        <option value='easy'>Easy</option>
+                                                        <option value='normal'>Normal</option>
+                                                        <option value='hard'>Hard</option>
+                                                        <option value='peaceful'>Peaceful</option>
                                                     </select>
                                                 );
                                             }

@@ -193,7 +193,7 @@ export default {
             route: 'properties/*',
             path: 'properties',
             permission: 'file.read',
-            name: 'Properties',
+            name: 'Server Properties',
             component: PropertiesContainer,
         },
     ],
