@@ -36,9 +36,9 @@ class VpsCreationService
             $uuidShort = substr($uuid, 0, 8);
 
             // Get Proxmox configuration from settings
-            $proxmoxNode = $data['proxmox_node'] ?? config('pterodactyl.proxmox.node');
-            $proxmoxStorage = $data['proxmox_storage'] ?? config('pterodactyl.proxmox.storage');
-            $template = $data['template'] ?? config('pterodactyl.proxmox.template');
+            $proxmoxNode = $data['proxmox_node'] ?? config('proxmox.node');
+            $proxmoxStorage = $data['proxmox_storage'] ?? config('proxmox.storage');
+            $template = $data['template'] ?? config('proxmox.template');
 
             if (empty($proxmoxNode) || empty($proxmoxStorage) || empty($template)) {
                 throw new \RuntimeException('Proxmox configuration is incomplete. Please configure Proxmox settings in the admin panel.');
