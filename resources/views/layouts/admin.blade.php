@@ -20,11 +20,47 @@
 
     @include('layouts.scripts')
 
-    <style>
-        :root {
-            --color-brand: {{ config('theme.primary_color', '#fa4e49') }};
-        }
-    </style>
+    <script>
+        (function() {
+            const primaryColor = '{{ config('theme.primary_color', '#fa4e49') }}';
+            function applyThemeColor() {
+                const root = document.documentElement;
+                root.style.setProperty('--color-brand', primaryColor);
+                // Update brand gradient to use the new color
+                const rgb = hexToRgb(primaryColor);
+                if (rgb) {
+                    const lighter = adjustBrightness(primaryColor, 1.2);
+                    root.style.setProperty('--color-brand-grad', `radial-gradient(109.26% 109.26% at 49.83% 13.37%, ${primaryColor} 0%, ${lighter} 100%)`);
+                }
+            }
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            }
+            function adjustBrightness(hex, factor) {
+                const rgb = hexToRgb(hex);
+                if (!rgb) return hex;
+                const r = Math.min(255, Math.round(rgb.r * factor));
+                const g = Math.min(255, Math.round(rgb.g * factor));
+                const b = Math.min(255, Math.round(rgb.b * factor));
+                return '#' + [r, g, b].map(x => {
+                    const hex = x.toString(16);
+                    return hex.length === 1 ? '0' + hex : hex;
+                }).join('');
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', applyThemeColor);
+            } else {
+                applyThemeColor();
+            }
+            // Also apply after a short delay to ensure all CSS has loaded
+            setTimeout(applyThemeColor, 100);
+        })();
+    </script>
 
     @section('scripts')
     {!! Theme::css('vendor/select2/select2.min.css?t={cache-version}') !!}
