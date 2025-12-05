@@ -103,6 +103,85 @@
         </div>
     </form>
     <div class="col-xs-12">
+        <div class="box box-primary">
+            <div class="box-header with-border">
+                <h3 class="box-title">User Servers</h3>
+            </div>
+            <div class="box-body table-responsive no-padding">
+                @if($user->servers->count() > 0)
+                    <table class="table table-hover">
+                        <tbody>
+                            <tr>
+                                <th>Server Name</th>
+                                <th>UUID</th>
+                                <th>Node</th>
+                                <th>Connection</th>
+                                <th>Subscription</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                            @foreach ($user->servers as $server)
+                                <tr data-server="{{ $server->uuidShort }}">
+                                    <td><a href="{{ route('admin.servers.view', $server->id) }}">{{ $server->name }}</a></td>
+                                    <td><code title="{{ $server->uuid }}">{{ $server->uuid }}</code></td>
+                                    <td>
+                                        @if($server->node)
+                                            <a href="{{ route('admin.nodes.view', $server->node->id) }}">{{ $server->node->name }}</a>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($server->allocation)
+                                            <code>{{ $server->allocation->alias }}:{{ $server->allocation->port }}</code>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($server->subscription)
+                                            @php
+                                                $priceInfo = $server->subscription->getMonthlyPriceInfo();
+                                            @endphp
+                                            @if($priceInfo['monthly_price'] !== null)
+                                                <strong>{{ number_format($priceInfo['monthly_price'], 2) }} {{ $priceInfo['currency'] }}</strong> / month<br>
+                                                <small class="text-muted">{{ $priceInfo['billing_cycle'] }}</small>
+                                            @else
+                                                <span class="text-muted">Custom Plan</span>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">No subscription</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($server->isSuspended())
+                                            <span class="label bg-maroon">Suspended</span>
+                                        @elseif(! $server->isInstalled())
+                                            <span class="label label-warning">Installing</span>
+                                        @else
+                                            <span class="label label-success">Active</span>
+                                        @endif
+                                        
+                                        @if($server->exclude_from_resource_calculation)
+                                            <br><small><span class="label label-info" title="Excluded from resource calculations">Excluded</span></small>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <a class="btn btn-xs btn-default" href="/server/{{ $server->uuidShort }}"><i class="fa fa-wrench"></i></a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @else
+                    <div class="box-body">
+                        <p class="text-muted">This user has no servers.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+    <div class="col-xs-12">
         <div class="box box-danger">
             <div class="box-header with-border">
                 <h3 class="box-title">Delete User</h3>

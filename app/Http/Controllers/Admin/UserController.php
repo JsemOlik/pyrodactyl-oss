@@ -87,6 +87,13 @@ public function index(Request $request): View
      */
     public function view(User $user): View
     {
+        $user->load([
+            'servers' => function ($query) {
+                $query->with(['subscription.plan', 'node', 'allocation', 'user'])
+                    ->orderBy('created_at', 'desc');
+            },
+        ]);
+
         return $this->view->make('admin.users.view', [
             'user' => $user,
             'languages' => $this->getAvailableLanguages(true),

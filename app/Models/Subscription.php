@@ -61,5 +61,103 @@ class Subscription extends CashierSubscription
     {
         return $this->belongsTo(Plan::class, 'stripe_price', 'stripe_price_id');
     }
+
+    /**
+     * Get the monthly price for this subscription.
+     *
+     * @return array{monthly_price: float|null, currency: string, billing_cycle: string}
+     */
+    public function getMonthlyPriceInfo(): array
+    {
+        // If we have a plan, use it
+        if ($this->plan) {
+            $plan = $this->plan;
+            $intervalMonths = match($plan->interval) {
+                'month' => 1,
+                'quarter' => 3,
+                'half-year' => 6,
+                'year' => 12,
+                default => 1,
+            };
+            $monthlyPrice = $plan->price / $intervalMonths;
+            
+            $billingCycle = match($plan->interval) {
+                'month' => 'Monthly',
+                'quarter' => 'Quarterly',
+                'half-year' => 'Half-Yearly',
+                'year' => 'Yearly',
+                default => $plan->interval,
+            };
+            
+            return [
+                'monthly_price' => (float) $monthlyPrice,
+                'currency' => strtoupper($plan->currency),
+                'billing_cycle' => $billingCycle,
+            ];
+        }
+        
+        // If no plan but we have stripe_price, try to get from Stripe
+        if ($this->stripe_price) {
+            try {
+                \Stripe\Stripe::setApiKey(config('cashier.secret'));
+                $stripePrice = \Stripe\Price::retrieve($this->stripe_price);
+                $priceAmount = $stripePrice->unit_amount / 100;
+                $currency = strtoupper($stripePrice->currency);
+                
+                // Determine interval from Stripe price
+                $interval = 'month';
+                $monthlyPrice = $priceAmount;
+                
+                if ($stripePrice->recurring) {
+                    $stripeInterval = $stripePrice->recurring->interval;
+                    $intervalCount = $stripePrice->recurring->interval_count ?? 1;
+                    
+                    if ($stripeInterval === 'month' && $intervalCount === 1) {
+                        $interval = 'month';
+                        $monthlyPrice = $priceAmount;
+                    } elseif ($stripeInterval === 'month' && $intervalCount === 3) {
+                        $interval = 'quarter';
+                        $monthlyPrice = $priceAmount / 3;
+                    } elseif ($stripeInterval === 'month' && $intervalCount === 6) {
+                        $interval = 'half-year';
+                        $monthlyPrice = $priceAmount / 6;
+                    } elseif ($stripeInterval === 'year' && $intervalCount === 1) {
+                        $interval = 'year';
+                        $monthlyPrice = $priceAmount / 12;
+                    }
+                    
+                    $billingCycle = match($interval) {
+                        'month' => 'Monthly',
+                        'quarter' => 'Quarterly',
+                        'half-year' => 'Half-Yearly',
+                        'year' => 'Yearly',
+                        default => $interval,
+                    };
+                } else {
+                    $billingCycle = 'One-time';
+                }
+                
+                return [
+                    'monthly_price' => (float) $monthlyPrice,
+                    'currency' => $currency,
+                    'billing_cycle' => $billingCycle,
+                ];
+            } catch (\Exception $e) {
+                // Fallback if Stripe API call fails
+                return [
+                    'monthly_price' => null,
+                    'currency' => 'USD',
+                    'billing_cycle' => 'Unknown',
+                ];
+            }
+        }
+        
+        // No subscription info available
+        return [
+            'monthly_price' => null,
+            'currency' => 'USD',
+            'billing_cycle' => 'N/A',
+        ];
+    }
 }
 
