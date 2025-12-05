@@ -1,183 +1,92 @@
 import { Person } from '@gravity-ui/icons';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import ErrorBoundary from '@/components/elements/ErrorBoundary';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import ServerContentBlock from '@/components/elements/ServerContentBlock';
 import Spinner from '@/components/elements/Spinner';
-import { SocketEvent } from '@/components/server/events';
-
-import sendCommand from '@/api/server/sendCommand';
 
 import { ServerContext } from '@/state/server';
-
-import useWebsocketEvent from '@/plugins/useWebsocketEvent';
 
 interface Player {
     name: string;
 }
 
-const PlayersContainer = () => {
-    const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
-    const connected = ServerContext.useStoreState((state) => state.socket.connected);
-    const instance = ServerContext.useStoreState((state) => state.socket.instance);
-    const serverStatus = ServerContext.useStoreState((state) => state.server.data?.status);
+interface McSrvStatResponse {
+    online: boolean;
+    players?: {
+        online?: number;
+        max?: number;
+        list?: Array<{ name?: string; uuid?: string }>;
+    };
+}
 
+const PlayersContainer = () => {
+    const serverData = ServerContext.useStoreState((state) => state.server.data);
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isListening, setIsListening] = useState(false);
-    const consoleLinesRef = useRef<string[]>([]);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    const parseListCommand = (lines: string[]): Player[] => {
-        const players: Player[] = [];
-
-        // Look for the line that contains player names
-        // Format: "default: ookmot, tms911" or "world: player1, player2"
-        // The line typically comes after "players online" message
-        for (const line of lines) {
-            // Remove ANSI color codes and timestamps like [22:31:23 INFO]:
-            const cleanLine = line
-                .replace(/\[.*?\]/g, '') // Remove timestamps
-                .replace(/\u001b\[[0-9;]*m/g, '') // Remove ANSI codes
-                .trim();
-
-            // Only match lines that have a world prefix followed by a colon and player names
-            // This ensures we don't match the command "list" or other unrelated lines
-            // Pattern: "default: player1, player2" or "world: player1, player2"
-            const playerLineMatch = cleanLine.match(
-                /^(?:default|world|.*?):\s*([a-zA-Z0-9_]+(?:\s*,\s*[a-zA-Z0-9_]+)+)$/i,
-            );
-
-            if (playerLineMatch) {
-                const playerNamesStr = playerLineMatch[1];
-                const playerNames = playerNamesStr
-                    .split(',')
-                    .map((name) => name.trim())
-                    .filter((name) => {
-                        // Filter out invalid names
-                        const lowerName = name.toLowerCase();
-                        return (
-                            name.length > 0 &&
-                            name.length <= 16 && // Minecraft usernames are max 16 chars
-                            !lowerName.includes('players online') &&
-                            !lowerName.includes('issued server command') &&
-                            !lowerName.includes('list') &&
-                            !lowerName.includes('online') &&
-                            !lowerName.includes('maximum')
-                        );
-                    });
-
-                playerNames.forEach((name) => {
-                    if (name.length > 0) {
-                        players.push({ name });
-                    }
-                });
-
-                // Found players, return early
-                if (players.length > 0) {
-                    return players;
-                }
-            }
-        }
-
-        return players;
-    };
+    const [hasFetched, setHasFetched] = useState(false);
 
     const fetchPlayers = async () => {
-        if (!connected || !instance || !uuid) {
-            setError('Server connection not available. Make sure the server is online and connected.');
+        if (!serverData) {
+            setError('Server data not available');
             return;
         }
 
-        // Check if server is actually running (status should be null when running)
-        if (serverStatus !== null) {
-            setError('Server must be running to check player list. Please start your server first.');
+        // Get the default allocation (primary IP and port)
+        const defaultAllocation = serverData.allocations?.find((alloc) => alloc.isDefault);
+        if (!defaultAllocation) {
+            setError('Server allocation not found');
             return;
-        }
-
-        // Clear any existing timeout
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
         }
 
         setLoading(true);
         setError(null);
-        setPlayers([]);
-        consoleLinesRef.current = [];
-        setIsListening(true);
 
         try {
-            // Send the /list command
-            await sendCommand(uuid, 'list');
+            // Use mcsrvstat.us API to get player list
+            const response = await fetch(
+                `https://api.mcsrvstat.us/3/${defaultAllocation.ip}:${defaultAllocation.port}`,
+            );
 
-            // Set a timeout to stop listening after 8 seconds
-            timeoutRef.current = setTimeout(() => {
-                setIsListening(false);
-                const parsedPlayers = parseListCommand(consoleLinesRef.current);
-
-                if (parsedPlayers.length > 0) {
-                    setPlayers(parsedPlayers);
-                    setError(null);
-                } else if (consoleLinesRef.current.length > 0) {
-                    // We got console output but couldn't parse players
-                    setError('No players found online or unable to parse response');
-                } else {
-                    setError('Server did not respond. Make sure the server is online.');
-                }
-
-                setLoading(false);
-            }, 8000);
-        } catch (err: any) {
-            setError(err.message || 'Failed to send command');
-            setLoading(false);
-            setIsListening(false);
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
+            if (!response.ok) {
+                throw new Error('Failed to fetch server status');
             }
+
+            const data: McSrvStatResponse = await response.json();
+
+            if (!data.online) {
+                setError('Server is offline');
+                setPlayers([]);
+            } else if (data.players?.list && data.players.list.length > 0) {
+                // Extract player names from the API response
+                const playerNames = data.players.list
+                    .map((player) => player.name)
+                    .filter((name): name is string => !!name)
+                    .map((name) => ({ name }));
+                setPlayers(playerNames);
+                setError(null);
+            } else {
+                setPlayers([]);
+                setError(null);
+            }
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch player list');
+            setPlayers([]);
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Listen for console output
-    useWebsocketEvent(
-        SocketEvent.CONSOLE_OUTPUT,
-        (line: string) => {
-            if (!isListening) return;
-
-            // Collect console lines
-            consoleLinesRef.current = [...consoleLinesRef.current, line];
-
-            // Try to parse players from accumulated lines
-            const parsedPlayers = parseListCommand(consoleLinesRef.current);
-            if (parsedPlayers.length > 0) {
-                setPlayers(parsedPlayers);
-                setIsListening(false);
-                setLoading(false);
-                setError(null);
-                if (timeoutRef.current) {
-                    clearTimeout(timeoutRef.current);
-                    timeoutRef.current = null;
-                }
-            }
-        },
-        [isListening],
-    );
-
-    // Cleanup timeout on unmount
+    // Fetch players once on component mount
     useEffect(() => {
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        if (connected && instance && serverStatus === null) {
+        if (!hasFetched && serverData) {
+            setHasFetched(true);
             fetchPlayers();
         }
-    }, [connected, instance, serverStatus]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serverData, hasFetched]);
 
     const getMinecraftHeadUrl = (username: string): string => {
         // Using mc-heads.net API
@@ -193,7 +102,7 @@ const PlayersContainer = () => {
                 >
                     <button
                         onClick={fetchPlayers}
-                        disabled={loading || !connected}
+                        disabled={loading}
                         className='px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
                     >
                         {loading ? (
