@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import ActionButton from '@/components/elements/ActionButton';
 import ErrorBoundary from '@/components/elements/ErrorBoundary';
@@ -25,8 +26,8 @@ const PropertiesContainer = () => {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const parsePropertiesFile = (content: string): Property[] => {
         const lines = content.split('\n');
@@ -122,21 +123,25 @@ const PropertiesContainer = () => {
         }
     };
 
-    const saveProperties = async () => {
+    const saveProperties = async (showToast = true) => {
         if (!uuid) return;
 
         setSaving(true);
         setError(null);
-        setSuccess(false);
 
         try {
             const formatted = formatPropertiesFile(properties);
             await saveFileContents(uuid, 'server.properties', formatted);
             setOriginalContent(formatted);
-            setSuccess(true);
-            setTimeout(() => setSuccess(false), 3000);
+            if (showToast) {
+                toast.success('Properties saved successfully!');
+            }
         } catch (err: any) {
-            setError(err.message || 'Failed to save server.properties file');
+            const errorMessage = err.message || 'Failed to save server.properties file';
+            setError(errorMessage);
+            if (showToast) {
+                toast.error(errorMessage);
+            }
         } finally {
             setSaving(false);
         }
@@ -146,6 +151,19 @@ const PropertiesContainer = () => {
         const updated = [...properties];
         updated[index] = { ...updated[index], value };
         setProperties(updated);
+
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Set new timeout for auto-save
+        saveTimeoutRef.current = setTimeout(() => {
+            const formatted = formatPropertiesFile(updated);
+            if (formatted !== originalContent) {
+                saveProperties(true);
+            }
+        }, 1000); // Auto-save after 1 second of no typing
     };
 
     const formatPropertyKey = (key: string): string => {
@@ -174,6 +192,15 @@ const PropertiesContainer = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [uuid]);
 
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, []);
+
     return (
         <ServerContentBlock title={'Properties'} showFlashKey={'properties'}>
             <ErrorBoundary>
@@ -184,21 +211,15 @@ const PropertiesContainer = () => {
                     }
                 >
                     <div className='flex items-center gap-2'>
-                        {hasChanges && <span className='text-sm text-yellow-400'>You have unsaved changes</span>}
-                        <ActionButton
-                            variant='primary'
-                            onClick={saveProperties}
-                            disabled={saving || loading || !hasChanges}
-                        >
-                            {saving ? (
-                                <span className='flex items-center gap-2'>
-                                    <Spinner size='small' />
-                                    Saving...
-                                </span>
-                            ) : (
-                                'Save Changes'
-                            )}
-                        </ActionButton>
+                        {saving && (
+                            <span className='text-sm text-blue-400 flex items-center gap-2'>
+                                <Spinner size='small' />
+                                Saving...
+                            </span>
+                        )}
+                        {hasChanges && !saving && (
+                            <span className='text-sm text-yellow-400'>Changes will auto-save...</span>
+                        )}
                     </div>
                 </MainPageHeader>
 
@@ -206,12 +227,6 @@ const PropertiesContainer = () => {
                     {error && (
                         <div className='mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400'>
                             {error}
-                        </div>
-                    )}
-
-                    {success && (
-                        <div className='mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400'>
-                            Properties saved successfully! Restart your server for changes to take effect.
                         </div>
                     )}
 
@@ -255,7 +270,10 @@ const PropertiesContainer = () => {
                                                 </span>
                                             )}
                                         </label>
-                                        {prop.key === 'online-mode' ? (
+                                        {prop.key === 'online-mode' ||
+                                        prop.key === 'force-gamemode' ||
+                                        prop.key === 'enable-query' ||
+                                        prop.key === 'white-list' ? (
                                             <select
                                                 value={prop.value}
                                                 onChange={(e) => updateProperty(actualIndex, e.target.value)}
@@ -264,6 +282,41 @@ const PropertiesContainer = () => {
                                                 <option value='true'>True</option>
                                                 <option value='false'>False</option>
                                             </select>
+                                        ) : prop.key === 'difficulty' ? (
+                                            <select
+                                                value={prop.value}
+                                                onChange={(e) => updateProperty(actualIndex, e.target.value)}
+                                                className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                            >
+                                                <option value='easy'>Easy</option>
+                                                <option value='normal'>Normal</option>
+                                                <option value='hard'>Hard</option>
+                                                <option value='peaceful'>Peaceful</option>
+                                            </select>
+                                        ) : prop.key === 'max-tick-time' || prop.key === 'view-distance' ? (
+                                            <div>
+                                                <input
+                                                    type='number'
+                                                    value={prop.value}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        // Only allow numbers (including empty for deletion)
+                                                        if (value === '' || /^\d+$/.test(value)) {
+                                                            updateProperty(actualIndex, value);
+                                                        }
+                                                    }}
+                                                    className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                                    placeholder='Value'
+                                                />
+                                                {prop.key === 'view-distance' &&
+                                                    prop.value &&
+                                                    parseInt(prop.value) > 18 && (
+                                                        <p className='mt-2 text-xs text-yellow-400'>
+                                                            A larger view distance may slow down chunk generation. Use
+                                                            with caution
+                                                        </p>
+                                                    )}
+                                            </div>
                                         ) : (
                                             <input
                                                 type='text'
