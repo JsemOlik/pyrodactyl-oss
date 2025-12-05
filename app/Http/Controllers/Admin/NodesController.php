@@ -157,24 +157,55 @@ class NodesController extends Controller
      */
     public function allocationSetRestrictions(Request $request, Node $node, Allocation $allocation): RedirectResponse
     {
+        $request->validate([
+            'restriction_type' => 'required|in:none,whitelist,blacklist',
+            'nests' => 'nullable|array',
+            'nests.*' => 'integer|exists:nests,id',
+            'eggs' => 'nullable|array',
+            'eggs.*' => 'integer|exists:eggs,id',
+        ]);
+
         $restrictionType = $request->input('restriction_type', 'none');
         $nests = $request->input('nests', []);
         $eggs = $request->input('eggs', []);
 
-        // Update restriction type
-        $allocation->update(['restriction_type' => $restrictionType]);
-
-        if ($restrictionType === 'none') {
-            // Clear all restrictions
-            $allocation->allowedNests()->sync([]);
-            $allocation->allowedEggs()->sync([]);
+        // Ensure arrays are properly formatted and not null - handle both array and null cases
+        if (!is_array($nests)) {
+            $nests = [];
         } else {
-            // Sync the restricted nests and eggs
-            $allocation->allowedNests()->sync($nests);
-            $allocation->allowedEggs()->sync($eggs);
+            $nests = array_filter(array_map('intval', $nests), fn($val) => $val > 0);
+        }
+        
+        if (!is_array($eggs)) {
+            $eggs = [];
+        } else {
+            $eggs = array_filter(array_map('intval', $eggs), fn($val) => $val > 0);
         }
 
-        $this->alert->success('Allocation restrictions updated successfully.')->flash();
+        try {
+            // Update restriction type
+            $allocation->update(['restriction_type' => $restrictionType]);
+
+            if ($restrictionType === 'none') {
+                // Clear all restrictions
+                $allocation->allowedNests()->sync([]);
+                $allocation->allowedEggs()->sync([]);
+            } else {
+                // Sync the restricted nests and eggs
+                $allocation->allowedNests()->sync($nests);
+                $allocation->allowedEggs()->sync($eggs);
+            }
+
+            $this->alert->success('Allocation restrictions updated successfully.')->flash();
+        } catch (\Exception $e) {
+            \Log::error('Failed to update allocation restrictions', [
+                'allocation_id' => $allocation->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            $this->alert->danger('Failed to update allocation restrictions: ' . $e->getMessage())->flash();
+        }
 
         return redirect()->route('admin.nodes.view.allocation', $node->id);
     }
