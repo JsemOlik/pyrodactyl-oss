@@ -130,6 +130,7 @@ class HostingPlanController extends Controller
         $message = config('billing.server_creation_disabled_message', '');
         $statusPageUrl = config('billing.status_page_url', '');
         $showStatusButton = config('billing.show_status_page_button', false);
+        $showLogo = config('billing.show_logo_on_disabled_page', true);
 
         return [
             'data' => [
@@ -137,6 +138,7 @@ class HostingPlanController extends Controller
                 'disabled_message' => $message,
                 'status_page_url' => $statusPageUrl,
                 'show_status_page_button' => $showStatusButton,
+                'show_logo' => $showLogo,
             ],
         ];
     }

@@ -52,6 +52,7 @@ class SettingsServiceProvider extends ServiceProvider
     'billing:server_creation_disabled_message',
     'billing:status_page_url',
     'billing:show_status_page_button',
+    'billing:show_logo_on_disabled_page',
   ];
 
 

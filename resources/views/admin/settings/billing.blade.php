@@ -122,6 +122,20 @@
               <p class="text-muted small">Display a "View our status page" button on the server creation disabled page.</p>
             </div>
           </div>
+          <div class="row">
+            <div class="form-group col-md-12">
+              <div class="checkbox checkbox-primary">
+                @php
+                  $showLogo = old('billing:show_logo_on_disabled_page', config('billing.show_logo_on_disabled_page', true));
+                  $showLogoValue = is_bool($showLogo) ? $showLogo : ($showLogo === 'true' || $showLogo === true || $showLogo === '1');
+                @endphp
+                <input id="billingShowLogoOnDisabledPage" type="checkbox" name="billing:show_logo_on_disabled_page" value="1"
+                  {{ $showLogoValue ? 'checked' : '' }} />
+                <label for="billingShowLogoOnDisabledPage">Show logo on server creation disabled page</label>
+              </div>
+              <p class="text-muted small">Display the logo on the server creation disabled page. When disabled, only the message and buttons will be shown.</p>
+            </div>
+          </div>
         </div>
         <div class="box-footer">
           {{ csrf_field() }}
@@ -153,7 +167,8 @@
           'billing:enable_server_creation': $('input[name="billing:enable_server_creation"]').is(':checked') ? '1' : '0',
           'billing:server_creation_disabled_message': $('textarea[name="billing:server_creation_disabled_message"]').val(),
           'billing:status_page_url': $('input[name="billing:status_page_url"]').val(),
-          'billing:show_status_page_button': $('input[name="billing:show_status_page_button"]').is(':checked') ? '1' : '0'
+          'billing:show_status_page_button': $('input[name="billing:show_status_page_button"]').is(':checked') ? '1' : '0',
+          'billing:show_logo_on_disabled_page': $('input[name="billing:show_logo_on_disabled_page"]').is(':checked') ? '1' : '0'
         }),
         headers: { 'X-CSRF-Token': $('input[name="_token"]').val() }
       }).fail(function (jqXHR) {

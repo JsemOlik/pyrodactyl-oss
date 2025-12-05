@@ -44,7 +44,7 @@ class BillingController extends Controller
 
         foreach ($values as $key => $value) {
             // Handle boolean fields - convert '1'/'0' to 'true'/'false' strings
-            if (in_array($key, ['billing:enable_server_creation', 'billing:show_status_page_button'])) {
+            if (in_array($key, ['billing:enable_server_creation', 'billing:show_status_page_button', 'billing:show_logo_on_disabled_page'])) {
                 $value = ($value === '1' || $value === true || $value === 'true') ? 'true' : 'false';
             }
 
