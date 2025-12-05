@@ -139,8 +139,8 @@ const PlayersContainer = () => {
     }, [connected, instance]);
 
     const getMinecraftHeadUrl = (username: string): string => {
-        // Using Minotar API (crafatar.com alternative)
-        return `https://crafatar.com/avatars/${username}?size=32&overlay`;
+        // Using mc-heads.net API
+        return `https://mc-heads.net/avatar/${username}/32`;
     };
 
     return (
@@ -196,7 +196,7 @@ const PlayersContainer = () => {
                                         onError={(e) => {
                                             // Fallback to a default avatar if image fails to load
                                             (e.target as HTMLImageElement).src =
-                                                `https://crafatar.com/avatars/8667ba71-b85a-4004-af54-457acd50f086?size=32&overlay`;
+                                                `https://mc-heads.net/avatar/8667ba71-b85a-4004-af54-457acd50f086/32`;
                                         }}
                                     />
                                     <span className='font-medium text-white'>{player.name}</span>
