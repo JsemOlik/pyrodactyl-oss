@@ -61,7 +61,7 @@
                             $allocationRestrictions = isset($allocationsWithRestrictions) ? $allocationsWithRestrictions->firstWhere('id', $allocation->id) : null;
                             $allowedNests = $allocationRestrictions ? $allocationRestrictions->allowedNests->pluck('id')->toArray() : [];
                             $allowedEggs = $allocationRestrictions ? $allocationRestrictions->allowedEggs->pluck('id')->toArray() : [];
-                            $hasRestrictions = !empty($allowedNests) || !empty($allowedEggs);
+                            $restrictionTypeLabel = $allocationRestrictions ? ($allocationRestrictions->restriction_type ?? 'none') : 'none';
                         @endphp
                         <tr>
                             <td class="middle min-size" data-identifier="type">
@@ -78,15 +78,22 @@
                             </td>
                             <td class="col-sm-1 middle" data-identifier="port">{{ $allocation->port }}</td>
                             <td class="col-sm-2 middle">
-                                @if($hasRestrictions)
-                                    <span class="label label-info" data-toggle="tooltip" title="Restricted">
-                                        <i class="fa fa-lock"></i> Restricted
-                                    </span>
-                                @else
-                                    <span class="label label-success" data-toggle="tooltip" title="No restrictions - available to all nests/eggs">
-                                        <i class="fa fa-unlock"></i> Open
-                                    </span>
-                                @endif
+                                @php
+                                $restrictionTypeLabel = $allocationRestrictions ? ($allocationRestrictions->restriction_type ?? 'none') : 'none';
+                            @endphp
+                            @if($restrictionTypeLabel === 'none')
+                                <span class="label label-success" data-toggle="tooltip" title="No restrictions - available to all nests/eggs">
+                                    <i class="fa fa-unlock"></i> Open
+                                </span>
+                            @elseif($restrictionTypeLabel === 'whitelist')
+                                <span class="label label-info" data-toggle="tooltip" title="Whitelist - Only selected nests/eggs allowed">
+                                    <i class="fa fa-check-circle"></i> Whitelist
+                                </span>
+                            @else
+                                <span class="label label-warning" data-toggle="tooltip" title="Blacklist - Selected nests/eggs blocked">
+                                    <i class="fa fa-ban"></i> Blacklist
+                                </span>
+                            @endif
                                 <button 
                                     class="btn btn-xs btn-default" 
                                     data-toggle="modal" 
@@ -149,6 +156,41 @@
                             <p class="text-muted small">Enter individual ports or port ranges here separated by commas or spaces.</p>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="control-label">Allocation Restrictions</label>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="restriction_type" value="none" checked>
+                                <strong>None</strong> - Available to all nests/eggs (default)
+                            </label>
+                        </div>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="restriction_type" value="whitelist">
+                                <strong>Whitelist</strong> - Only allow selected nests/eggs
+                            </label>
+                        </div>
+                        <div class="radio">
+                            <label>
+                                <input type="radio" name="restriction_type" value="blacklist">
+                                <strong>Blacklist</strong> - Block selected nests/eggs
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" id="restrictionNestsGroup" style="display:none;">
+                        <label for="pRestrictionNests" class="control-label">Nests</label>
+                        <div>
+                            <select class="form-control" name="restriction_nests[]" id="pRestrictionNests" multiple></select>
+                            <p class="text-muted small">Select which nests to whitelist or blacklist.</p>
+                        </div>
+                    </div>
+                    <div class="form-group" id="restrictionEggsGroup" style="display:none;">
+                        <label for="pRestrictionEggs" class="control-label">Eggs</label>
+                        <div>
+                            <select class="form-control" name="restriction_eggs[]" id="pRestrictionEggs" multiple></select>
+                            <p class="text-muted small">Select which eggs to whitelist or blacklist.</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="box-footer">
                     {!! csrf_field() !!}
@@ -192,6 +234,7 @@
         $allocationRestrictions = isset($allocationsWithRestrictions) ? $allocationsWithRestrictions->firstWhere('id', $allocation->id) : null;
         $allowedNests = $allocationRestrictions ? $allocationRestrictions->allowedNests->pluck('id')->toArray() : [];
         $allowedEggs = $allocationRestrictions ? $allocationRestrictions->allowedEggs->pluck('id')->toArray() : [];
+        $restrictionType = $allocationRestrictions ? ($allocationRestrictions->restriction_type ?? 'none') : 'none';
     @endphp
     <div class="modal fade" id="restrictionModal{{ $allocation->id }}" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
@@ -202,37 +245,38 @@
                 </div>
                 <form action="{{ route('admin.nodes.view.allocation.restrictions', ['node' => $node->id, 'allocation' => $allocation->id]) }}" method="POST">
                     <div class="modal-body">
-                        <p class="text-muted">
-                            <strong>Leave empty to allow all nests/eggs.</strong> If you select specific nests or eggs, only servers with those nests/eggs will be able to use this allocation. 
-                            The allocation must be allowed for BOTH the nest AND the egg for a server to use it.
-                        </p>
-                        
                         <div class="form-group">
-                            <label for="nests{{ $allocation->id }}">Allowed Nests</label>
-                            <select class="form-control" name="nests[]" id="nests{{ $allocation->id }}" multiple style="height: 150px;">
-                                @foreach($nests as $nest)
-                                    <option value="{{ $nest->id }}" {{ in_array($nest->id, $allowedNests) ? 'selected' : '' }}>
-                                        {{ $nest->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="help-block">Select which nests can use this allocation. Leave empty for no restrictions.</p>
+                            <label class="control-label">Restriction Type</label>
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="restriction_type" value="none" {{ $restrictionType === 'none' ? 'checked' : '' }}>
+                                    <strong>None</strong> - Available to all nests/eggs
+                                </label>
+                            </div>
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="restriction_type" value="whitelist" {{ $restrictionType === 'whitelist' ? 'checked' : '' }}>
+                                    <strong>Whitelist</strong> - Only allow selected nests/eggs
+                                </label>
+                            </div>
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="restriction_type" value="blacklist" {{ $restrictionType === 'blacklist' ? 'checked' : '' }}>
+                                    <strong>Blacklist</strong> - Block selected nests/eggs
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" id="modalNestsGroup{{ $allocation->id }}" style="display:{{ $restrictionType === 'none' ? 'none' : 'block' }};">
+                            <label for="modalNests{{ $allocation->id }}">Nests</label>
+                            <select class="form-control" name="nests[]" id="modalNests{{ $allocation->id }}" multiple></select>
+                            <p class="help-block">Select which nests to whitelist or blacklist.</p>
                         </div>
 
-                        <div class="form-group">
-                            <label for="eggs{{ $allocation->id }}">Allowed Eggs</label>
-                            <select class="form-control" name="eggs[]" id="eggs{{ $allocation->id }}" multiple style="height: 200px;">
-                                @foreach($nests as $nest)
-                                    <optgroup label="{{ $nest->name }}">
-                                        @foreach($nest->eggs as $egg)
-                                            <option value="{{ $egg->id }}" {{ in_array($egg->id, $allowedEggs) ? 'selected' : '' }}>
-                                                {{ $egg->name }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endforeach
-                            </select>
-                            <p class="help-block">Select which eggs can use this allocation. Leave empty for no restrictions.</p>
+                        <div class="form-group" id="modalEggsGroup{{ $allocation->id }}" style="display:{{ $restrictionType === 'none' ? 'none' : 'block' }};">
+                            <label for="modalEggs{{ $allocation->id }}">Eggs</label>
+                            <select class="form-control" name="eggs[]" id="modalEggs{{ $allocation->id }}" multiple></select>
+                            <p class="help-block">Select which eggs to whitelist or blacklist.</p>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -244,6 +288,59 @@
             </div>
         </div>
     </div>
+    
+    <script>
+    $(document).ready(function() {
+        // Initialize select2 for this modal when it's shown
+        $('#restrictionModal{{ $allocation->id }}').on('show.bs.modal', function() {
+            var nestsData = [
+                @foreach($nests as $nest)
+                {
+                    id: {{ $nest->id }},
+                    text: '{{ $nest->name }}'
+                },
+                @endforeach
+            ];
+            
+            var eggsData = [
+                @foreach($nests as $nest)
+                    @foreach($nest->eggs as $egg)
+                    {
+                        id: {{ $egg->id }},
+                        text: '{{ $nest->name }} - {{ $egg->name }}'
+                    },
+                    @endforeach
+                @endforeach
+            ];
+            
+            $('#modalNests{{ $allocation->id }}').select2({
+                data: nestsData,
+                placeholder: 'Select nests...',
+                allowClear: true,
+            }).val([{{ implode(',', $allowedNests) }}]).trigger('change');
+            
+            $('#modalEggs{{ $allocation->id }}').select2({
+                data: eggsData,
+                placeholder: 'Select eggs...',
+                allowClear: true,
+            }).val([{{ implode(',', $allowedEggs) }}]).trigger('change');
+            
+            // Show/hide restriction fields based on restriction type
+            $('input[name="restriction_type"]', this).on('change', function() {
+                var restrictionType = $(this).val();
+                if (restrictionType === 'none') {
+                    $('#modalNestsGroup{{ $allocation->id }}').slideUp();
+                    $('#modalEggsGroup{{ $allocation->id }}').slideUp();
+                    $('#modalNests{{ $allocation->id }}').val(null).trigger('change');
+                    $('#modalEggs{{ $allocation->id }}').val(null).trigger('change');
+                } else {
+                    $('#modalNestsGroup{{ $allocation->id }}').slideDown();
+                    $('#modalEggsGroup{{ $allocation->id }}').slideDown();
+                }
+            });
+        });
+    });
+    </script>
 @endforeach
 @endsection
 
@@ -277,6 +374,56 @@
         tags: true,
         selectOnClose: true,
         tokenSeparators: [',', ' '],
+    });
+
+    // Initialize restriction nests select2 with all nests
+    @if(isset($nests))
+    var nestsData = [
+        @foreach($nests as $nest)
+        {
+            id: {{ $nest->id }},
+            text: '{{ $nest->name }}',
+            nest: true
+        },
+        @endforeach
+    ];
+    $('#pRestrictionNests').select2({
+        data: nestsData,
+        placeholder: 'Select nests...',
+        allowClear: true,
+    });
+
+    // Initialize restriction eggs select2 with all eggs grouped by nest
+    var eggsData = [
+        @foreach($nests as $nest)
+            @foreach($nest->eggs as $egg)
+            {
+                id: {{ $egg->id }},
+                text: '{{ $nest->name }} - {{ $egg->name }}',
+                egg: true
+            },
+            @endforeach
+        @endforeach
+    ];
+    $('#pRestrictionEggs').select2({
+        data: eggsData,
+        placeholder: 'Select eggs...',
+        allowClear: true,
+    });
+    @endif
+
+    // Show/hide restriction fields based on restriction type
+    $('input[name="restriction_type"]').on('change', function() {
+        var restrictionType = $(this).val();
+        if (restrictionType === 'none') {
+            $('#restrictionNestsGroup').slideUp();
+            $('#restrictionEggsGroup').slideUp();
+            $('#pRestrictionNests').val(null).trigger('change');
+            $('#pRestrictionEggs').val(null).trigger('change');
+        } else {
+            $('#restrictionNestsGroup').slideDown();
+            $('#restrictionEggsGroup').slideDown();
+        }
     });
 
     $('button[data-action="deallocate"]').click(function (event) {

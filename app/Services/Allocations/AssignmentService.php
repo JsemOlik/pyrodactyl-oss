@@ -4,6 +4,7 @@ namespace Pterodactyl\Services\Allocations;
 
 use IPTools\Network;
 use Pterodactyl\Models\Node;
+use Pterodactyl\Models\Allocation;
 use Illuminate\Database\ConnectionInterface;
 use Pterodactyl\Exceptions\DisplayException;
 use Pterodactyl\Contracts\Repository\AllocationRepositoryInterface;
@@ -64,7 +65,13 @@ class AssignmentService
             throw new DisplayException("Could not parse provided allocation IP address ({$underlying}): {$exception->getMessage()}", $exception);
         }
 
+        $restrictionType = $data['restriction_type'] ?? 'none';
+        $restrictionNests = $data['restriction_nests'] ?? [];
+        $restrictionEggs = $data['restriction_eggs'] ?? [];
+
         $this->connection->beginTransaction();
+        $allocationKeys = [];
+        
         foreach ($parsed as $ip) {
             foreach ($data['allocation_ports'] as $port) {
                 if (!is_digit($port) && !preg_match(self::PORT_RANGE_REGEX, $port)) {
@@ -97,6 +104,14 @@ class AssignmentService
                             'port' => (int) $unit,
                             'ip_alias' => array_get($data, 'allocation_alias'),
                             'server_id' => null,
+                            'restriction_type' => $restrictionType,
+                        ];
+                        
+                        // Store keys to query later
+                        $allocationKeys[] = [
+                            'node_id' => $node->id,
+                            'ip' => $ipString,
+                            'port' => (int) $unit,
                         ];
                     }
                 } else {
@@ -117,10 +132,52 @@ class AssignmentService
                         'port' => (int) $port,
                         'ip_alias' => array_get($data, 'allocation_alias'),
                         'server_id' => null,
+                        'restriction_type' => $restrictionType,
+                    ];
+                    
+                    // Store keys to query later
+                    $allocationKeys[] = [
+                        'node_id' => $node->id,
+                        'ip' => $ipString,
+                        'port' => (int) $port,
                     ];
                 }
 
                 $this->repository->insertIgnore($insertData);
+            }
+        }
+
+        // Apply restrictions to all created allocations if restriction_type is set
+        if ($restrictionType !== 'none' && !empty($allocationKeys)) {
+            // Query all allocations we just created/updated (insertIgnore may have skipped some)
+            $allocations = Allocation::query()
+                ->where(function ($query) use ($allocationKeys) {
+                    foreach ($allocationKeys as $key) {
+                        $query->orWhere(function ($q) use ($key) {
+                            $q->where('node_id', $key['node_id'])
+                                ->where('ip', $key['ip'])
+                                ->where('port', $key['port']);
+                        });
+                    }
+                })
+                ->get();
+            
+            foreach ($allocations as $allocation) {
+                // Update restriction type in case it was changed
+                $allocation->update(['restriction_type' => $restrictionType]);
+                
+                // Sync nests and eggs (works for both whitelist and blacklist)
+                if (!empty($restrictionNests)) {
+                    $allocation->allowedNests()->sync($restrictionNests);
+                } else {
+                    $allocation->allowedNests()->sync([]);
+                }
+                
+                if (!empty($restrictionEggs)) {
+                    $allocation->allowedEggs()->sync($restrictionEggs);
+                } else {
+                    $allocation->allowedEggs()->sync([]);
+                }
             }
         }
 

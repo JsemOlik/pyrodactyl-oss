@@ -67,18 +67,35 @@ class FindAssignableAllocationService
         // Apply nest/egg restrictions if the server has them
         if ($server->nest_id && $server->egg_id) {
             $query->where(function ($q) use ($server) {
-                // No nest restrictions OR nest is allowed
+                // Handle restriction_type: none, whitelist, blacklist
                 $q->where(function ($nestQuery) use ($server) {
-                    $nestQuery->whereDoesntHave('allowedNests')
-                        ->orWhereHas('allowedNests', function ($q) use ($server) {
-                            $q->where('nests.id', $server->nest_id);
+                    $nestQuery->where('restriction_type', 'none')
+                        ->orWhere(function ($q) use ($server) {
+                            $q->where('restriction_type', 'whitelist')
+                                ->whereHas('allowedNests', function ($subQ) use ($server) {
+                                    $subQ->where('nests.id', $server->nest_id);
+                                });
+                        })
+                        ->orWhere(function ($q) use ($server) {
+                            $q->where('restriction_type', 'blacklist')
+                                ->whereDoesntHave('allowedNests', function ($subQ) use ($server) {
+                                    $subQ->where('nests.id', $server->nest_id);
+                                });
                         });
                 })
-                // AND no egg restrictions OR egg is allowed
                 ->where(function ($eggQuery) use ($server) {
-                    $eggQuery->whereDoesntHave('allowedEggs')
-                        ->orWhereHas('allowedEggs', function ($q) use ($server) {
-                            $q->where('eggs.id', $server->egg_id);
+                    $eggQuery->where('restriction_type', 'none')
+                        ->orWhere(function ($q) use ($server) {
+                            $q->where('restriction_type', 'whitelist')
+                                ->whereHas('allowedEggs', function ($subQ) use ($server) {
+                                    $subQ->where('eggs.id', $server->egg_id);
+                                });
+                        })
+                        ->orWhere(function ($q) use ($server) {
+                            $q->where('restriction_type', 'blacklist')
+                                ->whereDoesntHave('allowedEggs', function ($subQ) use ($server) {
+                                    $subQ->where('eggs.id', $server->egg_id);
+                                });
                         });
                 });
             });

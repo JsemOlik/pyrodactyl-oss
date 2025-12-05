@@ -157,14 +157,22 @@ class NodesController extends Controller
      */
     public function allocationSetRestrictions(Request $request, Node $node, Allocation $allocation): RedirectResponse
     {
+        $restrictionType = $request->input('restriction_type', 'none');
         $nests = $request->input('nests', []);
         $eggs = $request->input('eggs', []);
 
-        // Sync the allowed nests
-        $allocation->allowedNests()->sync($nests);
+        // Update restriction type
+        $allocation->update(['restriction_type' => $restrictionType]);
 
-        // Sync the allowed eggs
-        $allocation->allowedEggs()->sync($eggs);
+        if ($restrictionType === 'none') {
+            // Clear all restrictions
+            $allocation->allowedNests()->sync([]);
+            $allocation->allowedEggs()->sync([]);
+        } else {
+            // Sync the restricted nests and eggs
+            $allocation->allowedNests()->sync($nests);
+            $allocation->allowedEggs()->sync($eggs);
+        }
 
         $this->alert->success('Allocation restrictions updated successfully.')->flash();
 

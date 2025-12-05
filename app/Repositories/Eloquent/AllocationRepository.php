@@ -85,26 +85,49 @@ class AllocationRepository extends EloquentRepository implements AllocationRepos
         // Filter by nest/egg restrictions if provided
         if ($nestId !== null || $eggId !== null) {
             $query->where(function (Builder $inner) use ($nestId, $eggId) {
-                // An allocation is allowed if:
-                // 1. It has no nest restrictions OR it's in the allowed nests list
-                // 2. AND it has no egg restrictions OR it's in the allowed eggs list
+                // An allocation is allowed based on restriction_type:
+                // - 'none': No restrictions, always allowed
+                // - 'whitelist': Only allowed if nest/egg is in the list
+                // - 'blacklist': Only allowed if nest/egg is NOT in the list
                 
                 if ($nestId !== null) {
                     $inner->where(function (Builder $nestQuery) use ($nestId) {
-                        // No nest restrictions OR nest is allowed
-                        $nestQuery->whereDoesntHave('allowedNests')
-                            ->orWhereHas('allowedNests', function (Builder $q) use ($nestId) {
-                                $q->where('nests.id', $nestId);
+                        // No restrictions
+                        $nestQuery->where('restriction_type', 'none')
+                            // OR whitelist and in list
+                            ->orWhere(function (Builder $q) use ($nestId) {
+                                $q->where('restriction_type', 'whitelist')
+                                    ->whereHas('allowedNests', function (Builder $subQ) use ($nestId) {
+                                        $subQ->where('nests.id', $nestId);
+                                    });
+                            })
+                            // OR blacklist and not in list
+                            ->orWhere(function (Builder $q) use ($nestId) {
+                                $q->where('restriction_type', 'blacklist')
+                                    ->whereDoesntHave('allowedNests', function (Builder $subQ) use ($nestId) {
+                                        $subQ->where('nests.id', $nestId);
+                                    });
                             });
                     });
                 }
 
                 if ($eggId !== null) {
                     $inner->where(function (Builder $eggQuery) use ($eggId) {
-                        // No egg restrictions OR egg is allowed
-                        $eggQuery->whereDoesntHave('allowedEggs')
-                            ->orWhereHas('allowedEggs', function (Builder $q) use ($eggId) {
-                                $q->where('eggs.id', $eggId);
+                        // No restrictions
+                        $eggQuery->where('restriction_type', 'none')
+                            // OR whitelist and in list
+                            ->orWhere(function (Builder $q) use ($eggId) {
+                                $q->where('restriction_type', 'whitelist')
+                                    ->whereHas('allowedEggs', function (Builder $subQ) use ($eggId) {
+                                        $subQ->where('eggs.id', $eggId);
+                                    });
+                            })
+                            // OR blacklist and not in list
+                            ->orWhere(function (Builder $q) use ($eggId) {
+                                $q->where('restriction_type', 'blacklist')
+                                    ->whereDoesntHave('allowedEggs', function (Builder $subQ) use ($eggId) {
+                                        $subQ->where('eggs.id', $eggId);
+                                    });
                             });
                     });
                 }

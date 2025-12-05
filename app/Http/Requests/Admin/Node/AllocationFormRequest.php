@@ -12,6 +12,11 @@ class AllocationFormRequest extends AdminFormRequest
             'allocation_ip' => 'required|string',
             'allocation_alias' => 'sometimes|nullable|string|max:191',
             'allocation_ports' => 'required|array',
+            'restriction_type' => 'sometimes|in:none,whitelist,blacklist',
+            'restriction_nests' => 'sometimes|nullable|array',
+            'restriction_nests.*' => 'integer|exists:nests,id',
+            'restriction_eggs' => 'sometimes|nullable|array',
+            'restriction_eggs.*' => 'integer|exists:eggs,id',
         ];
     }
 }

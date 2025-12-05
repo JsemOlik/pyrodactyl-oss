@@ -68,6 +68,7 @@ class Allocation extends Model
         'node_id' => 'integer',
         'port' => 'integer',
         'server_id' => 'integer',
+        'restriction_type' => 'string',
     ];
 
     public static array $validationRules = [
@@ -149,40 +150,74 @@ class Allocation extends Model
 
     /**
      * Checks if this allocation is allowed for a specific nest.
-     * Returns true if no restrictions are set (empty allowed_nests), or if the nest is in the allowed list.
+     * Returns true if no restrictions are set (empty allowed_nests), or if the nest matches the restriction type.
      */
     public function isAllowedForNest(int $nestId): bool
     {
+        $restrictionType = $this->restriction_type ?? 'none';
+        
+        if ($restrictionType === 'none') {
+            return true;
+        }
+
         if (!$this->relationLoaded('allowedNests')) {
             $this->load('allowedNests');
         }
 
-        $allowedNests = $this->allowedNests;
-        if ($allowedNests->isEmpty()) {
-            // No restrictions means all nests are allowed
+        $restrictedNests = $this->allowedNests;
+        if ($restrictedNests->isEmpty()) {
+            // No specific nest restrictions, check if we're in whitelist or blacklist mode
+            if ($restrictionType === 'whitelist') {
+                // Whitelist with no entries = nothing allowed (shouldn't happen but be safe)
+                return false;
+            }
+            // Blacklist with no entries = everything allowed
             return true;
         }
 
-        return $allowedNests->contains('id', $nestId);
+        $isInList = $restrictedNests->contains('id', $nestId);
+        
+        if ($restrictionType === 'whitelist') {
+            return $isInList; // Only allowed if in whitelist
+        } else { // blacklist
+            return !$isInList; // Not allowed if in blacklist
+        }
     }
 
     /**
      * Checks if this allocation is allowed for a specific egg.
-     * Returns true if no restrictions are set (empty allowed_eggs), or if the egg is in the allowed list.
+     * Returns true if no restrictions are set (empty allowed_eggs), or if the egg matches the restriction type.
      */
     public function isAllowedForEgg(int $eggId): bool
     {
+        $restrictionType = $this->restriction_type ?? 'none';
+        
+        if ($restrictionType === 'none') {
+            return true;
+        }
+
         if (!$this->relationLoaded('allowedEggs')) {
             $this->load('allowedEggs');
         }
 
-        $allowedEggs = $this->allowedEggs;
-        if ($allowedEggs->isEmpty()) {
-            // No restrictions means all eggs are allowed
+        $restrictedEggs = $this->allowedEggs;
+        if ($restrictedEggs->isEmpty()) {
+            // No specific egg restrictions, check if we're in whitelist or blacklist mode
+            if ($restrictionType === 'whitelist') {
+                // Whitelist with no entries = nothing allowed (shouldn't happen but be safe)
+                return false;
+            }
+            // Blacklist with no entries = everything allowed
             return true;
         }
 
-        return $allowedEggs->contains('id', $eggId);
+        $isInList = $restrictedEggs->contains('id', $eggId);
+        
+        if ($restrictionType === 'whitelist') {
+            return $isInList; // Only allowed if in whitelist
+        } else { // blacklist
+            return !$isInList; // Not allowed if in blacklist
+        }
     }
 
     /**
