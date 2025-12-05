@@ -37,6 +37,7 @@ Route::prefix('/nests')->group(function () {
 Route::prefix('/hosting')->group(function () {
     Route::post('/checkout', [Client\Hosting\CheckoutController::class, 'store']);
     Route::get('/verify-payment', [Client\Hosting\PaymentVerificationController::class, 'check']);
+    Route::get('/vps-distributions', [Client\Hosting\VpsDistributionController::class, 'index']);
 });
 
 Route::prefix('/billing')->group(function () {

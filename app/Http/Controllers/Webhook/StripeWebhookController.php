@@ -10,11 +10,13 @@ use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Services\Hosting\ServerProvisioningService;
+use Pterodactyl\Services\Hosting\VpsProvisioningService;
 
 class StripeWebhookController extends Controller
 {
     public function __construct(
-        private ServerProvisioningService $provisioningService
+        private ServerProvisioningService $serverProvisioningService,
+        private VpsProvisioningService $vpsProvisioningService
     ) {
         Stripe::setApiKey(config('cashier.secret'));
     }
@@ -137,17 +139,29 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        // Provision the server
+        // Determine provisioning type from metadata
+        $type = $metadata['type'] ?? 'game-server';
+        
+        // Provision the server or VPS based on type
         try {
-            $this->provisioningService->provisionServer($session);
-            Log::info('Server provisioned successfully', [
-                'session_id' => $session->id,
-                'user_id' => $metadata['user_id'],
-            ]);
+            if ($type === 'vps') {
+                $this->vpsProvisioningService->provisionVps($session);
+                Log::info('VPS provisioned successfully', [
+                    'session_id' => $session->id,
+                    'user_id' => $metadata['user_id'],
+                ]);
+            } else {
+                $this->serverProvisioningService->provisionServer($session);
+                Log::info('Server provisioned successfully', [
+                    'session_id' => $session->id,
+                    'user_id' => $metadata['user_id'],
+                ]);
+            }
         } catch (\Exception $e) {
-            Log::error('Failed to provision server from webhook', [
+            Log::error('Failed to provision from webhook', [
                 'session_id' => $session->id,
                 'user_id' => $metadata['user_id'],
+                'type' => $type,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -211,21 +225,33 @@ class StripeWebhookController extends Controller
             'has_egg_id' => !empty($metadata['egg_id']),
         ]);
 
-        // Check if we have the required metadata to provision a server
-        if (empty($metadata['user_id']) || empty($metadata['nest_id']) || empty($metadata['egg_id'])) {
-            Log::error('Cannot provision server: missing required metadata in subscription and checkout session', [
-                'subscription_id' => $subscription->id,
-                'metadata' => $metadata,
-            ]);
-            return;
+        // Determine provisioning type from metadata
+        $type = $metadata['type'] ?? 'game-server';
+        
+        // Check required metadata based on type
+        if ($type === 'vps') {
+            if (empty($metadata['user_id']) || empty($metadata['server_name'])) {
+                Log::error('Cannot provision VPS: missing required metadata in subscription and checkout session', [
+                    'subscription_id' => $subscription->id,
+                    'metadata' => $metadata,
+                ]);
+                return;
+            }
+        } else {
+            if (empty($metadata['user_id']) || empty($metadata['nest_id']) || empty($metadata['egg_id'])) {
+                Log::error('Cannot provision server: missing required metadata in subscription and checkout session', [
+                    'subscription_id' => $subscription->id,
+                    'metadata' => $metadata,
+                ]);
+                return;
+            }
         }
 
-        // Provision server using subscription metadata
-        Log::info('Attempting to provision server using subscription metadata', [
+        // Provision server or VPS using subscription metadata
+        Log::info('Attempting to provision using subscription metadata', [
             'subscription_id' => $subscription->id,
             'user_id' => $metadata['user_id'],
-            'nest_id' => $metadata['nest_id'],
-            'egg_id' => $metadata['egg_id'],
+            'type' => $type,
         ]);
 
         try {
@@ -238,15 +264,24 @@ class StripeWebhookController extends Controller
                 'metadata' => $metadata,
             ];
 
-            $this->provisioningService->provisionServer($mockSession);
-            Log::info('Server provisioned successfully from subscription metadata', [
-                'subscription_id' => $subscription->id,
-                'user_id' => $metadata['user_id'],
-            ]);
+            if ($type === 'vps') {
+                $this->vpsProvisioningService->provisionVps($mockSession);
+                Log::info('VPS provisioned successfully from subscription metadata', [
+                    'subscription_id' => $subscription->id,
+                    'user_id' => $metadata['user_id'],
+                ]);
+            } else {
+                $this->serverProvisioningService->provisionServer($mockSession);
+                Log::info('Server provisioned successfully from subscription metadata', [
+                    'subscription_id' => $subscription->id,
+                    'user_id' => $metadata['user_id'],
+                ]);
+            }
         } catch (\Exception $e) {
-            Log::error('Failed to provision server from subscription metadata', [
+            Log::error('Failed to provision from subscription metadata', [
                 'subscription_id' => $subscription->id,
                 'user_id' => $metadata['user_id'] ?? null,
+                'type' => $type,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
