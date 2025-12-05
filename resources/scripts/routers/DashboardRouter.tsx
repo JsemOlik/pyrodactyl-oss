@@ -7,7 +7,6 @@ import routes from '@/routers/routes';
 
 import BillingContainer from '@/components/dashboard/BillingContainer';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
-import VpsContainer from '@/components/vps/VpsContainer';
 import SupportContainer from '@/components/dashboard/SupportContainer';
 import {
     DropdownMenu,
@@ -22,6 +21,7 @@ import { DashboardMobileMenu } from '@/components/elements/MobileFullScreenMenu'
 import MobileTopBar from '@/components/elements/MobileTopBar';
 import Logo from '@/components/elements/PyroLogo';
 import { NotFound } from '@/components/elements/ScreenBlock';
+import VpsContainer from '@/components/vps/VpsContainer';
 
 import http from '@/api/http';
 
@@ -161,10 +161,11 @@ const DashboardRouter = () => {
                             <House width={22} height={22} fill='currentColor' />
                             <p>Your Servers</p>
                         </NavLink>
+                        {/* NOT FINISHED YET
                         <NavLink to={'/vps-servers'} end className='flex flex-row items-center'>
                             <House width={22} height={22} fill='currentColor' />
                             <p>Your VPS Servers</p>
-                        </NavLink>
+                        </NavLink> */}
                         <NavLink to={'/account/api'} end className='flex flex-row items-center' ref={NavigationApi}>
                             <Lock width={22} height={22} fill='currentColor' />
                             <p>API Keys</p>
