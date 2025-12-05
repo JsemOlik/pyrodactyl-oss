@@ -177,8 +177,7 @@
 @section('footer-scripts')
   @parent
   <script>
-    $(document).ready(function () {
-      // Draw circular progress bars
+    (function() {
       function drawCircularProgress() {
         $('.circular-progress').each(function() {
           const $this = $(this);
@@ -190,50 +189,66 @@
           const circumference = 2 * Math.PI * radius;
           const offset = circumference - (percent / 100) * circumference;
 
-          // Create SVG if it doesn't exist
-          if ($this.find('svg').length === 0) {
-            const svg = $('<svg>')
-              .attr('width', size)
-              .attr('height', size)
-              .attr('class', 'progress-ring');
-            
-            const circleBg = $('<circle>')
-              .attr('cx', size / 2)
-              .attr('cy', size / 2)
-              .attr('r', radius)
-              .attr('fill', 'transparent')
-              .attr('stroke', '#555')
-              .attr('stroke-width', strokeWidth);
-            
-            const circle = $('<circle>')
-              .attr('cx', size / 2)
-              .attr('cy', size / 2)
-              .attr('r', radius)
-              .attr('fill', 'transparent')
-              .attr('stroke', color)
-              .attr('stroke-width', strokeWidth)
-              .attr('stroke-dasharray', circumference)
-              .attr('stroke-dashoffset', circumference)
-              .attr('stroke-linecap', 'round')
-              .attr('transform', 'rotate(-90 ' + (size / 2) + ' ' + (size / 2) + ')')
-              .attr('class', 'progress-ring-circle');
-            
-            svg.append(circleBg).append(circle);
-            $this.prepend(svg);
-          }
+          // Remove existing SVG if any
+          $this.find('svg').remove();
+
+          // Create SVG
+          const svg = $('<svg>')
+            .attr('width', size)
+            .attr('height', size)
+            .attr('class', 'progress-ring');
+          
+          const circleBg = $('<circle>')
+            .attr('cx', size / 2)
+            .attr('cy', size / 2)
+            .attr('r', radius)
+            .attr('fill', 'transparent')
+            .attr('stroke', '#555')
+            .attr('stroke-width', strokeWidth);
+          
+          const circle = $('<circle>')
+            .attr('cx', size / 2)
+            .attr('cy', size / 2)
+            .attr('r', radius)
+            .attr('fill', 'transparent')
+            .attr('stroke', color)
+            .attr('stroke-width', strokeWidth)
+            .attr('stroke-dasharray', circumference)
+            .attr('stroke-dashoffset', circumference)
+            .attr('stroke-linecap', 'round')
+            .attr('transform', 'rotate(-90 ' + (size / 2) + ' ' + (size / 2) + ')')
+            .attr('class', 'progress-ring-circle');
+          
+          svg.append(circleBg).append(circle);
+          $this.prepend(svg);
 
           // Animate the progress
-          const $circle = $this.find('.progress-ring-circle');
-          $circle.css({
-            'stroke-dashoffset': offset,
-            'transition': 'stroke-dashoffset 0.5s ease-in-out'
-          });
+          setTimeout(function() {
+            const $circle = $this.find('.progress-ring-circle');
+            $circle.css({
+              'stroke-dashoffset': offset,
+              'transition': 'stroke-dashoffset 0.5s ease-in-out'
+            });
+          }, 100);
         });
       }
 
-      // Draw progress bars on page load
-      drawCircularProgress();
-    });
+      // Wait for jQuery and DOM to be ready
+      if (typeof jQuery !== 'undefined') {
+        $(document).ready(function() {
+          drawCircularProgress();
+        });
+      } else {
+        // Fallback if jQuery loads later
+        window.addEventListener('load', function() {
+          if (typeof jQuery !== 'undefined') {
+            $(document).ready(function() {
+              drawCircularProgress();
+            });
+          }
+        });
+      }
+    })();
   </script>
 
   <style>
@@ -242,10 +257,19 @@
       display: inline-block;
       width: 120px;
       height: 120px;
+      margin: 0 auto;
     }
 
     .circular-progress .progress-ring {
-      transform: rotate(-90deg);
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .circular-progress svg {
+      display: block;
+      width: 100%;
+      height: 100%;
     }
 
     .circular-progress .progress-value {
@@ -256,6 +280,9 @@
       font-size: 24px;
       font-weight: bold;
       color: #fff;
+      z-index: 10;
+      width: 100%;
+      text-align: center;
     }
 
     .circular-progress p {
