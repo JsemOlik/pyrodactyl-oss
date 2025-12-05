@@ -48,6 +48,14 @@ Route::prefix('/billing')->group(function () {
     Route::get('/invoices', [Client\Billing\InvoiceController::class, 'index']);
 });
 
+Route::prefix('/vps-servers')->group(function () {
+    Route::get('/', [Client\Vps\VpsController::class, 'index']);
+    Route::get('/{vps}', [Client\Vps\VpsController::class, 'view']);
+    Route::post('/{vps}/power', [Client\Vps\VpsPowerController::class, 'send']);
+    Route::get('/{vps}/metrics', [Client\Vps\VpsMetricsController::class, 'index']);
+    Route::get('/{vps}/activity', [Client\Vps\VpsActivityController::class, '__invoke']);
+});
+
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {
     Route::prefix('/')->withoutMiddleware(RequireTwoFactorAuthentication::class)->group(function () {
         Route::get('/', [Client\AccountController::class, 'index'])->name('api:client.account');
