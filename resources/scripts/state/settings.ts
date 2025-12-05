@@ -4,6 +4,7 @@ export interface SiteSettings {
     name: string;
     locale: string;
     timezone: string;
+    logoUrl?: string | null;
 }
 
 export interface SettingsStore {

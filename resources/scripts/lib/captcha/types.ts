@@ -8,6 +8,7 @@ declare global {
                 siteKey: string;
                 scriptIncludes: string[];
             };
+            logoUrl?: string | null;
         };
         turnstile?: {
             render: (container: string | HTMLElement, params: any) => string;

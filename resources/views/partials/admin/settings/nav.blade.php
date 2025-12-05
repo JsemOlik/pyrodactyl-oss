@@ -10,6 +10,7 @@
                     <li @if($activeTab === 'mail')class="active"@endif><a href="{{ route('admin.settings.mail') }}">Mail</a></li>
                     <li @if($activeTab === 'captcha')class="active"@endif><a href="{{ route('admin.settings.captcha') }}">Captcha</a></li>
                     <li @if($activeTab === 'domains')class="active"@endif><a href="{{ route('admin.settings.domains.index') }}">Domains</a></li>
+                    <li @if($activeTab === 'proxmox')class="active"@endif><a href="{{ route('admin.settings.proxmox') }}">Proxmox</a></li>
                     <li @if($activeTab === 'advanced')class="active"@endif><a href="{{ route('admin.settings.advanced') }}">Advanced</a></li>
                 </ul>
             </div>
