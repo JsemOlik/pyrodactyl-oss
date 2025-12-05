@@ -37,24 +37,37 @@ const PlayersContainer = () => {
         // Format: "default: ookmot, tms911" or "world: player1, player2"
         // The line typically comes after "players online" message
         for (const line of lines) {
-            // Remove ANSI color codes and timestamps like [22:07:44 INFO]:
+            // Remove ANSI color codes and timestamps like [22:31:23 INFO]:
             const cleanLine = line
                 .replace(/\[.*?\]/g, '') // Remove timestamps
                 .replace(/\u001b\[[0-9;]*m/g, '') // Remove ANSI codes
                 .trim();
 
-            // Match pattern like "default: player1, player2" or "world: player1, player2"
-            // Also handle cases where it's just "player1, player2" without world prefix
-            const playerLineMatch =
-                cleanLine.match(/(?:default|world|.*?):\s*([a-zA-Z0-9_]+(?:\s*,\s*[a-zA-Z0-9_]+)*)/i) ||
-                cleanLine.match(/^([a-zA-Z0-9_]+(?:\s*,\s*[a-zA-Z0-9_]+)*)$/);
+            // Only match lines that have a world prefix followed by a colon and player names
+            // This ensures we don't match the command "list" or other unrelated lines
+            // Pattern: "default: player1, player2" or "world: player1, player2"
+            const playerLineMatch = cleanLine.match(
+                /^(?:default|world|.*?):\s*([a-zA-Z0-9_]+(?:\s*,\s*[a-zA-Z0-9_]+)+)$/i,
+            );
 
             if (playerLineMatch) {
-                const playerNamesStr = playerLineMatch[1] || playerLineMatch[0];
+                const playerNamesStr = playerLineMatch[1];
                 const playerNames = playerNamesStr
                     .split(',')
                     .map((name) => name.trim())
-                    .filter((name) => name.length > 0 && !name.toLowerCase().includes('players online'));
+                    .filter((name) => {
+                        // Filter out invalid names
+                        const lowerName = name.toLowerCase();
+                        return (
+                            name.length > 0 &&
+                            name.length <= 16 && // Minecraft usernames are max 16 chars
+                            !lowerName.includes('players online') &&
+                            !lowerName.includes('issued server command') &&
+                            !lowerName.includes('list') &&
+                            !lowerName.includes('online') &&
+                            !lowerName.includes('maximum')
+                        );
+                    });
 
                 playerNames.forEach((name) => {
                     if (name.length > 0) {
