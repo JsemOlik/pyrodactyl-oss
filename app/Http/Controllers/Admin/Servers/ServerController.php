@@ -113,6 +113,9 @@ class ServerController extends Controller
                     ->whereNotNull('ends_at')
                     ->where('ends_at', '>', now());
             });
+        } elseif ($filterType === 'limbo') {
+            // Placeholder filter - doesn't filter anything for now
+            // This will be implemented later
         }
         
         $servers = QueryBuilder::for($baseQuery)

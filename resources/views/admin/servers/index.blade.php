@@ -61,6 +61,15 @@
                     <a href="{{ route('admin.servers', ['filter_type' => 'pending_cancellation']) }}" class="small-box-footer" style="color: white !important;">Filter <i class="fa fa-arrow-circle-right"></i></a>
                 </div>
             </div>
+            <div class="col-lg-3 col-xs-6">
+                <div class="small-box {{ request()->input('filter_type') === 'limbo' ? 'active' : '' }}" style="background-color: #9c27b0;">
+                    <div class="inner">
+                        <h3 style="color: white;">-</h3>
+                        <p style="color: white;">Limbo</p>
+                    </div>
+                    <a href="{{ route('admin.servers', ['filter_type' => 'limbo']) }}" class="small-box-footer" style="color: white !important;">Filter <i class="fa fa-arrow-circle-right"></i></a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
