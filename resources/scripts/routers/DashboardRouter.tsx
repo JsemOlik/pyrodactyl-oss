@@ -160,6 +160,10 @@ const DashboardRouter = () => {
                             <House width={22} height={22} fill='currentColor' />
                             <p>Your Servers</p>
                         </NavLink>
+                        <NavLink to={'/vps-servers'} end className='flex flex-row items-center'>
+                            <House width={22} height={22} fill='currentColor' />
+                            <p>Your VPS Servers</p>
+                        </NavLink>
                         <NavLink to={'/account/api'} end className='flex flex-row items-center' ref={NavigationApi}>
                             <Lock width={22} height={22} fill='currentColor' />
                             <p>API Keys</p>
@@ -212,6 +216,9 @@ const DashboardRouter = () => {
                                 <Route path='/billing' element={<BillingContainer />} />
 
                                 <Route path='/support' element={<SupportContainer />} />
+
+                                {/* VPS Servers route - will be handled by VpsContainer in Phase 8 */}
+                                <Route path='/vps-servers' element={<DashboardContainer />} />
 
                                 <Route path='*' element={<NotFound />} />
                             </Routes>
