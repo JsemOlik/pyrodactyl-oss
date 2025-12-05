@@ -67,6 +67,7 @@ class ServerTransformer extends BaseClientTransformer
       'docker_image' => $server->image,
       'egg_features' => $server->egg->inherit_features,
       'egg' => $server->egg->uuid,
+      'nest' => $server->nest_id,
       'feature_limits' => [
         'databases' => $server->database_limit,
         'allocations' => $server->allocation_limit,

@@ -182,8 +182,7 @@ const ServerRouter = () => {
     const getServer = ServerContext.useStoreActions((actions) => actions.server.getServer);
     const clearServerState = ServerContext.useStoreActions((actions) => actions.clearServerState);
     const egg_id = ServerContext.useStoreState((state) => state.server.data?.egg);
-    // Access nest_id from server data - it may not be in TypeScript types but exists in API response
-    const nest_id = (ServerContext.useStoreState((state) => state.server.data) as any)?.nest;
+    const nest_id = ServerContext.useStoreState((state) => state.server.data?.nest);
     const databaseLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.databases);
     const backupLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.backups);
     const allocationLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.allocations);
