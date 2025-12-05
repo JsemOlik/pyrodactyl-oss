@@ -115,7 +115,7 @@ class VpsCreationService
         // Sanitize VM name to be DNS-compatible (Proxmox requirement)
         $vmName = $this->sanitizeVmName($data['name'] ?? 'vps-' . $vmId);
 
-        // Build cloud-init configuration
+        // Build base VM configuration
         $config = [
             'vmid' => $vmId,
             'name' => $vmName,
@@ -125,21 +125,44 @@ class VpsCreationService
             'net0' => 'virtio,bridge=vmbr0,firewall=1',
             'scsi0' => "{$storage}:{$diskGb},format=raw",
             'ide2' => "{$storage}:cloudinit",
-            'boot' => 'order=scsi0',
             'agent' => '1',
             'onboot' => 1,
         ];
 
-        // Add template if provided
+        // Handle template/ISO
         if (!empty($template)) {
-            // Check if template is a storage path or template ID
+            // Check if template contains a colon (storage:path format)
             if (str_contains($template, ':')) {
-                // Template is in format "storage:template-name"
-                $config['scsi0'] = "{$template},format=raw";
+                // Template is in format "storage:path" - use as-is for ISO
+                $templatePath = $template;
+                // Attach to CD-ROM (ide3) - Proxmox will detect if it's an ISO
+                $config['ide3'] = $templatePath . ',media=cdrom';
+                // Boot from ISO first, then disk
+                $config['boot'] = 'order=ide3;scsi0';
             } else {
-                // Assume template is a template ID in the storage
-                $config['scsi0'] = "{$storage}:{$template},format=raw";
+                // Template is just a filename - check if it's an ISO or template
+                if (str_ends_with(strtolower($template), '.iso')) {
+                    // It's an ISO file - attach to CD-ROM (ide3)
+                    // Format depends on storage type:
+                    // - ISO storage type: storage:filename.iso
+                    // - Directory storage with iso subdir: storage:iso/filename.iso
+                    // Try the simpler format first (most common for ISO storage types)
+                    $config['ide3'] = "{$storage}:{$template},media=cdrom";
+                    // Boot from ISO first, then disk
+                    $config['boot'] = 'order=ide3;scsi0';
+                } else {
+                    // It's a template name (not an ISO) - this would require cloning
+                    // For now, we'll create an empty VM and log a warning
+                    Log::warning('Template specified is not an ISO file - creating empty VM', [
+                        'template' => $template,
+                        'vmid' => $vmId,
+                    ]);
+                    $config['boot'] = 'order=scsi0';
+                }
             }
+        } else {
+            // No template - boot from disk
+            $config['boot'] = 'order=scsi0';
         }
 
         return $config;
