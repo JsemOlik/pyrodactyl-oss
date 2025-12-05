@@ -299,9 +299,14 @@
         var modal = $('#restrictionModal' + allocationId);
         var nestsSelect = $('#modalNests' + allocationId);
         var eggsSelect = $('#modalEggs' + allocationId);
-        var initialized = false;
+        var select2Initialized = false;
         
         function initializeSelect2() {
+            // Skip if already initialized
+            if (select2Initialized && nestsSelect.hasClass('select2-hidden-accessible')) {
+                return;
+            }
+            
             // Destroy existing select2 if any
             try {
                 if (nestsSelect.hasClass('select2-hidden-accessible')) {
@@ -335,20 +340,17 @@
             @if(!empty($allowedEggs))
             eggsSelect.val([{{ implode(',', $allowedEggs) }}]).trigger('change');
             @endif
+            
+            select2Initialized = true;
         }
         
-        function toggleRestrictionFields(restrictionType, animate) {
+        function toggleRestrictionFields(restrictionType) {
             var nestsGroup = $('#modalNestsGroup' + allocationId);
             var eggsGroup = $('#modalEggsGroup' + allocationId);
             
             if (restrictionType === 'none') {
-                if (animate) {
-                    nestsGroup.slideUp();
-                    eggsGroup.slideUp();
-                } else {
-                    nestsGroup.hide();
-                    eggsGroup.hide();
-                }
+                nestsGroup.hide();
+                eggsGroup.hide();
                 
                 // Clean up select2 when hiding
                 try {
@@ -359,33 +361,34 @@
                         eggsSelect.select2('destroy');
                     }
                 } catch(e) {}
+                select2Initialized = false;
             } else {
                 // Show immediately (no animation)
                 nestsGroup.show();
                 eggsGroup.show();
                 
-                // Initialize select2 after fields are shown
+                // Initialize select2 immediately when fields are shown
                 setTimeout(function() {
                     initializeSelect2();
-                }, 50);
+                }, 10);
             }
         }
         
-        // Set up radio button change handler - use immediate event binding
-        $(document).on('change', '#restrictionModal' + allocationId + ' input[name="restriction_type"]', function() {
-            var restrictionType = $(this).val();
-            toggleRestrictionFields(restrictionType, false); // false = no animation, show instantly
+        // When modal is shown - attach event handlers and initialize
+        modal.on('show.bs.modal', function() {
+            // Attach change handler directly to radio buttons in this modal
+            modal.find('input[name="restriction_type"]').off('change.modal-restriction').on('change.modal-restriction', function() {
+                var restrictionType = $(this).val();
+                toggleRestrictionFields(restrictionType);
+            });
         });
         
-        // When modal is shown
         modal.on('shown.bs.modal', function() {
             var checkedRadio = modal.find('input[name="restriction_type"]:checked');
             var restrictionType = checkedRadio.length ? checkedRadio.val() : 'none';
             
-            // Show/hide fields based on current selection (no animation on initial load)
-            toggleRestrictionFields(restrictionType, false);
-            
-            initialized = true;
+            // Show/hide fields based on current selection
+            toggleRestrictionFields(restrictionType);
         });
         
         // Cleanup when modal is hidden
@@ -398,7 +401,10 @@
                     eggsSelect.select2('destroy');
                 }
             } catch(e) {}
-            initialized = false;
+            select2Initialized = false;
+            
+            // Remove event handlers
+            modal.find('input[name="restriction_type"]').off('change.modal-restriction');
         });
     })();
     </script>
