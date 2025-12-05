@@ -153,14 +153,14 @@
                             <i class="bi bi-globe"></i> <span>Application API</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.themes') ?: 'active' }}">
-                        <a href="{{ route('admin.themes.index')}}">
-                            <i class="bi bi-palette-fill"></i> <span>Theme</span>
-                        </a>
-                    </li>
                     <li class="{{ !starts_with(Route::currentRouteName(), 'admin.announcements') ?: 'active' }}">
                         <a href="{{ route('admin.announcements.index') }}">
                             <i class="bi bi-megaphone-fill"></i> <span>Announcements</span>
+                        </a>
+                    </li>
+                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.themes') ?: 'active' }}">
+                        <a href="{{ route('admin.themes.index')}}">
+                            <i class="bi bi-palette-fill"></i> <span>Theme</span>
                         </a>
                     </li>
                     <li class="header">MANAGEMENT</li>

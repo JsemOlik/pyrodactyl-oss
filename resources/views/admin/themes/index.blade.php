@@ -37,7 +37,7 @@
               <div class="form-group col-md-6">
                 <label class="control-label">Preview</label>
                 <div>
-                  <div class="preview-box" style="padding: 20px; border: 1px solid #ddd; border-radius: 4px; background: #fff;">
+                  <div class="preview-box" style="padding: 20px; border: 1px solid #444; border-radius: 4px; background: #1a1a1a;">
                     <div style="background: {{ old('theme:primary_color', $primaryColor) }}; color: white; padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 10px;" id="preview-box">
                       Sample Button
                     </div>
@@ -51,8 +51,13 @@
           </div>
           <div class="box-footer">
             {!! csrf_field() !!}
-            <button type="submit" name="_method" value="PATCH"
-              class="btn btn-primary btn-sm btn-outline-primary pull-right">Save</button>
+            <div class="pull-right" style="display: flex; gap: 10px;">
+              <button type="button" class="btn btn-default btn-sm" id="revert-color-btn" title="Revert to default color">
+                <i class="bi bi-arrow-counterclockwise"></i> Revert to Default
+              </button>
+              <button type="submit" name="_method" value="PATCH"
+                class="btn btn-primary btn-sm btn-outline-primary">Save</button>
+            </div>
           </div>
         </div>
 
@@ -107,10 +112,18 @@
       const colorText = document.getElementById('primary-color-text');
       const previewBox = document.getElementById('preview-box');
       const previewText = document.getElementById('preview-text');
+      const revertBtn = document.getElementById('revert-color-btn');
+      const defaultColor = '#fa4e49';
 
       function updatePreview(color) {
         previewBox.style.background = color;
         previewText.style.color = color;
+      }
+
+      function setColor(color) {
+        colorInput.value = color;
+        colorText.value = color;
+        updatePreview(color);
       }
 
       colorInput.addEventListener('input', function() {
@@ -125,6 +138,13 @@
           updatePreview(color);
         }
       });
+
+      // Revert to default color
+      if (revertBtn) {
+        revertBtn.addEventListener('click', function() {
+          setColor(defaultColor);
+        });
+      }
 
       // Initialize preview on load
       updatePreview(colorInput.value);
