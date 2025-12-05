@@ -17,6 +17,7 @@ import StartupContainer from '@/components/server/startup/StartupContainer';
 import CreateUserContainer from '@/components/server/users/CreateUserContainer';
 import EditUserContainer from '@/components/server/users/EditUserContainer';
 import UsersContainer from '@/components/server/users/UsersContainer';
+import PlayersContainer from '@/components/server/players/PlayersContainer';
 
 // Each of the router files is already code split out appropriately — so
 // all the items above will only be loaded in when that router is loaded.
@@ -179,6 +180,13 @@ export default {
             permission: 'activity.*',
             name: 'Activity',
             component: ServerActivityLogContainer,
+        },
+        {
+            route: 'players/*',
+            path: 'players',
+            permission: 'control.console',
+            name: 'Players',
+            component: PlayersContainer,
         },
     ],
 } as Routes;

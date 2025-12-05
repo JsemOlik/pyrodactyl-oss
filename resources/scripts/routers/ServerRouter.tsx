@@ -11,6 +11,7 @@ import {
     Gear,
     House,
     PencilToLine,
+    Person,
     Persons,
     Terminal,
 } from '@gravity-ui/icons';
@@ -181,6 +182,8 @@ const ServerRouter = () => {
     const getServer = ServerContext.useStoreActions((actions) => actions.server.getServer);
     const clearServerState = ServerContext.useStoreActions((actions) => actions.clearServerState);
     const egg_id = ServerContext.useStoreState((state) => state.server.data?.egg);
+    // Access nest_id from server data - it may not be in TypeScript types but exists in API response
+    const nest_id = (ServerContext.useStoreState((state) => state.server.data) as any)?.nest;
     const databaseLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.databases);
     const backupLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.backups);
     const allocationLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.allocations);
@@ -272,6 +275,7 @@ const ServerRouter = () => {
     const NavigationActivity = useRef(null);
     const NavigationMod = useRef(null);
     const NavigationShell = useRef(null);
+    const NavigationPlayers = useRef(null);
 
     const calculateTop = (pathname: string) => {
         if (!id) return '0';
@@ -289,6 +293,7 @@ const ServerRouter = () => {
         const ButtonShell = NavigationShell.current;
         const ButtonActivity = NavigationActivity.current;
         const ButtonMod = NavigationMod.current;
+        const ButtonPlayers = NavigationPlayers.current;
 
         // Perfectly center the page highlighter with simple math.
         // Height of navigation links (56) minus highlight height (40) equals 16. 16 devided by 2 is 8.
@@ -322,6 +327,8 @@ const ServerRouter = () => {
             return (ButtonActivity as any).offsetTop + HighlightOffset;
         if (pathname.endsWith(`/server/${id}/mods`) && ButtonMod != null)
             return (ButtonMod as any).offsetTop + HighlightOffset;
+        if (pathname.endsWith(`/server/${id}/players`) && ButtonPlayers != null)
+            return (ButtonPlayers as any).offsetTop + HighlightOffset;
 
         return '0';
     };
@@ -523,6 +530,19 @@ const ServerRouter = () => {
                                         <p>Software</p>
                                     </NavLink>
                                 </Can>
+                                {nest_id === 1 && (
+                                    <Can action={'control.console'}>
+                                        <NavLink
+                                            className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
+                                            ref={NavigationPlayers}
+                                            to={`/server/${id}/players`}
+                                            end
+                                        >
+                                            <Person width={22} height={22} fill='currentColor' />
+                                            <p>Players</p>
+                                        </NavLink>
+                                    </Can>
+                                )}
                             </ul>
                             <div className='shrink-0'>
                                 <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-full'></div>
