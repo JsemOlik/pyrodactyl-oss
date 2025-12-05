@@ -143,13 +143,19 @@ class VpsCreationService
                 // Template is just a filename - check if it's an ISO or template
                 if (str_ends_with(strtolower($template), '.iso')) {
                     // It's an ISO file - attach to CD-ROM (ide3)
-                    // Format depends on storage type:
-                    // - ISO storage type: storage:filename.iso
-                    // - Directory storage with iso subdir: storage:iso/filename.iso
-                    // Try the simpler format first (most common for ISO storage types)
-                    $config['ide3'] = "{$storage}:{$template},media=cdrom";
+                    // For directory storage, ISOs are typically in an 'iso' subdirectory
+                    // Format: storage:iso/filename.iso
+                    // This is the most common format for Proxmox directory storage
+                    $config['ide3'] = "{$storage}:iso/{$template},media=cdrom";
                     // Boot from ISO first, then disk
                     $config['boot'] = 'order=ide3;scsi0';
+                    
+                    Log::info('Attaching ISO to VM', [
+                        'vmid' => $vmId,
+                        'iso_path' => $config['ide3'],
+                        'template' => $template,
+                        'storage' => $storage,
+                    ]);
                 } else {
                     // It's a template name (not an ISO) - this would require cloning
                     // For now, we'll create an empty VM and log a warning
@@ -164,6 +170,11 @@ class VpsCreationService
             // No template - boot from disk
             $config['boot'] = 'order=scsi0';
         }
+        
+        Log::info('VM configuration built', [
+            'vmid' => $vmId,
+            'config' => $config,
+        ]);
 
         return $config;
     }
