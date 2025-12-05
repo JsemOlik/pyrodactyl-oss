@@ -48,7 +48,7 @@ const DashboardRouter = () => {
     };
 
     const onSelectAdminPanel = () => {
-        window.open(`/admin`);
+        window.location.href = `/admin`;
     };
 
     // Define refs for navigation buttons.
