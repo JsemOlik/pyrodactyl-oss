@@ -7,6 +7,7 @@ import routes from '@/routers/routes';
 
 import BillingContainer from '@/components/dashboard/BillingContainer';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
+import VpsContainer from '@/components/vps/VpsContainer';
 import SupportContainer from '@/components/dashboard/SupportContainer';
 import {
     DropdownMenu,
@@ -217,8 +218,7 @@ const DashboardRouter = () => {
 
                                 <Route path='/support' element={<SupportContainer />} />
 
-                                {/* VPS Servers route - will be handled by VpsContainer in Phase 8 */}
-                                <Route path='/vps-servers' element={<DashboardContainer />} />
+                                <Route path='/vps-servers' element={<VpsContainer />} />
 
                                 <Route path='*' element={<NotFound />} />
                             </Routes>

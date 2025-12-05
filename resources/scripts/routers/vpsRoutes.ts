@@ -1,15 +1,10 @@
 import type { ComponentType } from 'react';
 import { lazy } from 'react';
 
-// VPS-specific containers will be created in Phase 8
-// These imports will fail until Phase 8 components are created
-// @ts-expect-error - Components will be created in Phase 8
+// VPS-specific containers
 const VpsOverviewContainer = lazy(() => import('@/components/vps/VpsOverviewContainer'));
-// @ts-expect-error - Components will be created in Phase 8
 const VpsMetricsContainer = lazy(() => import('@/components/vps/VpsMetricsContainer'));
-// @ts-expect-error - Components will be created in Phase 8
 const VpsSettingsContainer = lazy(() => import('@/components/vps/VpsSettingsContainer'));
-// @ts-expect-error - Components will be created in Phase 8
 const VpsActivityContainer = lazy(() => import('@/components/vps/VpsActivityContainer'));
 
 interface RouteDefinition {
