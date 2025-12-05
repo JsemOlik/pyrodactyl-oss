@@ -43,6 +43,11 @@ class SettingsServiceProvider extends ServiceProvider
     'proxmox:template',
     'theme:primary_color',
     'theme:logo_path',
+    'cashier:key',
+    'cashier:secret',
+    'cashier:webhook:secret',
+    'cashier:currency',
+    'cashier:currency_locale',
   ];
 
 
@@ -70,6 +75,8 @@ class SettingsServiceProvider extends ServiceProvider
     'pterodactyl:captcha:hcaptcha:secret_key',
     'pterodactyl:captcha:recaptcha:secret_key',
     'proxmox:api_token',
+    'cashier:secret',
+    'cashier:webhook:secret',
   ];
 
   /**
