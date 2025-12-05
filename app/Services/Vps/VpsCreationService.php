@@ -133,8 +133,21 @@ class VpsCreationService
         if (!empty($template)) {
             // Check if template contains a colon (storage:path format)
             if (str_contains($template, ':')) {
-                // Template is in format "storage:path" - use as-is for ISO
+                // Template is in format "storage:path"
                 $templatePath = $template;
+                
+                // If it's an ISO file and doesn't already have 'iso/' in the path,
+                // add it for directory storage compatibility
+                if (str_ends_with(strtolower($templatePath), '.iso')) {
+                    // Check if path already contains 'iso/' or starts with 'iso:'
+                    if (!str_contains($templatePath, 'iso/') && !str_contains($templatePath, 'iso:')) {
+                        // Split storage:filename.iso into storage and filename
+                        [$storageName, $filename] = explode(':', $templatePath, 2);
+                        // Reconstruct with iso/ prefix: storage:iso/filename.iso
+                        $templatePath = "{$storageName}:iso/{$filename}";
+                    }
+                }
+                
                 // Attach to CD-ROM (ide3) - Proxmox will detect if it's an ISO
                 $config['ide3'] = $templatePath . ',media=cdrom';
                 // Boot from ISO first, then disk
