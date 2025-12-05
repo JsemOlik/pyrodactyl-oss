@@ -19,12 +19,18 @@ import Input from '@/components/elements/Input';
 import PageContentBlock from '@/components/elements/PageContentBlock';
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
 import { Dialog } from '@/components/elements/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import createApiKey from '@/api/account/createApiKey';
 import deleteApiKey from '@/api/account/deleteApiKey';
+import getAccountData, { AccountData } from '@/api/account/getAccountData';
 import getApiKeys, { ApiKey } from '@/api/account/getApiKeys';
 import { createSSHKey, deleteSSHKey, useSSHKeys } from '@/api/account/ssh-keys';
+import updateGravatarStyle from '@/api/account/updateGravatarStyle';
 import { httpErrorToHuman } from '@/api/http';
+
+import { getGravatarUrl, GravatarStyle } from '@/lib/gravatar';
+import { useInitials } from '@/hooks/use-initials';
 
 import { ApplicationStore } from '@/state';
 
@@ -42,6 +48,11 @@ interface CreateSSHValues {
 
 const AccountOverviewContainer = () => {
     const { state } = useLocation();
+    const getInitials = useInitials();
+
+    // Account data state
+    const [accountData, setAccountData] = useState<AccountData | null>(null);
+    const [accountDataLoading, setAccountDataLoading] = useState(true);
 
     // API Keys state
     const [deleteApiIdentifier, setDeleteApiIdentifier] = useState('');
@@ -80,6 +91,18 @@ const AccountOverviewContainer = () => {
     useEffect(() => {
         clearSSHError(sshKeysError);
     }, [sshKeysError, clearSSHError]);
+
+    useEffect(() => {
+        getAccountData()
+            .then((data) => {
+                setAccountData(data);
+                setAccountDataLoading(false);
+            })
+            .catch((error) => {
+                console.error('Failed to load account data:', error);
+                setAccountDataLoading(false);
+            });
+    }, []);
 
     const doApiDeletion = (identifier: string) => {
         setApiKeysLoading(true);
@@ -287,6 +310,126 @@ const AccountOverviewContainer = () => {
             </Dialog.Confirm>
 
             <div className='w-full h-full min-h-full flex-1 flex flex-col px-2 sm:px-0'>
+                {/* Profile Header */}
+                {!accountDataLoading && accountData && (
+                    <div
+                        className='transform-gpu skeleton-anim-2 mb-4 sm:mb-6'
+                        style={{
+                            animationDelay: '0ms',
+                            animationTimingFunction:
+                                'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                        }}
+                    >
+                        <ContentBox>
+                            <div className='flex items-center gap-4'>
+                                <Avatar className='h-16 w-16 overflow-hidden rounded-full'>
+                                    <AvatarImage
+                                        src={
+                                            accountData.email
+                                                ? getGravatarUrl(accountData.email, 128, accountData.gravatar_style as any)
+                                                : undefined
+                                        }
+                                        alt={accountData.username}
+                                    />
+                                    <AvatarFallback className='rounded-full bg-neutral-200 text-lg text-black dark:bg-neutral-700 dark:text-white'>
+                                        {accountData.first_name || accountData.last_name
+                                            ? getInitials(`${accountData.first_name || ''} ${accountData.last_name || ''}`.trim())
+                                            : getInitials(accountData.username)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className='flex-1 min-w-0'>
+                                    <h2 className='text-xl font-bold text-zinc-100 truncate'>
+                                        {accountData.first_name || accountData.last_name
+                                            ? `${accountData.first_name || ''} ${accountData.last_name || ''}`.trim()
+                                            : accountData.username}
+                                    </h2>
+                                    <p className='text-sm text-zinc-400 truncate'>{accountData.email}</p>
+                                </div>
+                            </div>
+                        </ContentBox>
+                    </div>
+                )}
+
+                {/* Gravatar Style Selector */}
+                {!accountDataLoading && accountData && (
+                    <div
+                        className='transform-gpu skeleton-anim-2 mb-4 sm:mb-6'
+                        style={{
+                            animationDelay: '10ms',
+                            animationTimingFunction:
+                                'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                        }}
+                    >
+                        <ContentBox title='Gravatar Style'>
+                            <p className='text-sm text-zinc-400 mb-4'>
+                                Choose your preferred Gravatar style. This will be used for your profile picture when you don't have a custom Gravatar image.
+                            </p>
+                            <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4'>
+                                {(
+                                    [
+                                        { value: 'identicon', label: 'Identicon', description: 'Geometric pattern' },
+                                        { value: 'monsterid', label: 'Monster', description: 'Generated monster' },
+                                        { value: 'wavatar', label: 'Wavatar', description: 'Generated faces' },
+                                        { value: 'retro', label: 'Retro', description: '8-bit pixelated' },
+                                        { value: 'robohash', label: 'Robohash', description: 'Generated robot' },
+                                    ] as const
+                                ).map((style) => {
+                                    const isSelected = accountData.gravatar_style === style.value;
+                                    return (
+                                        <button
+                                            key={style.value}
+                                            onClick={async () => {
+                                                if (!isSelected) {
+                                                    try {
+                                                        await updateGravatarStyle(style.value);
+                                                        setAccountData({
+                                                            ...accountData,
+                                                            gravatar_style: style.value,
+                                                        });
+                                                    } catch (error) {
+                                                        console.error('Failed to update gravatar style:', error);
+                                                        addError({
+                                                            key: 'account:gravatar-style',
+                                                            message: httpErrorToHuman(error as any),
+                                                        });
+                                                    }
+                                                }
+                                            }}
+                                            className={`relative flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                                                isSelected
+                                                    ? 'border-brand bg-brand/10'
+                                                    : 'border-[#ffffff08] bg-[#ffffff05] hover:border-[#ffffff15] hover:bg-[#ffffff08]'
+                                            }`}
+                                        >
+                                            <img
+                                                src={getGravatarUrl(accountData.email || 'example@example.com', 64, style.value as GravatarStyle)}
+                                                alt={style.label}
+                                                className='w-12 h-12 rounded-full'
+                                            />
+                                            <div className='text-center'>
+                                                <p
+                                                    className={`text-sm font-medium ${
+                                                        isSelected ? 'text-brand' : 'text-zinc-300'
+                                                    }`}
+                                                >
+                                                    {style.label}
+                                                </p>
+                                                <p className='text-xs text-zinc-500'>{style.description}</p>
+                                            </div>
+                                            {isSelected && (
+                                                <div className='absolute top-2 right-2 w-5 h-5 rounded-full bg-brand flex items-center justify-center'>
+                                                    <span className='text-white text-xs'>✓</span>
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <FlashMessageRender byKey='account:gravatar-style' />
+                        </ContentBox>
+                    </div>
+                )}
+
                 {state?.twoFactorRedirect && (
                     <div
                         className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'

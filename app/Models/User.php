@@ -138,6 +138,7 @@ class User extends Model implements
         'totp_secret',
         'totp_authenticated_at',
         'gravatar',
+        'gravatar_style',
         'root_admin',
     ];
 

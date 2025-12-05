@@ -10,6 +10,7 @@ use Pterodactyl\Facades\Activity;
 use Pterodactyl\Services\Users\UserUpdateService;
 use Pterodactyl\Transformers\Api\Client\AccountTransformer;
 use Pterodactyl\Http\Requests\Api\Client\Account\UpdateEmailRequest;
+use Pterodactyl\Http\Requests\Api\Client\Account\UpdateGravatarStyleRequest;
 use Pterodactyl\Http\Requests\Api\Client\Account\UpdatePasswordRequest;
 
 class AccountController extends ClientApiController
@@ -69,6 +70,20 @@ class AccountController extends ClientApiController
         }
 
         Activity::event('user:account.password-changed')->log();
+
+        return new JsonResponse([], Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Update the authenticated user's gravatar style preference.
+     */
+    public function updateGravatarStyle(UpdateGravatarStyleRequest $request): JsonResponse
+    {
+        $this->updateService->handle($request->user(), $request->validated());
+
+        Activity::event('user:account.gravatar-style-changed')
+            ->property(['style' => $request->input('gravatar_style')])
+            ->log();
 
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }

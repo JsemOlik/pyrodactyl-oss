@@ -74,7 +74,7 @@ export default function Navbar() {
                                         variant='secondary'
                                         size='sm'
                                         onClick={() => navigate('/')}
-                                        className='h-8 rounded-lg border-white/15 px-3'
+                                        className='h-8 rounded-lg border-brand/30 bg-brand/10 px-3 text-brand hover:bg-brand/30 hover:text-white hover:border-brand/80'
                                     >
                                         Dashboard
                                     </ActionButton>
@@ -175,7 +175,7 @@ export default function Navbar() {
                                     <Link
                                         to='/'
                                         onClick={() => setOpen(false)}
-                                        className='rounded-xl bg-white/5 px-3 py-2 text-center hover:bg-white/10'
+                                        className='rounded-xl bg-brand/10 px-3 py-2 text-center hover:bg-brand/30 hover:text-white text-brand border border-brand/30 hover:border-brand/80'
                                     >
                                         Dashboard
                                     </Link>
@@ -198,7 +198,7 @@ export default function Navbar() {
                                         onClick={() => setOpen(false)}
                                         className='rounded-xl px-3 py-2 text-center hover:bg-white/10'
                                     >
-                                        Portal (Log in)
+                                        Log in
                                     </Link>
                                     <Link
                                         to='/auth/register'

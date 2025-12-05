@@ -1,7 +1,9 @@
+export type GravatarStyle = 'identicon' | 'monsterid' | 'wavatar' | 'retro' | 'robohash';
+
 /**
  * Generate a Gravatar URL from an email address
  */
-export function getGravatarUrl(email: string, size: number = 80): string {
+export function getGravatarUrl(email: string, size: number = 80, style: GravatarStyle = 'identicon'): string {
     if (!email) {
         return '';
     }
@@ -23,5 +25,5 @@ export function getGravatarUrl(email: string, size: number = 80): string {
     }
 
     const hash = simpleHash(email);
-    return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
+    return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=${style}`;
 }

@@ -27,6 +27,7 @@ class AccountTransformer extends BaseClientTransformer
             'first_name' => $model->name_first,
             'last_name' => $model->name_last,
             'language' => $model->language,
+            'gravatar_style' => $model->gravatar_style ?? 'identicon',
         ];
     }
 }

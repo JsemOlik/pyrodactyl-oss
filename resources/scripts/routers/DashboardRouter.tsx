@@ -47,6 +47,10 @@ const DashboardRouter = () => {
         });
     };
 
+    const onTriggerReturnToWebsite = () => {
+        window.location.href = '/hosting';
+    };
+
     const onSelectAdminPanel = () => {
         window.location.href = `/admin`;
     };
@@ -144,6 +148,9 @@ const DashboardRouter = () => {
                                         </span>
                                     </DropdownMenuItem>
                                 )}
+                                <DropdownMenuItem onSelect={onTriggerReturnToWebsite}>
+                                    Return to Website
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={onTriggerLogout}>Log Out</DropdownMenuItem>
                             </DropdownMenuContent>

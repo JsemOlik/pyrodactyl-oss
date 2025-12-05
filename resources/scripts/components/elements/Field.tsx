@@ -1,6 +1,8 @@
 import { FieldProps, Field as FormikField } from 'formik';
 import { forwardRef } from 'react';
 
+import { cn } from '@/lib/utils';
+
 interface OwnProps {
     name: string;
     label?: string;
@@ -11,10 +13,10 @@ interface OwnProps {
 type Props = OwnProps & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'name'>;
 
 const Field = forwardRef<HTMLInputElement, Props>(
-    ({ id, name = false, label, description, validate, ...props }, ref) => (
+    ({ id, name = false, label, description, validate, className, ...props }, ref) => (
         <FormikField innerRef={ref} name={name} validate={validate}>
             {({ field, form: { errors, touched } }: FieldProps) => (
-                <div className='flex flex-col gap-2'>
+                <div className={cn('flex flex-col gap-2', className)}>
                     {label && (
                         <label className='text-sm text-[#ffffff77]' htmlFor={id}>
                             {label}

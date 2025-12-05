@@ -138,6 +138,14 @@ function LoginContainer() {
                             Login
                         </Button>
                     </div>
+                    <div className='mt-6 text-center'>
+                        <p className='text-sm text-zinc-500'>
+                            Don&apos;t have an account?{' '}
+                            <Link to='/auth/register' className='text-brand hover:text-brand/80 font-medium'>
+                                Register
+                            </Link>
+                        </p>
+                    </div>
                 </LoginFormContainer>
             )}
         </Formik>

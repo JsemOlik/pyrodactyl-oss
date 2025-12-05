@@ -591,6 +591,7 @@ const DashboardContainer = () => {
                                                             variant='primary'
                                                             size='lg'
                                                             onClick={() => navigate('/hosting')}
+                                                            className='bg-brand/90 hover:bg-brand'
                                                         >
                                                             Purchase your first server
                                                         </ActionButton>
