@@ -1,10 +1,8 @@
 import type { ComponentType } from 'react';
 import { lazy } from 'react';
 
-import AccountApiContainer from '@/components/dashboard/AccountApiContainer';
 import AccountOverviewContainer from '@/components/dashboard/AccountOverviewContainer';
 import ActivityLogContainer from '@/components/dashboard/activity/ActivityLogContainer';
-import AccountSSHContainer from '@/components/dashboard/ssh/AccountSSHContainer';
 import ServerActivityLogContainer from '@/components/server/ServerActivityLogContainer';
 import BackupContainer from '@/components/server/backups/BackupContainer';
 import ServerConsoleContainer from '@/components/server/console/ServerConsoleContainer';
@@ -64,18 +62,6 @@ export default {
             name: 'Account',
             component: AccountOverviewContainer,
             end: true,
-        },
-        {
-            route: 'api',
-            path: 'api',
-            name: 'API Credentials',
-            component: AccountApiContainer,
-        },
-        {
-            route: 'ssh',
-            path: 'ssh',
-            name: 'SSH Keys',
-            component: AccountSSHContainer,
         },
         {
             route: 'activity',

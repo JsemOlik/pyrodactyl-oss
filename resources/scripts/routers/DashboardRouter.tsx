@@ -1,4 +1,4 @@
-import { CircleDollar, CircleQuestion, Ellipsis, Gear, House, Key, Lock } from '@gravity-ui/icons';
+import { CircleDollar, CircleQuestion, Ellipsis, Gear, House } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
@@ -55,8 +55,6 @@ const DashboardRouter = () => {
     const NavigationHome = useRef<HTMLAnchorElement | null>(null);
     const NavigationSettingsBilling = useRef<HTMLAnchorElement | null>(null);
     const NavigationSettings = useRef<HTMLAnchorElement | null>(null);
-    const NavigationApi = useRef<HTMLAnchorElement | null>(null);
-    const NavigationSSH = useRef<HTMLAnchorElement | null>(null);
     const NavigationSupport = useRef<HTMLAnchorElement | null>(null);
 
     const calculateTop = (pathname: string) => {
@@ -64,8 +62,6 @@ const DashboardRouter = () => {
         const ButtonHome = NavigationHome.current;
         const ButtonSettingsBilling = NavigationSettingsBilling.current;
         const ButtonSettings = NavigationSettings.current;
-        const ButtonApi = NavigationApi.current;
-        const ButtonSSH = NavigationSSH.current;
         const ButtonSupport = NavigationSupport.current;
 
         // Perfectly center the page highlighter with simple math.
@@ -75,8 +71,6 @@ const DashboardRouter = () => {
         if (pathname.endsWith(`/`) && ButtonHome != null) return (ButtonHome as any).offsetTop + HighlightOffset;
         if (pathname.endsWith(`/account`) && ButtonSettings != null)
             return (ButtonSettings as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith('/api') && ButtonApi != null) return (ButtonApi as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith('/ssh') && ButtonSSH != null) return (ButtonSSH as any).offsetTop + HighlightOffset;
         if (pathname.includes('/billing') && ButtonSettingsBilling != null)
             return (ButtonSettingsBilling as any).offsetTop + HighlightOffset;
         if (pathname.endsWith('/support') && ButtonSupport != null)
@@ -166,14 +160,6 @@ const DashboardRouter = () => {
                             <House width={22} height={22} fill='currentColor' />
                             <p>Your VPS Servers</p>
                         </NavLink> */}
-                        <NavLink to={'/account/api'} end className='flex flex-row items-center' ref={NavigationApi}>
-                            <Lock width={22} height={22} fill='currentColor' />
-                            <p>API Keys</p>
-                        </NavLink>
-                        <NavLink to={'/account/ssh'} end className='flex flex-row items-center' ref={NavigationSSH}>
-                            <Key width={22} height={22} fill='currentColor' />
-                            <p>SSH Keys</p>
-                        </NavLink>
                         {/* Spacer pushes the following links to the bottom */}
                         <div className='pyro-subnav-spacer' />
                         {/* Bottom links */}
