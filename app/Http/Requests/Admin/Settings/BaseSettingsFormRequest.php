@@ -12,10 +12,25 @@ class BaseSettingsFormRequest extends AdminFormRequest
 
     public function rules(): array
     {
+        // Check if Panel Settings fields are present in the request
+        $hasPanelSettings = $this->hasAny([
+            'app:name',
+            'pterodactyl:auth:2fa_required',
+            'app:locale',
+        ]);
+
+        // Panel Settings fields are only required if they're present in the request
+        // This allows updating Proxmox settings independently without requiring Panel Settings
+        $panelSettingsRule = $hasPanelSettings ? 'required' : 'nullable';
+
         return [
-            'app:name' => 'required|string|max:191',
-            'pterodactyl:auth:2fa_required' => 'required|integer|in:0,1,2',
-            'app:locale' => ['required', 'string', Rule::in(array_keys($this->getAvailableLanguages()))],
+            'app:name' => "{$panelSettingsRule}|string|max:191",
+            'pterodactyl:auth:2fa_required' => "{$panelSettingsRule}|integer|in:0,1,2",
+            'app:locale' => [
+                $panelSettingsRule,
+                'string',
+                Rule::in(array_keys($this->getAvailableLanguages())),
+            ],
             'proxmox:url' => 'nullable|url|max:255',
             'proxmox:api_token' => 'nullable|string|max:500',
             'proxmox:realm' => 'nullable|string|max:191',
