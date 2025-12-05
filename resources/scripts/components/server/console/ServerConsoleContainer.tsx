@@ -97,7 +97,7 @@ const ServerConsoleContainer = () => {
                                 </p>
                                 {nest_id === 1 && playerData && (
                                     <p className='p-1 text-zinc-300 border-2 bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[#ffffff12] rounded-lg hover:border-[#ffffff20] transition-all duration-150 shadow-sm'>
-                                        Player: {playerData.online}/{playerData.max}
+                                        Players: {playerData.online}/{playerData.max}
                                     </p>
                                 )}
                             </div>
@@ -117,7 +117,7 @@ const ServerConsoleContainer = () => {
                                     </p>
                                     {nest_id === 1 && playerData && (
                                         <p className='p-1 text-zinc-300 border-2 bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[#ffffff12] rounded-lg hover:border-[#ffffff20] transition-all duration-150 shadow-sm'>
-                                            Player: {playerData.online}/{playerData.max}
+                                            Players: {playerData.online}/{playerData.max}
                                         </p>
                                     )}
                                 </div>
