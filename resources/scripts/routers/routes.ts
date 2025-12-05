@@ -18,6 +18,7 @@ import CreateUserContainer from '@/components/server/users/CreateUserContainer';
 import EditUserContainer from '@/components/server/users/EditUserContainer';
 import UsersContainer from '@/components/server/users/UsersContainer';
 import PlayersContainer from '@/components/server/players/PlayersContainer';
+import PropertiesContainer from '@/components/server/properties/PropertiesContainer';
 
 // Each of the router files is already code split out appropriately — so
 // all the items above will only be loaded in when that router is loaded.
@@ -187,6 +188,13 @@ export default {
             permission: 'control.console',
             name: 'Players',
             component: PlayersContainer,
+        },
+        {
+            route: 'properties/*',
+            path: 'properties',
+            permission: 'file.read',
+            name: 'Properties',
+            component: PropertiesContainer,
         },
     ],
 } as Routes;
