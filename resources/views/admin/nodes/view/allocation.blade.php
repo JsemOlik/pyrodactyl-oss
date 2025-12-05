@@ -51,6 +51,7 @@
                                         data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Mass Actions <span class="caret"></span>
                                 </button>
                                 <ul class="dropdown-menu dropdown-massactions">
+                                    <li><a href="#" id="selective-configure" data-action="selective-configure">Configure Restrictions <i class="fa fa-fw fa-cog"></i></a></li>
                                     <li><a href="#" id="selective-deletion" data-action="selective-deletion">Delete <i class="fa fa-fw fa-trash-o"></i></a></li>
                                 </ul>
                             </div>
@@ -94,14 +95,6 @@
                                     <i class="fa fa-ban"></i> Blacklist
                                 </span>
                             @endif
-                                <button 
-                                    class="btn btn-xs btn-default" 
-                                    data-toggle="modal" 
-                                    data-target="#restrictionModal{{ $allocation->id }}"
-                                    style="margin-left: 5px;"
-                                >
-                                    <i class="fa fa-cog"></i> Configure
-                                </button>
                             </td>
                             <td class="col-sm-2 middle">
                                 @if(! is_null($allocation->server))
@@ -110,7 +103,17 @@
                             </td>
                             <td class="col-sm-1 middle">
                                 @if(is_null($allocation->server_id))
-                                    <button data-action="deallocate" data-id="{{ $allocation->id }}" class="btn btn-sm btn-danger"><i class="fa fa-trash-o"></i></button>
+                                    <div class="btn-group">
+                                        <button 
+                                            class="btn btn-sm btn-default" 
+                                            data-toggle="modal" 
+                                            data-target="#restrictionModal{{ $allocation->id }}"
+                                            title="Configure Restrictions"
+                                        >
+                                            <i class="fa fa-cog"></i>
+                                        </button>
+                                        <button data-action="deallocate" data-id="{{ $allocation->id }}" class="btn btn-sm btn-danger" title="Delete Allocation"><i class="fa fa-trash-o"></i></button>
+                                    </div>
                                 @endif
                             </td>
                         </tr>
@@ -310,6 +313,10 @@
         updateMassActions();
     });
 
+    $('[data-action="selective-configure"]').on('mousedown', function () {
+        configureSelected();
+    });
+
     $('[data-action="selective-deletion"]').on('mousedown', function () {
         deleteSelected();
     });
@@ -453,6 +460,35 @@
         } else {
             $('#mass_actions').addClass('disabled');
         }
+    }
+
+    function configureSelected() {
+        var selectedCheckboxes = $('input.select-file:checked');
+        
+        if (selectedCheckboxes.length === 0) {
+            swal({
+                type: 'warning',
+                title: '',
+                text: 'Please select an allocation to configure.',
+            });
+            return;
+        }
+        
+        if (selectedCheckboxes.length > 1) {
+            swal({
+                type: 'warning',
+                title: '',
+                text: 'Please select only one allocation to configure restrictions.',
+            });
+            return;
+        }
+        
+        // Get the selected allocation ID
+        var $parent = selectedCheckboxes.closest('tr');
+        var allocationId = $parent.find('[data-action="deallocate"]').data('id');
+        
+        // Open the modal for this allocation
+        $('#restrictionModal' + allocationId).modal('show');
     }
 
     function deleteSelected() {
