@@ -177,28 +177,28 @@
 @section('footer-scripts')
   @parent
   <script>
-    (function() {
+    $(function() {
       function drawCircularProgress() {
         $('.circular-progress').each(function() {
-          const $this = $(this);
-          const percent = parseFloat($this.data('percent')) || 0;
-          const color = $this.data('color') || '#3c8dbc';
-          const size = 120;
-          const strokeWidth = 10;
-          const radius = (size - strokeWidth) / 2;
-          const circumference = 2 * Math.PI * radius;
-          const offset = circumference - (percent / 100) * circumference;
+          var $this = $(this);
+          var percent = parseFloat($this.data('percent')) || 0;
+          var color = $this.data('color') || '#3c8dbc';
+          var size = 120;
+          var strokeWidth = 10;
+          var radius = (size - strokeWidth) / 2;
+          var circumference = 2 * Math.PI * radius;
+          var offset = circumference - (percent / 100) * circumference;
 
           // Remove existing SVG if any
           $this.find('svg').remove();
 
           // Create SVG
-          const svg = $('<svg>')
+          var svg = $('<svg>')
             .attr('width', size)
             .attr('height', size)
             .attr('class', 'progress-ring');
           
-          const circleBg = $('<circle>')
+          var circleBg = $('<circle>')
             .attr('cx', size / 2)
             .attr('cy', size / 2)
             .attr('r', radius)
@@ -206,7 +206,7 @@
             .attr('stroke', '#555')
             .attr('stroke-width', strokeWidth);
           
-          const circle = $('<circle>')
+          var circle = $('<circle>')
             .attr('cx', size / 2)
             .attr('cy', size / 2)
             .attr('r', radius)
@@ -224,31 +224,21 @@
 
           // Animate the progress
           setTimeout(function() {
-            const $circle = $this.find('.progress-ring-circle');
+            var $circle = $this.find('.progress-ring-circle');
             $circle.css({
               'stroke-dashoffset': offset,
               'transition': 'stroke-dashoffset 0.5s ease-in-out'
             });
-          }, 100);
+          }, 50);
         });
       }
 
-      // Wait for jQuery and DOM to be ready
-      if (typeof jQuery !== 'undefined') {
-        $(document).ready(function() {
-          drawCircularProgress();
-        });
-      } else {
-        // Fallback if jQuery loads later
-        window.addEventListener('load', function() {
-          if (typeof jQuery !== 'undefined') {
-            $(document).ready(function() {
-              drawCircularProgress();
-            });
-          }
-        });
-      }
-    })();
+      // Draw immediately and also on window load as fallback
+      drawCircularProgress();
+      $(window).on('load', function() {
+        drawCircularProgress();
+      });
+    });
   </script>
 
   <style>

@@ -46,27 +46,40 @@ class BaseController extends Controller
         // Server statistics
         $totalServers = Server::count();
         $suspendedServers = Server::where('status', Server::STATUS_SUSPENDED)->count();
-        $installedServers = Server::whereNotIn('status', [
+        // Running servers are those that are installed and not suspended
+        $runningServers = Server::whereNotIn('status', [
             Server::STATUS_INSTALLING,
             Server::STATUS_INSTALL_FAILED,
             Server::STATUS_REINSTALL_FAILED,
+            Server::STATUS_SUSPENDED,
         ])->count();
-        $runningServers = $installedServers - $suspendedServers; // Approximation
+        $stoppedServers = $totalServers - $runningServers;
 
-        // Aggregate resource usage across all nodes
-        $resourceStats = DB::table('nodes')
+        // Get total node resources (without JOIN to avoid multiplication)
+        $nodeTotals = DB::table('nodes')
             ->selectRaw('
-                SUM(nodes.memory) as total_memory,
-                SUM(nodes.disk) as total_disk,
-                COALESCE(SUM(servers.memory), 0) as allocated_memory,
-                COALESCE(SUM(servers.disk), 0) as allocated_disk,
-                COALESCE(SUM(servers.cpu), 0) as allocated_cpu
+                SUM(memory) as total_memory,
+                SUM(disk) as total_disk
             ')
-            ->leftJoin('servers', function ($join) {
-                $join->on('servers.node_id', '=', 'nodes.id')
-                    ->where('servers.exclude_from_resource_calculation', '=', false);
-            })
             ->first();
+
+        // Get allocated resources from servers (separate query to avoid JOIN multiplication)
+        $serverAllocations = DB::table('servers')
+            ->where('exclude_from_resource_calculation', false)
+            ->selectRaw('
+                SUM(memory) as allocated_memory,
+                SUM(disk) as allocated_disk,
+                SUM(cpu) as allocated_cpu
+            ')
+            ->first();
+
+        $resourceStats = (object) [
+            'total_memory' => $nodeTotals->total_memory ?? 0,
+            'total_disk' => $nodeTotals->total_disk ?? 0,
+            'allocated_memory' => $serverAllocations->allocated_memory ?? 0,
+            'allocated_disk' => $serverAllocations->allocated_disk ?? 0,
+            'allocated_cpu' => $serverAllocations->allocated_cpu ?? 0,
+        ];
 
         // Calculate memory with overallocation
         $totalMemory = $resourceStats->total_memory;
@@ -93,8 +106,8 @@ class BaseController extends Controller
             ],
             'servers' => [
                 'total' => $totalServers,
-                'running' => max(0, $runningServers),
-                'stopped' => max(0, $totalServers - $runningServers),
+                'running' => $runningServers,
+                'stopped' => $stoppedServers,
             ],
             'resources' => [
                 'cpu' => [
