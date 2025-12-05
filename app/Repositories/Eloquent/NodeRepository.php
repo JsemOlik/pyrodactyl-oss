@@ -140,15 +140,25 @@ class NodeRepository extends EloquentRepository implements NodeRepositoryInterfa
      */
     public function getNodesForServerCreation(): Collection
     {
-        return $this->getBuilder()->with('allocations')->get()->map(function (Node $item) {
-            $filtered = $item->getRelation('allocations')->where('server_id', null)->map(function ($map) {
-                return collect($map)->only(['id', 'ip', 'port']);
+        return $this->getBuilder()->with(['allocations.allowedNests', 'allocations.allowedEggs'])->get()->map(function (Node $item) {
+            $filtered = $item->getRelation('allocations')->where('server_id', null)->map(function ($allocation) {
+                return [
+                    'id' => $allocation->id,
+                    'ip' => $allocation->ip,
+                    'port' => $allocation->port,
+                    'restriction_type' => $allocation->restriction_type ?? 'none',
+                    'allowed_nests' => $allocation->allowedNests->pluck('id')->toArray(),
+                    'allowed_eggs' => $allocation->allowedEggs->pluck('id')->toArray(),
+                ];
             });
 
             $item->ports = $filtered->map(function ($map) {
                 return [
                     'id' => $map['id'],
                     'text' => sprintf('%s:%s', $map['ip'], $map['port']),
+                    'restriction_type' => $map['restriction_type'],
+                    'allowed_nests' => $map['allowed_nests'],
+                    'allowed_eggs' => $map['allowed_eggs'],
                 ];
             })->values();
 

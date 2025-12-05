@@ -57,6 +57,65 @@
     </div>
 
     <div class="row">
+        <div class="col-md-6">
+            <div class="box">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Nest Configuration</h3>
+                </div>
+
+                <div class="box-body row">
+                    <div class="form-group col-xs-12">
+                        <label for="pNestId">Nest</label>
+
+                        <select id="pNestId" name="nest_id" class="form-control">
+                            @foreach($nests as $nest)
+                                <option value="{{ $nest->id }}"
+                                    @if($nest->id === old('nest_id'))
+                                        selected="selected"
+                                    @endif
+                                >{{ $nest->name }}</option>
+                            @endforeach
+                        </select>
+
+                        <p class="small text-muted no-margin">Select the Nest that this server will be grouped under.</p>
+                    </div>
+
+                    <div class="form-group col-xs-12">
+                        <label for="pEggId">Egg</label>
+                        <select id="pEggId" name="egg_id" class="form-control"></select>
+                        <p class="small text-muted no-margin">Select the Egg that will define how this server should operate.</p>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <div class="checkbox checkbox-primary no-margin-bottom">
+                            <input type="checkbox" id="pSkipScripting" name="skip_scripts" value="1" {{ \Pterodactyl\Helpers\Utilities::checked('skip_scripts', 0) }} />
+                            <label for="pSkipScripting" class="strong">Skip Egg Install Script</label>
+                        </div>
+
+                        <p class="small text-muted no-margin">If the selected Egg has an install script attached to it, the script will run during the install. If you would like to skip this step, check this box.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="box">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Docker Configuration</h3>
+                </div>
+
+                <div class="box-body row">
+                    <div class="form-group col-xs-12">
+                        <label for="pDefaultContainer">Docker Image</label>
+                        <select id="pDefaultContainer" name="image" class="form-control"></select>
+                        <input id="pDefaultContainerCustom" name="custom_image" value="{{ old('custom_image') }}" class="form-control" placeholder="Or enter a custom image..." style="margin-top:1rem"/>
+                        <p class="small text-muted no-margin">This is the default Docker image that will be used to run this server. Select an image from the dropdown above, or enter a custom image in the text field above.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-xs-12">
             <div class="box">
                 <div class="overlay" id="allocationLoader" style="display:none;"><i class="fa fa-refresh fa-spin"></i></div>
@@ -245,65 +304,6 @@
                         </div>
 
                         <p class="small text-muted no-margin">When enabled, this server will not be included in resource calculations when provisioning new servers onto this node. Useful for testing or development servers.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
-            <div class="box">
-                <div class="box-header with-border">
-                    <h3 class="box-title">Nest Configuration</h3>
-                </div>
-
-                <div class="box-body row">
-                    <div class="form-group col-xs-12">
-                        <label for="pNestId">Nest</label>
-
-                        <select id="pNestId" name="nest_id" class="form-control">
-                            @foreach($nests as $nest)
-                                <option value="{{ $nest->id }}"
-                                    @if($nest->id === old('nest_id'))
-                                        selected="selected"
-                                    @endif
-                                >{{ $nest->name }}</option>
-                            @endforeach
-                        </select>
-
-                        <p class="small text-muted no-margin">Select the Nest that this server will be grouped under.</p>
-                    </div>
-
-                    <div class="form-group col-xs-12">
-                        <label for="pEggId">Egg</label>
-                        <select id="pEggId" name="egg_id" class="form-control"></select>
-                        <p class="small text-muted no-margin">Select the Egg that will define how this server should operate.</p>
-                    </div>
-                    <div class="form-group col-xs-12">
-                        <div class="checkbox checkbox-primary no-margin-bottom">
-                            <input type="checkbox" id="pSkipScripting" name="skip_scripts" value="1" {{ \Pterodactyl\Helpers\Utilities::checked('skip_scripts', 0) }} />
-                            <label for="pSkipScripting" class="strong">Skip Egg Install Script</label>
-                        </div>
-
-                        <p class="small text-muted no-margin">If the selected Egg has an install script attached to it, the script will run during the install. If you would like to skip this step, check this box.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="box">
-                <div class="box-header with-border">
-                    <h3 class="box-title">Docker Configuration</h3>
-                </div>
-
-                <div class="box-body row">
-                    <div class="form-group col-xs-12">
-                        <label for="pDefaultContainer">Docker Image</label>
-                        <select id="pDefaultContainer" name="image" class="form-control"></select>
-                        <input id="pDefaultContainerCustom" name="custom_image" value="{{ old('custom_image') }}" class="form-control" placeholder="Or enter a custom image..." style="margin-top:1rem"/>
-                        <p class="small text-muted no-margin">This is the default Docker image that will be used to run this server. Select an image from the dropdown above, or enter a custom image in the text field above.</p>
                     </div>
                 </div>
             </div>

@@ -44,6 +44,8 @@ $(document).ready(function() {
 });
 
 let lastActiveBox = null;
+let currentNode = null;
+
 $(document).on('click', function (event) {
     if (lastActiveBox !== null) {
         lastActiveBox.removeClass('box-primary');
@@ -55,17 +57,85 @@ $(document).on('click', function (event) {
 
 $('#pNodeId').on('change', function () {
     currentNode = $(this).val();
+    filterAndUpdateAllocations();
+});
+
+function filterAndUpdateAllocations() {
+    if (!currentNode) return;
+    
+    const selectedNestId = $('#pNestId').val();
+    const selectedEggId = $('#pEggId').val();
+    
     $.each(Pterodactyl.nodeData, function (i, v) {
         if (v.id == currentNode) {
+            let filteredAllocations = v.allocations;
+            
+            // Filter allocations based on nest/egg restrictions if both are selected
+            if (selectedNestId && selectedEggId) {
+                filteredAllocations = v.allocations.filter(function(allocation) {
+                    return isAllocationAllowed(allocation, selectedNestId, selectedEggId);
+                });
+            } else if (selectedNestId) {
+                // If only nest is selected, filter by nest restrictions
+                filteredAllocations = v.allocations.filter(function(allocation) {
+                    return isAllocationAllowedForNest(allocation, selectedNestId);
+                });
+            }
+            
             $('#pAllocation').html('').select2({
-                data: v.allocations,
+                data: filteredAllocations,
                 placeholder: 'Select a Default Allocation',
             });
 
             updateAdditionalAllocations();
         }
     });
-});
+}
+
+function isAllocationAllowed(allocation, nestId, eggId) {
+    const restrictionType = allocation.restriction_type || 'none';
+    
+    if (restrictionType === 'none') {
+        return true;
+    }
+    
+    const allowedNests = allocation.allowed_nests || [];
+    const allowedEggs = allocation.allowed_eggs || [];
+    
+    if (restrictionType === 'whitelist') {
+        // For whitelist: must be in both lists (or lists must be empty)
+        const nestAllowed = allowedNests.length === 0 || allowedNests.includes(parseInt(nestId));
+        const eggAllowed = allowedEggs.length === 0 || allowedEggs.includes(parseInt(eggId));
+        return nestAllowed && eggAllowed;
+    } else if (restrictionType === 'blacklist') {
+        // For blacklist: must NOT be in either list
+        const nestBlocked = allowedNests.length > 0 && allowedNests.includes(parseInt(nestId));
+        const eggBlocked = allowedEggs.length > 0 && allowedEggs.includes(parseInt(eggId));
+        return !nestBlocked && !eggBlocked;
+    }
+    
+    return true;
+}
+
+function isAllocationAllowedForNest(allocation, nestId) {
+    const restrictionType = allocation.restriction_type || 'none';
+    
+    if (restrictionType === 'none') {
+        return true;
+    }
+    
+    const allowedNests = allocation.allowed_nests || [];
+    
+    if (restrictionType === 'whitelist') {
+        // For whitelist: must be in the list (or list must be empty)
+        return allowedNests.length === 0 || allowedNests.includes(parseInt(nestId));
+    } else if (restrictionType === 'blacklist') {
+        // For blacklist: must NOT be in the list
+        return allowedNests.length === 0 || !allowedNests.includes(parseInt(nestId));
+    }
+    
+    return true;
+}
 
 $('#pNestId').on('change', function (event) {
     $('#pEggId').html('').select2({
@@ -76,6 +146,9 @@ $('#pNestId').on('change', function (event) {
             };
         }),
     }).change();
+    
+    // Filter allocations when nest changes
+    filterAndUpdateAllocations();
 });
 
 $('#pEggId').on('change', function (event) {
@@ -136,6 +209,9 @@ $('#pEggId').on('change', function (event) {
     // If you receive a warning on this line, it should be fine to ignore. this function is
     // defined in "resources/views/admin/servers/new.blade.php" near the bottom of the file.
     serviceVariablesUpdated($('#pEggId').val(), variableIds);
+    
+    // Filter allocations when egg changes
+    filterAndUpdateAllocations();
 });
 
 $('#pAllocation').on('change', function () {
@@ -145,6 +221,8 @@ $('#pAllocation').on('change', function () {
 function updateAdditionalAllocations() {
     let currentAllocation = $('#pAllocation').val();
     let currentNode = $('#pNodeId').val();
+    const selectedNestId = $('#pNestId').val();
+    const selectedEggId = $('#pEggId').val();
 
     $.each(Pterodactyl.nodeData, function (i, v) {
         if (v.id == currentNode) {
@@ -154,7 +232,18 @@ function updateAdditionalAllocations() {
                 const allocation = v.allocations[i];
 
                 if (allocation.id != currentAllocation) {
-                    allocations.push(allocation);
+                    // Filter by restrictions if nest/egg are selected
+                    if (selectedNestId && selectedEggId) {
+                        if (isAllocationAllowed(allocation, selectedNestId, selectedEggId)) {
+                            allocations.push(allocation);
+                        }
+                    } else if (selectedNestId) {
+                        if (isAllocationAllowedForNest(allocation, selectedNestId)) {
+                            allocations.push(allocation);
+                        }
+                    } else {
+                        allocations.push(allocation);
+                    }
                 }
             }
 
