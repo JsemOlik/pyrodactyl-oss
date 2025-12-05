@@ -6,9 +6,9 @@ import ActionButton from '@/components/elements/ActionButton';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import PageContentBlock from '@/components/elements/PageContentBlock';
 
+import getVpsDistributions, { VpsDistribution } from '@/api/hosting/getVpsDistributions';
 import { httpErrorToHuman } from '@/api/http';
 import getNests from '@/api/nests/getNests';
-import getVpsDistributions, { VpsDistribution } from '@/api/hosting/getVpsDistributions';
 
 interface SelectedPlan {
     planId?: number;
@@ -23,15 +23,17 @@ const HostingConfigureContainer = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const hostingType = (searchParams.get('type') || 'game-server') as HostingType;
-    
-    const { data: nests, error: nestsError, isLoading: nestsLoading } = useSWR(
-        hostingType === 'game-server' ? '/api/client/nests' : null,
-        getNests,
-    );
-    const { data: distributions, error: distributionsError, isLoading: distributionsLoading } = useSWR(
-        hostingType === 'vps' ? '/api/client/hosting/vps-distributions' : null,
-        getVpsDistributions,
-    );
+
+    const {
+        data: nests,
+        error: nestsError,
+        isLoading: nestsLoading,
+    } = useSWR(hostingType === 'game-server' ? '/api/client/nests' : null, getNests);
+    const {
+        data: distributions,
+        error: distributionsError,
+        isLoading: distributionsLoading,
+    } = useSWR(hostingType === 'vps' ? '/api/client/hosting/vps-distributions' : null, getVpsDistributions);
 
     const [selectedPlan, setSelectedPlan] = useState<SelectedPlan | null>(null);
     const [selectedNest, setSelectedNest] = useState<number | null>(null);
@@ -79,7 +81,7 @@ const HostingConfigureContainer = () => {
             params.set('interval', selectedPlan.interval || 'month');
         }
         params.set('type', hostingType);
-        
+
         if (hostingType === 'game-server') {
             params.set('nest', selectedNest!.toString());
             params.set('egg', selectedEgg!.toString());
@@ -120,20 +122,20 @@ const HostingConfigureContainer = () => {
     const selectedNestData = nests?.find((nest) => nest.attributes.id === selectedNest);
     const availableEggs = selectedNestData?.attributes.relationships?.eggs?.data || [];
 
-    const isReady = hostingType === 'game-server' 
-        ? selectedNest && selectedEgg 
-        : selectedDistribution;
+    const isReady = hostingType === 'game-server' ? selectedNest && selectedEgg : selectedDistribution;
 
     return (
         <PageContentBlock title='Configure Server'>
             <MainPageHeader title={`Configure Your ${hostingType === 'vps' ? 'VPS' : 'Server'}`} />
 
-            <div className='max-w-3xl space-y-6'>
+            <div className='space-y-6'>
                 {hostingType === 'game-server' ? (
                     <>
                         {/* Nest Selection */}
                         <div>
-                            <label className='block text-sm font-medium text-white/70 mb-3'>Select Game Type (Nest)</label>
+                            <label className='block text-sm font-medium text-white/70 mb-3'>
+                                Select Game Type (Nest)
+                            </label>
                             <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
                                 {nests?.map((nest) => (
                                     <button
@@ -160,7 +162,9 @@ const HostingConfigureContainer = () => {
                         {/* Egg Selection */}
                         {selectedNest && (
                             <div>
-                                <label className='block text-sm font-medium text-white/70 mb-3'>Select Game (Egg)</label>
+                                <label className='block text-sm font-medium text-white/70 mb-3'>
+                                    Select Game (Egg)
+                                </label>
                                 {availableEggs.length === 0 ? (
                                     <div className='text-white/50 text-sm'>No eggs available for this nest.</div>
                                 ) : (
@@ -175,9 +179,13 @@ const HostingConfigureContainer = () => {
                                                         : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
                                                 }`}
                                             >
-                                                <div className='font-semibold text-white mb-1'>{egg.attributes.name}</div>
+                                                <div className='font-semibold text-white mb-1'>
+                                                    {egg.attributes.name}
+                                                </div>
                                                 {egg.attributes.description && (
-                                                    <div className='text-sm text-white/60'>{egg.attributes.description}</div>
+                                                    <div className='text-sm text-white/60'>
+                                                        {egg.attributes.description}
+                                                    </div>
                                                 )}
                                             </button>
                                         ))}
@@ -214,7 +222,9 @@ const HostingConfigureContainer = () => {
                                                 <div className='text-sm text-white/60'>{dist.description}</div>
                                             )}
                                             {dist.version && (
-                                                <div className='text-xs text-white/40 mt-1'>Version: {dist.version}</div>
+                                                <div className='text-xs text-white/40 mt-1'>
+                                                    Version: {dist.version}
+                                                </div>
                                             )}
                                         </button>
                                     ))}
