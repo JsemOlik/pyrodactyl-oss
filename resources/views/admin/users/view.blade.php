@@ -167,7 +167,12 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <a class="btn btn-xs btn-default" href="/server/{{ $server->uuidShort }}"><i class="fa fa-wrench"></i></a>
+                                        <a class="btn btn-xs btn-default" href="/server/{{ $server->uuidShort }}" title="Manage Server"><i class="fa fa-wrench"></i></a>
+                                        @if($server->subscription && $server->subscription->stripe_id)
+                                            <a class="btn btn-xs" href="https://dashboard.stripe.com/subscriptions/{{ $server->subscription->stripe_id }}" target="_blank" title="Open in Stripe" style="background-color: #635bff; border-color: #635bff; color: white; margin-left: 5px;">
+                                                <i class="fa fa-credit-card"></i>
+                                            </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
