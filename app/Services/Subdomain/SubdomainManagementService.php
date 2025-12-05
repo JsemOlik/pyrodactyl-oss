@@ -49,10 +49,11 @@ class SubdomainManagementService
      * @param Server $server
      * @param Domain $domain
      * @param string $subdomain
+     * @param int|null $proxyPort
      * @return ServerSubdomain
      * @throws \Exception
      */
-    public function createSubdomain(Server $server, Domain $domain, string $subdomain): ?ServerSubdomain
+    public function createSubdomain(Server $server, Domain $domain, string $subdomain, ?int $proxyPort = null): ?ServerSubdomain
     {
         // Check if server supports subdomains
         $feature = $this->getServerSubdomainFeature($server);
@@ -80,7 +81,7 @@ class SubdomainManagementService
 
 
         // Use database transaction for consistency
-        return DB::transaction(function () use ($server, $domain, $subdomain, $feature, $dnsProvider, $dnsRecords) {
+        return DB::transaction(function () use ($server, $domain, $subdomain, $proxyPort, $feature, $dnsProvider, $dnsRecords) {
             // CRITICAL: Check if server already has an active subdomain (prevents race conditions)
             $existingServerSubdomain = ServerSubdomain::where('server_id', $server->id)
                 ->where('is_active', true)
@@ -123,6 +124,7 @@ class SubdomainManagementService
                     'domain_id' => $domain->id,
                     'subdomain' => $subdomain,
                     'record_type' => str_replace('subdomain_', '', $feature->getFeatureName()),
+                    'proxy_port' => $proxyPort,
                     'dns_records' => $createdRecordIds,
                     'is_active' => true,
                 ]);

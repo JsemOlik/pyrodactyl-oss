@@ -12,6 +12,8 @@ use Pterodactyl\Listeners\Auth\AuthenticationListener;
 use Pterodactyl\Events\Server\Installed as ServerInstalledEvent;
 use Pterodactyl\Notifications\ServerInstalled as ServerInstalledNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Pterodactyl\Models\ServerSubdomain;
+use Pterodactyl\Observers\ServerSubdomainObserver;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -36,5 +38,6 @@ class EventServiceProvider extends ServiceProvider
         User::observe(UserObserver::class);
         Subuser::observe(SubuserObserver::class);
         EggVariable::observe(EggVariableObserver::class);
+        ServerSubdomain::observe(ServerSubdomainObserver::class);
     }
 }

@@ -61,6 +61,12 @@ class CreateSubdomainRequest extends ClientApiRequest
                     }
                 },
             ],
+            'proxy_port' => [
+                'nullable',
+                'integer',
+                'min:1024',
+                'max:65535',
+            ],
         ];
     }
 

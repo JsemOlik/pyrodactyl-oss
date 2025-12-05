@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property int $domain_id
  * @property string $subdomain
  * @property string $record_type
+ * @property int|null $proxy_port
  * @property array $dns_records
  * @property bool $is_active
  * @property \Carbon\Carbon $created_at
@@ -42,6 +43,7 @@ class ServerSubdomain extends Model
         'domain_id',
         'subdomain',
         'record_type',
+        'proxy_port',
         'dns_records',
         'is_active',
     ];
@@ -52,6 +54,7 @@ class ServerSubdomain extends Model
     protected $casts = [
         'server_id' => 'integer',
         'domain_id' => 'integer',
+        'proxy_port' => 'integer',
         'dns_records' => 'array',
         'is_active' => 'boolean',
         self::CREATED_AT => 'datetime',
@@ -63,6 +66,7 @@ class ServerSubdomain extends Model
         'domain_id' => 'required|integer|exists:domains,id',
         'subdomain' => 'required|string|max:191',
         'record_type' => 'required|string|max:10',
+        'proxy_port' => 'nullable|integer|between:1024,65535',
         'dns_records' => 'sometimes|array',
         'is_active' => 'sometimes|boolean',
     ];
