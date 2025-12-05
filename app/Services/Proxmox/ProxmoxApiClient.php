@@ -55,6 +55,15 @@ class ProxmoxApiClient
      * @return array Response data
      * @throws ProxmoxApiException
      */
+    /**
+     * Make a request to the Proxmox API.
+     *
+     * @param string $method HTTP method (GET, POST, PUT, DELETE)
+     * @param string $endpoint API endpoint (e.g., '/api2/json/nodes/pve/qemu')
+     * @param array $data Request data (for POST/PUT)
+     * @return array Response data (always returns an array)
+     * @throws ProxmoxApiException
+     */
     private function request(string $method, string $endpoint, array $data = []): array
     {
         try {
@@ -67,12 +76,30 @@ class ProxmoxApiClient
             $body = $response->getBody()->getContents();
             $decoded = json_decode($body, true);
 
-            // Proxmox API returns data in 'data' key for successful responses
-            if (isset($decoded['data'])) {
-                return $decoded['data'];
+            if ($decoded === null) {
+                Log::warning('Proxmox API returned invalid JSON', [
+                    'endpoint' => $endpoint,
+                    'body' => $body,
+                ]);
+                return [];
             }
 
-            return $decoded;
+            // Proxmox API returns data in 'data' key for successful responses
+            if (isset($decoded['data'])) {
+                $dataValue = $decoded['data'];
+                
+                // If data is already an array, return it directly
+                if (is_array($dataValue)) {
+                    return $dataValue;
+                }
+                
+                // If data is a scalar (string/int), wrap it in an array
+                // This handles endpoints like /api2/json/cluster/nextid which return a string
+                return ['value' => $dataValue];
+            }
+
+            // If no 'data' key, return the decoded response as-is (should be an array)
+            return is_array($decoded) ? $decoded : [];
         } catch (GuzzleException $e) {
             Log::error('Proxmox API request failed', [
                 'method' => $method,
@@ -268,8 +295,20 @@ class ProxmoxApiClient
 
         $result = $this->request('GET', $endpoint);
         
-        // Proxmox returns the next ID directly in the data field
-        return (int) ($result ?? 100);
+        // Proxmox returns the next ID as a string in the data field
+        // The request() method wraps scalar values in ['value' => ...]
+        if (isset($result['value'])) {
+            return (int) $result['value'];
+        }
+        
+        // Fallback: if result is a numeric string or number directly
+        if (is_numeric($result[0] ?? null)) {
+            return (int) $result[0];
+        }
+        
+        // Default fallback if something goes wrong
+        Log::warning('Could not extract VM ID from Proxmox response', ['result' => $result]);
+        return 100;
     }
 }
 
