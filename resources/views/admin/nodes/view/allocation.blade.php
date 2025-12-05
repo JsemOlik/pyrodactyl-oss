@@ -257,13 +257,13 @@
                         
                         <div class="form-group" id="modalNestsGroup{{ $allocation->id }}" style="display:{{ $restrictionType === 'none' ? 'none' : 'block' }};">
                             <label for="modalNests{{ $allocation->id }}">Nests</label>
-                            <select class="form-control" name="nests[]" id="modalNests{{ $allocation->id }}" multiple></select>
+                            <select class="form-control" name="nests[]" id="modalNests{{ $allocation->id }}" multiple style="width: 100%;"></select>
                             <p class="help-block">Select which nests to whitelist or blacklist.</p>
                         </div>
 
                         <div class="form-group" id="modalEggsGroup{{ $allocation->id }}" style="display:{{ $restrictionType === 'none' ? 'none' : 'block' }};">
                             <label for="modalEggs{{ $allocation->id }}">Eggs</label>
-                            <select class="form-control" name="eggs[]" id="modalEggs{{ $allocation->id }}" multiple></select>
+                            <select class="form-control" name="eggs[]" id="modalEggs{{ $allocation->id }}" multiple style="width: 100%;"></select>
                             <p class="help-block">Select which eggs to whitelist or blacklist.</p>
                         </div>
                     </div>
@@ -283,6 +283,51 @@
         var modal = $('#restrictionModal{{ $allocation->id }}');
         var initialized = false;
         
+        var nestsData = [
+            @foreach($nests as $nest)
+            {
+                id: {{ $nest->id }},
+                text: '{{ addslashes($nest->name) }}'
+            },
+            @endforeach
+        ];
+        
+        var eggsData = [
+            @foreach($nests as $nest)
+                @foreach($nest->eggs as $egg)
+                {
+                    id: {{ $egg->id }},
+                    text: '{{ addslashes($nest->name) }} - {{ addslashes($egg->name) }}'
+                },
+                @endforeach
+            @endforeach
+        ];
+        
+        var nestsSelect = $('#modalNests{{ $allocation->id }}');
+        var eggsSelect = $('#modalEggs{{ $allocation->id }}');
+        
+        function initializeSelect2() {
+            if (!nestsSelect.hasClass('select2-hidden-accessible')) {
+                nestsSelect.select2({
+                    data: nestsData,
+                    placeholder: 'Select nests...',
+                    allowClear: true,
+                    dropdownParent: modal,
+                    width: '100%'
+                });
+            }
+            
+            if (!eggsSelect.hasClass('select2-hidden-accessible')) {
+                eggsSelect.select2({
+                    data: eggsData,
+                    placeholder: 'Select eggs...',
+                    allowClear: true,
+                    dropdownParent: modal,
+                    width: '100%'
+                });
+            }
+        }
+        
         // Set up radio button change handler (outside of modal show event so it's always attached)
         modal.find('input[name="restriction_type"]').on('change', function() {
             var restrictionType = $(this).val();
@@ -292,73 +337,55 @@
             if (restrictionType === 'none') {
                 nestsGroup.slideUp();
                 eggsGroup.slideUp();
-                $('#modalNests{{ $allocation->id }}').val(null).trigger('change');
-                $('#modalEggs{{ $allocation->id }}').val(null).trigger('change');
+                nestsSelect.val(null).trigger('change');
+                eggsSelect.val(null).trigger('change');
             } else {
                 nestsGroup.slideDown();
                 eggsGroup.slideDown();
+                
+                // Initialize select2 immediately when fields are shown
+                setTimeout(function() {
+                    initializeSelect2();
+                }, 100);
             }
         });
         
-        modal.on('show.bs.modal', function() {
+        modal.on('shown.bs.modal', function() {
+            // Use shown.bs.modal to ensure modal is fully rendered
             if (!initialized) {
-                var nestsData = [
-                    @foreach($nests as $nest)
-                    {
-                        id: {{ $nest->id }},
-                        text: '{{ addslashes($nest->name) }}'
-                    },
-                    @endforeach
-                ];
+                var checkedRadio = modal.find('input[name="restriction_type"]:checked');
+                var restrictionType = checkedRadio.length ? checkedRadio.val() : 'none';
                 
-                var eggsData = [
-                    @foreach($nests as $nest)
-                        @foreach($nest->eggs as $egg)
-                        {
-                            id: {{ $egg->id }},
-                            text: '{{ addslashes($nest->name) }} - {{ addslashes($egg->name) }}'
-                        },
-                        @endforeach
-                    @endforeach
-                ];
-                
-                $('#modalNests{{ $allocation->id }}').select2({
-                    data: nestsData,
-                    placeholder: 'Select nests...',
-                    allowClear: true,
-                    dropdownParent: modal,
-                });
-                
-                @if(!empty($allowedNests))
-                $('#modalNests{{ $allocation->id }}').val([{{ implode(',', $allowedNests) }}]).trigger('change');
-                @endif
-                
-                $('#modalEggs{{ $allocation->id }}').select2({
-                    data: eggsData,
-                    placeholder: 'Select eggs...',
-                    allowClear: true,
-                    dropdownParent: modal,
-                });
-                
-                @if(!empty($allowedEggs))
-                $('#modalEggs{{ $allocation->id }}').val([{{ implode(',', $allowedEggs) }}]).trigger('change');
-                @endif
+                if (restrictionType !== 'none') {
+                    // Fields should already be visible, initialize select2
+                    initializeSelect2();
+                    
+                    @if(!empty($allowedNests))
+                    nestsSelect.val([{{ implode(',', $allowedNests) }}]).trigger('change');
+                    @endif
+                    
+                    @if(!empty($allowedEggs))
+                    eggsSelect.val([{{ implode(',', $allowedEggs) }}]).trigger('change');
+                    @endif
+                }
                 
                 initialized = true;
-            }
-            
-            // Trigger change on the checked radio button to show/hide fields if needed
-            var checkedRadio = modal.find('input[name="restriction_type"]:checked');
-            if (checkedRadio.length) {
-                checkedRadio.trigger('change');
             }
         });
         
         // Cleanup select2 when modal is hidden
         modal.on('hidden.bs.modal', function() {
             if (initialized) {
-                $('#modalNests{{ $allocation->id }}').select2('destroy');
-                $('#modalEggs{{ $allocation->id }}').select2('destroy');
+                try {
+                    if (nestsSelect.hasClass('select2-hidden-accessible')) {
+                        nestsSelect.select2('destroy');
+                    }
+                } catch(e) {}
+                try {
+                    if (eggsSelect.hasClass('select2-hidden-accessible')) {
+                        eggsSelect.select2('destroy');
+                    }
+                } catch(e) {}
                 initialized = false;
             }
         });
