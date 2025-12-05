@@ -17,6 +17,7 @@ import FileObjectRow from '@/components/server/files/FileObjectRow';
 import MassActionsBar from '@/components/server/files/MassActionsBar';
 import NewDirectoryButton from '@/components/server/files/NewDirectoryButton';
 import UploadButton from '@/components/server/files/UploadButton';
+import UploadFromUrlButton from '@/components/server/files/UploadFromUrlButton';
 
 import { httpErrorToHuman } from '@/api/http';
 import { FileObject } from '@/api/server/files/loadDirectory';
@@ -112,6 +113,7 @@ const FileManagerContainer = () => {
                                     <NewDirectoryButton />
                                     <NewFileButton id={id} />
                                     <UploadButton />
+                                    <UploadFromUrlButton />
                                 </div>
                             </Can>
                         }
