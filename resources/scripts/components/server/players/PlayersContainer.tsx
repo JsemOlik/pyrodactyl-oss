@@ -1,5 +1,5 @@
 import { Person } from '@gravity-ui/icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import ErrorBoundary from '@/components/elements/ErrorBoundary';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
@@ -21,12 +21,14 @@ const PlayersContainer = () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const connected = ServerContext.useStoreState((state) => state.socket.connected);
     const instance = ServerContext.useStoreState((state) => state.socket.instance);
+    const serverStatus = ServerContext.useStoreState((state) => state.server.data?.status);
 
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isListening, setIsListening] = useState(false);
-    const [consoleLines, setConsoleLines] = useState<string[]>([]);
+    const consoleLinesRef = useRef<string[]>([]);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const parseListCommand = (lines: string[]): Player[] => {
         const players: Player[] = [];
@@ -72,39 +74,55 @@ const PlayersContainer = () => {
 
     const fetchPlayers = async () => {
         if (!connected || !instance || !uuid) {
-            setError('Server connection not available');
+            setError('Server connection not available. Make sure the server is online and connected.');
             return;
+        }
+
+        // Check if server is actually running (status should be null when running)
+        if (serverStatus !== null) {
+            setError('Server must be running to check player list. Please start your server first.');
+            return;
+        }
+
+        // Clear any existing timeout
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
         }
 
         setLoading(true);
         setError(null);
         setPlayers([]);
-        setConsoleLines([]);
+        consoleLinesRef.current = [];
         setIsListening(true);
 
         try {
             // Send the /list command
             await sendCommand(uuid, 'list');
 
-            // Set a timeout to stop listening after 5 seconds
-            setTimeout(() => {
+            // Set a timeout to stop listening after 8 seconds
+            timeoutRef.current = setTimeout(() => {
                 setIsListening(false);
-                const parsedPlayers = parseListCommand(consoleLines);
+                const parsedPlayers = parseListCommand(consoleLinesRef.current);
 
                 if (parsedPlayers.length > 0) {
                     setPlayers(parsedPlayers);
-                } else if (consoleLines.length > 0) {
-                    setError('No players found online');
+                    setError(null);
+                } else if (consoleLinesRef.current.length > 0) {
+                    // We got console output but couldn't parse players
+                    setError('No players found online or unable to parse response');
                 } else {
-                    setError('Server did not respond');
+                    setError('Server did not respond. Make sure the server is online.');
                 }
 
                 setLoading(false);
-            }, 5000);
+            }, 8000);
         } catch (err: any) {
             setError(err.message || 'Failed to send command');
             setLoading(false);
             setIsListening(false);
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
         }
     };
 
@@ -115,28 +133,38 @@ const PlayersContainer = () => {
             if (!isListening) return;
 
             // Collect console lines
-            setConsoleLines((prev) => {
-                const newLines = [...prev, line];
+            consoleLinesRef.current = [...consoleLinesRef.current, line];
 
-                // Try to parse players from accumulated lines
-                const parsedPlayers = parseListCommand(newLines);
-                if (parsedPlayers.length > 0) {
-                    setPlayers(parsedPlayers);
-                    setIsListening(false);
-                    setLoading(false);
+            // Try to parse players from accumulated lines
+            const parsedPlayers = parseListCommand(consoleLinesRef.current);
+            if (parsedPlayers.length > 0) {
+                setPlayers(parsedPlayers);
+                setIsListening(false);
+                setLoading(false);
+                setError(null);
+                if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                    timeoutRef.current = null;
                 }
-
-                return newLines;
-            });
+            }
         },
         [isListening],
     );
 
+    // Cleanup timeout on unmount
     useEffect(() => {
-        if (connected && instance) {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (connected && instance && serverStatus === null) {
             fetchPlayers();
         }
-    }, [connected, instance]);
+    }, [connected, instance, serverStatus]);
 
     const getMinecraftHeadUrl = (username: string): string => {
         // Using mc-heads.net API
