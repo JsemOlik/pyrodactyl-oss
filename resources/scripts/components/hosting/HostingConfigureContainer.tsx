@@ -6,7 +6,7 @@ import ActionButton from '@/components/elements/ActionButton';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 
 import getVpsDistributions, { VpsDistribution } from '@/api/hosting/getVpsDistributions';
-import { httpErrorToHuman } from '@/api/http';
+import http, { httpErrorToHuman } from '@/api/http';
 import getNests from '@/api/nests/getNests';
 
 interface SelectedPlan {
@@ -40,6 +40,21 @@ const HostingConfigureContainer = () => {
     const [selectedEgg, setSelectedEgg] = useState<number | null>(null);
     const [selectedDistribution, setSelectedDistribution] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState<FlowStep>('select-nest');
+
+    // Check server creation status
+    const { data: serverCreationStatus, isLoading: serverCreationStatusLoading } = useSWR<{ enabled: boolean }>(
+        '/api/client/hosting/server-creation-status',
+        async (url: string) => {
+            const response = await http.get(url);
+            return response.data.data;
+        },
+    );
+
+    useEffect(() => {
+        if (!serverCreationStatusLoading && serverCreationStatus && !serverCreationStatus.enabled) {
+            navigate('/hosting/server-creation-disabled');
+        }
+    }, [serverCreationStatus, serverCreationStatusLoading, navigate]);
 
     useEffect(() => {
         document.title = 'Configure Server | Pyrodactyl';

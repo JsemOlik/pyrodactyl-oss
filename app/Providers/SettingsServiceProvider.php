@@ -48,6 +48,10 @@ class SettingsServiceProvider extends ServiceProvider
     'cashier:webhook:secret',
     'cashier:currency',
     'cashier:currency_locale',
+    'billing:enable_server_creation',
+    'billing:server_creation_disabled_message',
+    'billing:status_page_url',
+    'billing:show_status_page_button',
   ];
 
 

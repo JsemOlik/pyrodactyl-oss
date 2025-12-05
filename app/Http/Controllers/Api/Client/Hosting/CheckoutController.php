@@ -32,6 +32,18 @@ class CheckoutController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        // Check if server creation is enabled
+        $serverCreationEnabled = config('billing.enable_server_creation', true);
+        if (!$serverCreationEnabled) {
+            return response()->json([
+                'errors' => [[
+                    'code' => 'ServerCreationDisabled',
+                    'status' => '403',
+                    'detail' => 'Server creation is currently disabled. Please check back later.',
+                ]],
+            ], 403);
+        }
+
         try {
             // Get or create Stripe customer
             $stripeCustomer = $this->getOrCreateStripeCustomer($user);

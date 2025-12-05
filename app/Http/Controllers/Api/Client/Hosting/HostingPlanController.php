@@ -120,4 +120,24 @@ class HostingPlanController extends Controller
             ],
         ];
     }
+
+    /**
+     * Get server creation status and disabled message if applicable.
+     */
+    public function serverCreationStatus(): array
+    {
+        $enabled = config('billing.enable_server_creation', true);
+        $message = config('billing.server_creation_disabled_message', '');
+        $statusPageUrl = config('billing.status_page_url', '');
+        $showStatusButton = config('billing.show_status_page_button', false);
+
+        return [
+            'data' => [
+                'enabled' => $enabled,
+                'disabled_message' => $message,
+                'status_page_url' => $statusPageUrl,
+                'show_status_page_button' => $showStatusButton,
+            ],
+        ];
+    }
 }

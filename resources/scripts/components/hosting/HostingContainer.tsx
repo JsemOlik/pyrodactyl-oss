@@ -10,7 +10,7 @@ import getHostingPlans, {
     HostingPlan,
     calculateCustomPlan,
 } from '@/api/hosting/getHostingPlans';
-import { httpErrorToHuman } from '@/api/http';
+import http, { httpErrorToHuman } from '@/api/http';
 
 import { useStoreState } from '@/state/hooks';
 
@@ -30,6 +30,15 @@ const HostingContainer = () => {
     const customInterval = 'month';
     const [customPlanCalculation, setCustomPlanCalculation] = useState<CustomPlanCalculation | null>(null);
     const [isCalculating, setIsCalculating] = useState(false);
+
+    // Check server creation status
+    const { data: serverCreationStatus } = useSWR<{ enabled: boolean }>(
+        '/api/client/hosting/server-creation-status',
+        async (url: string) => {
+            const response = await http.get(url);
+            return response.data.data;
+        },
+    );
 
     useEffect(() => {
         document.title = 'Oasis Hosting - Game Servers & VPS Hosting';
@@ -81,6 +90,12 @@ const HostingContainer = () => {
     };
 
     const handlePlanSelect = (plan: HostingPlan) => {
+        // Check if server creation is disabled
+        if (serverCreationStatus && !serverCreationStatus.enabled) {
+            navigate('/hosting/server-creation-disabled');
+            return;
+        }
+
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
@@ -97,6 +112,13 @@ const HostingContainer = () => {
         if (!customPlanCalculation) {
             return;
         }
+
+        // Check if server creation is disabled
+        if (serverCreationStatus && !serverCreationStatus.enabled) {
+            navigate('/hosting/server-creation-disabled');
+            return;
+        }
+
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {

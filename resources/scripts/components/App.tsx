@@ -29,6 +29,7 @@ const HostingContainer = lazy(() => import('@/components/hosting/HostingContaine
 const HostingConfigureContainer = lazy(() => import('@/components/hosting/HostingConfigureContainer'));
 const HostingCheckoutContainer = lazy(() => import('@/components/hosting/HostingCheckoutContainer'));
 const HostingPaymentVerifyingContainer = lazy(() => import('@/components/hosting/HostingPaymentVerifyingContainer'));
+const ServerCreationDisabled = lazy(() => import('@/components/hosting/ServerCreationDisabled'));
 
 interface ExtendedWindow extends Window {
     SiteConfiguration?: SiteSettings;
@@ -124,6 +125,15 @@ const App = () => {
                                     element={
                                         <Spinner.Suspense>
                                             <HostingContainer />
+                                        </Spinner.Suspense>
+                                    }
+                                />
+
+                                <Route
+                                    path='/hosting/server-creation-disabled'
+                                    element={
+                                        <Spinner.Suspense>
+                                            <ServerCreationDisabled />
                                         </Spinner.Suspense>
                                     }
                                 />

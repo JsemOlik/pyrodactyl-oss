@@ -200,12 +200,6 @@
                             <i class="bi bi-egg-fill"></i> <span>Nests</span>
                         </a>
                     </li>
-                    <li class="header">BILLING</li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.settings.billing') ?: 'active' }}">
-                        <a href="{{ route('admin.settings.billing') }}">
-                            <i class="bi bi-credit-card-fill"></i> <span>Settings</span>
-                        </a>
-                    </li>
                 </ul>
             </section>
         </aside>

@@ -43,6 +43,11 @@ class BillingController extends Controller
         $values = $request->normalize();
 
         foreach ($values as $key => $value) {
+            // Handle boolean fields - convert '1'/'0' to 'true'/'false' strings
+            if (in_array($key, ['billing:enable_server_creation', 'billing:show_status_page_button'])) {
+                $value = ($value === '1' || $value === true || $value === 'true') ? 'true' : 'false';
+            }
+
             // Skip empty values for encrypted fields to preserve existing values
             if (in_array($key, SettingsServiceProvider::getEncryptedKeys())) {
                 if (empty($value)) {
