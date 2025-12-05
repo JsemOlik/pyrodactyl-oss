@@ -158,19 +158,19 @@
                     </div>
                     <div class="form-group">
                         <label class="control-label">Allocation Restrictions</label>
-                        <div class="radio">
+                        <div class="radio radio-primary">
                             <label>
                                 <input type="radio" name="restriction_type" value="none" checked>
                                 <strong>None</strong> - Available to all nests/eggs (default)
                             </label>
                         </div>
-                        <div class="radio">
+                        <div class="radio radio-primary">
                             <label>
                                 <input type="radio" name="restriction_type" value="whitelist">
                                 <strong>Whitelist</strong> - Only allow selected nests/eggs
                             </label>
                         </div>
-                        <div class="radio">
+                        <div class="radio radio-primary">
                             <label>
                                 <input type="radio" name="restriction_type" value="blacklist">
                                 <strong>Blacklist</strong> - Block selected nests/eggs
@@ -247,19 +247,19 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label class="control-label">Restriction Type</label>
-                            <div class="radio">
+                            <div class="radio radio-primary">
                                 <label>
                                     <input type="radio" name="restriction_type" value="none" {{ $restrictionType === 'none' ? 'checked' : '' }}>
                                     <strong>None</strong> - Available to all nests/eggs
                                 </label>
                             </div>
-                            <div class="radio">
+                            <div class="radio radio-primary">
                                 <label>
                                     <input type="radio" name="restriction_type" value="whitelist" {{ $restrictionType === 'whitelist' ? 'checked' : '' }}>
                                     <strong>Whitelist</strong> - Only allow selected nests/eggs
                                 </label>
                             </div>
-                            <div class="radio">
+                            <div class="radio radio-primary">
                                 <label>
                                     <input type="radio" name="restriction_type" value="blacklist" {{ $restrictionType === 'blacklist' ? 'checked' : '' }}>
                                     <strong>Blacklist</strong> - Block selected nests/eggs
@@ -292,41 +292,58 @@
     <script>
     $(document).ready(function() {
         // Initialize select2 for this modal when it's shown
-        $('#restrictionModal{{ $allocation->id }}').on('show.bs.modal', function() {
-            var nestsData = [
-                @foreach($nests as $nest)
-                {
-                    id: {{ $nest->id }},
-                    text: '{{ $nest->name }}'
-                },
-                @endforeach
-            ];
-            
-            var eggsData = [
-                @foreach($nests as $nest)
-                    @foreach($nest->eggs as $egg)
+        var modal = $('#restrictionModal{{ $allocation->id }}');
+        var initialized = false;
+        
+        modal.on('show.bs.modal', function() {
+            if (!initialized) {
+                var nestsData = [
+                    @foreach($nests as $nest)
                     {
-                        id: {{ $egg->id }},
-                        text: '{{ $nest->name }} - {{ $egg->name }}'
+                        id: {{ $nest->id }},
+                        text: '{{ addslashes($nest->name) }}'
                     },
                     @endforeach
-                @endforeach
-            ];
+                ];
+                
+                var eggsData = [
+                    @foreach($nests as $nest)
+                        @foreach($nest->eggs as $egg)
+                        {
+                            id: {{ $egg->id }},
+                            text: '{{ addslashes($nest->name) }} - {{ addslashes($egg->name) }}'
+                        },
+                        @endforeach
+                    @endforeach
+                ];
+                
+                $('#modalNests{{ $allocation->id }}').select2({
+                    data: nestsData,
+                    placeholder: 'Select nests...',
+                    allowClear: true,
+                    dropdownParent: modal,
+                });
+                
+                @if(!empty($allowedNests))
+                $('#modalNests{{ $allocation->id }}').val([{{ implode(',', $allowedNests) }}]).trigger('change');
+                @endif
+                
+                $('#modalEggs{{ $allocation->id }}').select2({
+                    data: eggsData,
+                    placeholder: 'Select eggs...',
+                    allowClear: true,
+                    dropdownParent: modal,
+                });
+                
+                @if(!empty($allowedEggs))
+                $('#modalEggs{{ $allocation->id }}').val([{{ implode(',', $allowedEggs) }}]).trigger('change');
+                @endif
+                
+                initialized = true;
+            }
             
-            $('#modalNests{{ $allocation->id }}').select2({
-                data: nestsData,
-                placeholder: 'Select nests...',
-                allowClear: true,
-            }).val([{{ implode(',', $allowedNests) }}]).trigger('change');
-            
-            $('#modalEggs{{ $allocation->id }}').select2({
-                data: eggsData,
-                placeholder: 'Select eggs...',
-                allowClear: true,
-            }).val([{{ implode(',', $allowedEggs) }}]).trigger('change');
-            
-            // Show/hide restriction fields based on restriction type
-            $('input[name="restriction_type"]', this).on('change', function() {
+            // Show/hide restriction fields based on restriction type within this modal only
+            modal.find('input[name="restriction_type"]').off('change.restriction{{ $allocation->id }}').on('change.restriction{{ $allocation->id }}', function() {
                 var restrictionType = $(this).val();
                 if (restrictionType === 'none') {
                     $('#modalNestsGroup{{ $allocation->id }}').slideUp();
@@ -338,6 +355,13 @@
                     $('#modalEggsGroup{{ $allocation->id }}').slideDown();
                 }
             });
+        });
+        
+        // Cleanup select2 when modal is hidden
+        modal.on('hidden.bs.modal', function() {
+            $('#modalNests{{ $allocation->id }}').select2('destroy');
+            $('#modalEggs{{ $allocation->id }}').select2('destroy');
+            initialized = false;
         });
     });
     </script>
@@ -412,17 +436,20 @@
     });
     @endif
 
-    // Show/hide restriction fields based on restriction type
-    $('input[name="restriction_type"]').on('change', function() {
-        var restrictionType = $(this).val();
-        if (restrictionType === 'none') {
-            $('#restrictionNestsGroup').slideUp();
-            $('#restrictionEggsGroup').slideUp();
-            $('#pRestrictionNests').val(null).trigger('change');
-            $('#pRestrictionEggs').val(null).trigger('change');
-        } else {
-            $('#restrictionNestsGroup').slideDown();
-            $('#restrictionEggsGroup').slideDown();
+    // Show/hide restriction fields based on restriction type (only for creation form, not modals)
+    $('#restrictionNestsGroup').closest('form').find('input[name="restriction_type"]').on('change', function() {
+        // Only handle if this is in the creation form (not a modal)
+        if ($(this).closest('.modal').length === 0) {
+            var restrictionType = $(this).val();
+            if (restrictionType === 'none') {
+                $('#restrictionNestsGroup').slideUp();
+                $('#restrictionEggsGroup').slideUp();
+                $('#pRestrictionNests').val(null).trigger('change');
+                $('#pRestrictionEggs').val(null).trigger('change');
+            } else {
+                $('#restrictionNestsGroup').slideDown();
+                $('#restrictionEggsGroup').slideDown();
+            }
         }
     });
 
