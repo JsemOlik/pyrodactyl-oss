@@ -8,6 +8,7 @@ import PageContentBlock from '@/components/elements/PageContentBlock';
 
 import { httpErrorToHuman } from '@/api/http';
 import getNests from '@/api/nests/getNests';
+import getVpsDistributions, { VpsDistribution } from '@/api/hosting/getVpsDistributions';
 
 interface SelectedPlan {
     planId?: number;
@@ -16,14 +17,26 @@ interface SelectedPlan {
     interval?: string;
 }
 
+type HostingType = 'game-server' | 'vps';
+
 const HostingConfigureContainer = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { data: nests, error: nestsError, isLoading: nestsLoading } = useSWR('/api/client/nests', getNests);
+    const hostingType = (searchParams.get('type') || 'game-server') as HostingType;
+    
+    const { data: nests, error: nestsError, isLoading: nestsLoading } = useSWR(
+        hostingType === 'game-server' ? '/api/client/nests' : null,
+        getNests,
+    );
+    const { data: distributions, error: distributionsError, isLoading: distributionsLoading } = useSWR(
+        hostingType === 'vps' ? '/api/client/hosting/vps-distributions' : null,
+        getVpsDistributions,
+    );
 
     const [selectedPlan, setSelectedPlan] = useState<SelectedPlan | null>(null);
     const [selectedNest, setSelectedNest] = useState<number | null>(null);
     const [selectedEgg, setSelectedEgg] = useState<number | null>(null);
+    const [selectedDistribution, setSelectedDistribution] = useState<string | null>(null);
 
     useEffect(() => {
         document.title = 'Configure Server | Pyrodactyl';
@@ -49,7 +62,10 @@ const HostingConfigureContainer = () => {
     }, [searchParams, navigate]);
 
     const handleContinue = () => {
-        if (!selectedNest || !selectedEgg) {
+        if (hostingType === 'game-server' && (!selectedNest || !selectedEgg)) {
+            return;
+        }
+        if (hostingType === 'vps' && !selectedDistribution) {
             return;
         }
 
@@ -62,8 +78,14 @@ const HostingConfigureContainer = () => {
             params.set('memory', selectedPlan.memory?.toString() || '');
             params.set('interval', selectedPlan.interval || 'month');
         }
-        params.set('nest', selectedNest.toString());
-        params.set('egg', selectedEgg.toString());
+        params.set('type', hostingType);
+        
+        if (hostingType === 'game-server') {
+            params.set('nest', selectedNest!.toString());
+            params.set('egg', selectedEgg!.toString());
+        } else {
+            params.set('distribution', selectedDistribution!);
+        }
 
         navigate(`/hosting/checkout?${params.toString()}`);
     };
@@ -72,7 +94,10 @@ const HostingConfigureContainer = () => {
         navigate('/hosting');
     };
 
-    if (nestsLoading) {
+    const isLoading = hostingType === 'game-server' ? nestsLoading : distributionsLoading;
+    const hasError = hostingType === 'game-server' ? nestsError || !nests : distributionsError || !distributions;
+
+    if (isLoading) {
         return (
             <PageContentBlock title='Configure Server'>
                 <div className='flex items-center justify-center min-h-[400px]'>
@@ -82,7 +107,7 @@ const HostingConfigureContainer = () => {
         );
     }
 
-    if (nestsError || !nests) {
+    if (hasError) {
         return (
             <PageContentBlock title='Configure Server'>
                 <div className='flex items-center justify-center min-h-[400px]'>
@@ -92,67 +117,100 @@ const HostingConfigureContainer = () => {
         );
     }
 
-    const selectedNestData = nests.find((nest) => nest.attributes.id === selectedNest);
+    const selectedNestData = nests?.find((nest) => nest.attributes.id === selectedNest);
     const availableEggs = selectedNestData?.attributes.relationships?.eggs?.data || [];
+
+    const isReady = hostingType === 'game-server' 
+        ? selectedNest && selectedEgg 
+        : selectedDistribution;
 
     return (
         <PageContentBlock title='Configure Server'>
-            <MainPageHeader title='Configure Your Server' />
+            <MainPageHeader title={`Configure Your ${hostingType === 'vps' ? 'VPS' : 'Server'}`} />
 
             <div className='max-w-3xl space-y-6'>
-                {/* Nest Selection */}
-                <div>
-                    <label className='block text-sm font-medium text-white/70 mb-3'>Select Game Type (Nest)</label>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-                        {nests.map((nest) => (
-                            <button
-                                key={nest.attributes.id}
-                                onClick={() => {
-                                    setSelectedNest(nest.attributes.id);
-                                    setSelectedEgg(null); // Reset egg when nest changes
-                                }}
-                                className={`p-4 rounded-lg border transition-all text-left ${
-                                    selectedNest === nest.attributes.id
-                                        ? 'border-[#ffffff30] bg-[#ffffff10]'
-                                        : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
-                                }`}
-                            >
-                                <div className='font-semibold text-white mb-1'>{nest.attributes.name}</div>
-                                {nest.attributes.description && (
-                                    <div className='text-sm text-white/60'>{nest.attributes.description}</div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Egg Selection */}
-                {selectedNest && (
-                    <div>
-                        <label className='block text-sm font-medium text-white/70 mb-3'>Select Game (Egg)</label>
-                        {availableEggs.length === 0 ? (
-                            <div className='text-white/50 text-sm'>No eggs available for this nest.</div>
-                        ) : (
+                {hostingType === 'game-server' ? (
+                    <>
+                        {/* Nest Selection */}
+                        <div>
+                            <label className='block text-sm font-medium text-white/70 mb-3'>Select Game Type (Nest)</label>
                             <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-                                {availableEggs.map((egg) => (
+                                {nests?.map((nest) => (
                                     <button
-                                        key={egg.attributes.id}
-                                        onClick={() => setSelectedEgg(egg.attributes.id)}
+                                        key={nest.attributes.id}
+                                        onClick={() => {
+                                            setSelectedNest(nest.attributes.id);
+                                            setSelectedEgg(null); // Reset egg when nest changes
+                                        }}
                                         className={`p-4 rounded-lg border transition-all text-left ${
-                                            selectedEgg === egg.attributes.id
+                                            selectedNest === nest.attributes.id
                                                 ? 'border-[#ffffff30] bg-[#ffffff10]'
                                                 : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
                                         }`}
                                     >
-                                        <div className='font-semibold text-white mb-1'>{egg.attributes.name}</div>
-                                        {egg.attributes.description && (
-                                            <div className='text-sm text-white/60'>{egg.attributes.description}</div>
+                                        <div className='font-semibold text-white mb-1'>{nest.attributes.name}</div>
+                                        {nest.attributes.description && (
+                                            <div className='text-sm text-white/60'>{nest.attributes.description}</div>
                                         )}
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* Egg Selection */}
+                        {selectedNest && (
+                            <div>
+                                <label className='block text-sm font-medium text-white/70 mb-3'>Select Game (Egg)</label>
+                                {availableEggs.length === 0 ? (
+                                    <div className='text-white/50 text-sm'>No eggs available for this nest.</div>
+                                ) : (
+                                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                        {availableEggs.map((egg) => (
+                                            <button
+                                                key={egg.attributes.id}
+                                                onClick={() => setSelectedEgg(egg.attributes.id)}
+                                                className={`p-4 rounded-lg border transition-all text-left ${
+                                                    selectedEgg === egg.attributes.id
+                                                        ? 'border-[#ffffff30] bg-[#ffffff10]'
+                                                        : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
+                                                }`}
+                                            >
+                                                <div className='font-semibold text-white mb-1'>{egg.attributes.name}</div>
+                                                {egg.attributes.description && (
+                                                    <div className='text-sm text-white/60'>{egg.attributes.description}</div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         )}
-                    </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Distribution Selection */}
+                        <div>
+                            <label className='block text-sm font-medium text-white/70 mb-3'>Select Distribution</label>
+                            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                {distributions?.map((dist) => (
+                                    <button
+                                        key={dist.id}
+                                        onClick={() => setSelectedDistribution(dist.id)}
+                                        className={`p-4 rounded-lg border transition-all text-left ${
+                                            selectedDistribution === dist.id
+                                                ? 'border-[#ffffff30] bg-[#ffffff10]'
+                                                : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
+                                        }`}
+                                    >
+                                        <div className='font-semibold text-white mb-1'>{dist.name}</div>
+                                        {dist.description && (
+                                            <div className='text-sm text-white/60'>{dist.description}</div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </>
                 )}
 
                 {/* Action Buttons */}
@@ -164,7 +222,7 @@ const HostingConfigureContainer = () => {
                         variant='primary'
                         size='lg'
                         onClick={handleContinue}
-                        disabled={!selectedNest || !selectedEgg}
+                        disabled={!isReady}
                         className='flex-1'
                     >
                         Continue to Billing
