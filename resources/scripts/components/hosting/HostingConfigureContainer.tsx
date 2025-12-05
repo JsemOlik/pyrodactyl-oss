@@ -191,24 +191,35 @@ const HostingConfigureContainer = () => {
                         {/* Distribution Selection */}
                         <div>
                             <label className='block text-sm font-medium text-white/70 mb-3'>Select Distribution</label>
-                            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-                                {distributions?.map((dist) => (
-                                    <button
-                                        key={dist.id}
-                                        onClick={() => setSelectedDistribution(dist.id)}
-                                        className={`p-4 rounded-lg border transition-all text-left ${
-                                            selectedDistribution === dist.id
-                                                ? 'border-[#ffffff30] bg-[#ffffff10]'
-                                                : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
-                                        }`}
-                                    >
-                                        <div className='font-semibold text-white mb-1'>{dist.name}</div>
-                                        {dist.description && (
-                                            <div className='text-sm text-white/60'>{dist.description}</div>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
+                            {!distributions || distributions.length === 0 ? (
+                                <div className='text-white/50 text-sm'>
+                                    {distributionsLoading
+                                        ? 'Loading distributions...'
+                                        : 'No distributions available. Please contact support.'}
+                                </div>
+                            ) : (
+                                <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                    {distributions.map((dist) => (
+                                        <button
+                                            key={dist.id}
+                                            onClick={() => setSelectedDistribution(dist.id)}
+                                            className={`p-4 rounded-lg border transition-all text-left ${
+                                                selectedDistribution === dist.id
+                                                    ? 'border-[#ffffff30] bg-[#ffffff10]'
+                                                    : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
+                                            }`}
+                                        >
+                                            <div className='font-semibold text-white mb-1'>{dist.name}</div>
+                                            {dist.description && (
+                                                <div className='text-sm text-white/60'>{dist.description}</div>
+                                            )}
+                                            {dist.version && (
+                                                <div className='text-xs text-white/40 mt-1'>Version: {dist.version}</div>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
