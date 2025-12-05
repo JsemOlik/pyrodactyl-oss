@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import ActionButton from '@/components/elements/ActionButton';
@@ -27,7 +27,6 @@ const PropertiesContainer = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const parsePropertiesFile = (content: string): Property[] => {
         const lines = content.split('\n');
@@ -123,7 +122,7 @@ const PropertiesContainer = () => {
         }
     };
 
-    const saveProperties = async (showToast = true) => {
+    const saveProperties = async () => {
         if (!uuid) return;
 
         setSaving(true);
@@ -133,15 +132,11 @@ const PropertiesContainer = () => {
             const formatted = formatPropertiesFile(properties);
             await saveFileContents(uuid, 'server.properties', formatted);
             setOriginalContent(formatted);
-            if (showToast) {
-                toast.success('Properties saved successfully!');
-            }
+            toast.success('Properties saved successfully!');
         } catch (err: any) {
             const errorMessage = err.message || 'Failed to save server.properties file';
             setError(errorMessage);
-            if (showToast) {
-                toast.error(errorMessage);
-            }
+            toast.error(errorMessage);
         } finally {
             setSaving(false);
         }
@@ -149,28 +144,43 @@ const PropertiesContainer = () => {
 
     const updateProperty = (index: number, value: string) => {
         const updated = [...properties];
-        updated[index] = { ...updated[index], value };
-        setProperties(updated);
-
-        // Clear existing timeout
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
+        const currentProp = updated[index];
+        if (currentProp) {
+            updated[index] = { ...currentProp, value };
+            setProperties(updated);
         }
-
-        // Set new timeout for auto-save
-        saveTimeoutRef.current = setTimeout(() => {
-            const formatted = formatPropertiesFile(updated);
-            if (formatted !== originalContent) {
-                saveProperties(true);
-            }
-        }, 1000); // Auto-save after 1 second of no typing
     };
 
     const formatPropertyKey = (key: string): string => {
+        // Special case: MOTD should be all caps
+        if (key.toLowerCase() === 'motd') {
+            return 'MOTD';
+        }
         return key
             .split('-')
             .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
             .join(' ');
+    };
+
+    const getInputType = (key: string, value: string): 'boolean' | 'number' | 'text' => {
+        // MOTD is always a text input
+        if (key.toLowerCase() === 'motd') {
+            return 'text';
+        }
+
+        // Check if value is boolean (true/false, case-insensitive)
+        const lowerValue = value.toLowerCase();
+        if (lowerValue === 'true' || lowerValue === 'false') {
+            return 'boolean';
+        }
+
+        // Check if value is a number (including negative numbers and decimals)
+        if (value !== '' && /^-?\d+(\.\d+)?$/.test(value)) {
+            return 'number';
+        }
+
+        // Default to text input
+        return 'text';
     };
 
     const hasChanges = formatPropertiesFile(properties) !== originalContent;
@@ -192,34 +202,16 @@ const PropertiesContainer = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [uuid]);
 
-    // Cleanup timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (saveTimeoutRef.current) {
-                clearTimeout(saveTimeoutRef.current);
-            }
-        };
-    }, []);
-
     return (
         <ServerContentBlock title={'Properties'} showFlashKey={'properties'}>
             <ErrorBoundary>
-                <MainPageHeader
-                    title={'Server Properties'}
-                    description={
-                        'Manage your Minecraft server.properties file. Changes require a server restart to take effect.'
-                    }
-                >
-                    <div className='flex items-center gap-2'>
-                        {saving && (
-                            <span className='text-sm text-blue-400 flex items-center gap-2'>
-                                <Spinner size='small' />
-                                Saving...
-                            </span>
-                        )}
-                        {hasChanges && !saving && (
-                            <span className='text-sm text-yellow-400'>Changes will auto-save...</span>
-                        )}
+                <MainPageHeader direction='column' title={'Server Properties'}>
+                    <div className='flex items-center justify-between'>
+                        <p className='text-sm text-neutral-400 leading-relaxed'>
+                            Manage your Minecraft server.properties file. Changes require a server restart to take
+                            effect.
+                        </p>
+                        {hasChanges && <span className='text-sm text-yellow-400'>You have unsaved changes</span>}
                     </div>
                 </MainPageHeader>
 
@@ -232,14 +224,29 @@ const PropertiesContainer = () => {
 
                     {/* Search Box */}
                     {!loading && properties.some((p) => !p.isComment && p.key) && (
-                        <div className='mb-4'>
+                        <div className='mb-4 flex items-center gap-2'>
                             <input
                                 type='text'
                                 placeholder='Search properties...'
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className='w-full px-4 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                className='flex-1 px-4 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
                             />
+                            <ActionButton
+                                variant='primary'
+                                size='sm'
+                                onClick={saveProperties}
+                                disabled={saving || loading || !hasChanges}
+                            >
+                                {saving ? (
+                                    <span className='flex items-center gap-2'>
+                                        <Spinner size='small' />
+                                        Saving...
+                                    </span>
+                                ) : (
+                                    'Apply Changes'
+                                )}
+                            </ActionButton>
                         </div>
                     )}
 
@@ -249,7 +256,7 @@ const PropertiesContainer = () => {
                         </div>
                     ) : (
                         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                            {filteredProperties.map((prop, index) => {
+                            {filteredProperties.map((prop) => {
                                 // Skip comment-only lines and empty lines
                                 if (prop.isComment || !prop.key) {
                                     return null;
@@ -270,62 +277,61 @@ const PropertiesContainer = () => {
                                                 </span>
                                             )}
                                         </label>
-                                        {prop.key === 'online-mode' ||
-                                        prop.key === 'force-gamemode' ||
-                                        prop.key === 'enable-query' ||
-                                        prop.key === 'white-list' ? (
-                                            <select
-                                                value={prop.value}
-                                                onChange={(e) => updateProperty(actualIndex, e.target.value)}
-                                                className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
-                                            >
-                                                <option value='true'>True</option>
-                                                <option value='false'>False</option>
-                                            </select>
-                                        ) : prop.key === 'difficulty' ? (
-                                            <select
-                                                value={prop.value}
-                                                onChange={(e) => updateProperty(actualIndex, e.target.value)}
-                                                className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
-                                            >
-                                                <option value='easy'>Easy</option>
-                                                <option value='normal'>Normal</option>
-                                                <option value='hard'>Hard</option>
-                                                <option value='peaceful'>Peaceful</option>
-                                            </select>
-                                        ) : prop.key === 'max-tick-time' || prop.key === 'view-distance' ? (
-                                            <div>
+                                        {(() => {
+                                            const inputType = getInputType(prop.key, prop.value);
+
+                                            if (inputType === 'boolean') {
+                                                return (
+                                                    <select
+                                                        value={prop.value}
+                                                        onChange={(e) => updateProperty(actualIndex, e.target.value)}
+                                                        className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                                    >
+                                                        <option value='true'>True</option>
+                                                        <option value='false'>False</option>
+                                                    </select>
+                                                );
+                                            }
+
+                                            if (inputType === 'number') {
+                                                return (
+                                                    <div>
+                                                        <input
+                                                            type='number'
+                                                            value={prop.value}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                // Allow numbers, negative numbers, decimals, and empty for deletion
+                                                                if (value === '' || /^-?\d+(\.\d+)?$/.test(value)) {
+                                                                    updateProperty(actualIndex, value);
+                                                                }
+                                                            }}
+                                                            className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                                            placeholder='Value'
+                                                        />
+                                                        {prop.key === 'view-distance' &&
+                                                            prop.value &&
+                                                            parseFloat(prop.value) > 18 && (
+                                                                <p className='mt-2 text-xs text-yellow-400'>
+                                                                    A larger view distance may slow down chunk
+                                                                    generation. Use with caution
+                                                                </p>
+                                                            )}
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Text input (default, including MOTD)
+                                            return (
                                                 <input
-                                                    type='number'
+                                                    type='text'
                                                     value={prop.value}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value;
-                                                        // Only allow numbers (including empty for deletion)
-                                                        if (value === '' || /^\d+$/.test(value)) {
-                                                            updateProperty(actualIndex, value);
-                                                        }
-                                                    }}
+                                                    onChange={(e) => updateProperty(actualIndex, e.target.value)}
                                                     className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
                                                     placeholder='Value'
                                                 />
-                                                {prop.key === 'view-distance' &&
-                                                    prop.value &&
-                                                    parseInt(prop.value) > 18 && (
-                                                        <p className='mt-2 text-xs text-yellow-400'>
-                                                            A larger view distance may slow down chunk generation. Use
-                                                            with caution
-                                                        </p>
-                                                    )}
-                                            </div>
-                                        ) : (
-                                            <input
-                                                type='text'
-                                                value={prop.value}
-                                                onChange={(e) => updateProperty(actualIndex, e.target.value)}
-                                                className='w-full px-3 py-2 rounded-lg bg-[#ffffff11] border border-[#ffffff12] text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
-                                                placeholder='Value'
-                                            />
-                                        )}
+                                            );
+                                        })()}
                                     </div>
                                 );
                             })}
