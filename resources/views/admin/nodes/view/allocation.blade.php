@@ -337,28 +337,44 @@
             @endif
         }
         
-        function toggleRestrictionFields(restrictionType) {
+        function toggleRestrictionFields(restrictionType, animate) {
             var nestsGroup = $('#modalNestsGroup' + allocationId);
             var eggsGroup = $('#modalEggsGroup' + allocationId);
             
             if (restrictionType === 'none') {
-                nestsGroup.slideUp();
-                eggsGroup.slideUp();
+                if (animate) {
+                    nestsGroup.slideUp();
+                    eggsGroup.slideUp();
+                } else {
+                    nestsGroup.hide();
+                    eggsGroup.hide();
+                }
+                
+                // Clean up select2 when hiding
+                try {
+                    if (nestsSelect.hasClass('select2-hidden-accessible')) {
+                        nestsSelect.select2('destroy');
+                    }
+                    if (eggsSelect.hasClass('select2-hidden-accessible')) {
+                        eggsSelect.select2('destroy');
+                    }
+                } catch(e) {}
             } else {
-                nestsGroup.slideDown();
-                eggsGroup.slideDown();
+                // Show immediately (no animation)
+                nestsGroup.show();
+                eggsGroup.show();
                 
                 // Initialize select2 after fields are shown
                 setTimeout(function() {
                     initializeSelect2();
-                }, 250);
+                }, 50);
             }
         }
         
-        // Set up radio button change handler
-        modal.on('change', 'input[name="restriction_type"]', function() {
+        // Set up radio button change handler - use immediate event binding
+        $(document).on('change', '#restrictionModal' + allocationId + ' input[name="restriction_type"]', function() {
             var restrictionType = $(this).val();
-            toggleRestrictionFields(restrictionType);
+            toggleRestrictionFields(restrictionType, false); // false = no animation, show instantly
         });
         
         // When modal is shown
@@ -366,8 +382,8 @@
             var checkedRadio = modal.find('input[name="restriction_type"]:checked');
             var restrictionType = checkedRadio.length ? checkedRadio.val() : 'none';
             
-            // Show/hide fields based on current selection
-            toggleRestrictionFields(restrictionType);
+            // Show/hide fields based on current selection (no animation on initial load)
+            toggleRestrictionFields(restrictionType, false);
             
             initialized = true;
         });
