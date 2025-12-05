@@ -1,6 +1,6 @@
 'use client';
 
-import { Ellipsis, Gear, House, PencilToLine, ChartLineUp } from '@gravity-ui/icons';
+import { ChartLine, Ellipsis, Gear, House, PencilToLine } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import React, { Fragment, Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
@@ -192,7 +192,7 @@ const VpsRouter = () => {
                                     to={`/vps-server/${id}/metrics`}
                                     end
                                 >
-                                    <ChartLineUp width={22} height={22} fill='currentColor' />
+                                    <ChartLine width={22} height={22} fill='currentColor' />
                                     <p>Metrics</p>
                                 </NavLink>
                                 <NavLink
@@ -264,4 +264,3 @@ const VpsRouter = () => {
 };
 
 export default VpsRouter;
-
