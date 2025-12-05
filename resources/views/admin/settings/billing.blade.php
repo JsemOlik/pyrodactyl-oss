@@ -35,8 +35,8 @@
             <div class="form-group col-md-6">
               <label class="control-label">Stripe Secret Key <span class="field-optional"></span></label>
               <div>
-                <input type="password" class="form-control" name="cashier:secret"
-                  value="{{ old('cashier:secret', config('cashier.secret') ? '***' : '') }}" placeholder="sk_test_..." />
+                <input type="text" class="form-control" name="cashier:secret"
+                  value="{{ old('cashier:secret', config('cashier.secret')) }}" placeholder="sk_test_..." />
                 <p class="text-muted small">Your Stripe secret key. This will be encrypted and stored securely. Leave blank to keep existing value.</p>
               </div>
             </div>
@@ -45,8 +45,8 @@
             <div class="form-group col-md-6">
               <label class="control-label">Webhook Secret <span class="field-optional"></span></label>
               <div>
-                <input type="password" class="form-control" name="cashier:webhook:secret"
-                  value="{{ old('cashier:webhook:secret', config('cashier.webhook.secret') ? '***' : '') }}" placeholder="whsec_..." />
+                <input type="text" class="form-control" name="cashier:webhook:secret"
+                  value="{{ old('cashier:webhook:secret', config('cashier.webhook.secret')) }}" placeholder="whsec_..." />
                 <p class="text-muted small">The webhook signing secret from your Stripe dashboard. Leave blank to keep existing value.</p>
               </div>
             </div>
@@ -78,7 +78,7 @@
         <div class="box-body">
           <div class="row">
             <div class="form-group col-md-12">
-              <div class="checkbox">
+              <div class="checkbox checkbox-primary">
                 <label>
                   @php
                     $enableServerCreation = old('billing:enable_server_creation', config('billing.enable_server_creation', true));
@@ -112,7 +112,7 @@
               </div>
             </div>
             <div class="form-group col-md-6">
-              <div class="checkbox" style="margin-top: 25px;">
+              <div class="checkbox checkbox-primary" style="margin-top: 25px;">
                 <label>
                   @php
                     $showStatusButton = old('billing:show_status_page_button', config('billing.show_status_page_button', false));
@@ -150,8 +150,8 @@
         contentType: 'application/json',
         data: JSON.stringify({
           'cashier:key': $('input[name="cashier:key"]').val(),
-          'cashier:secret': $('input[name="cashier:secret"]').val() === '***' ? '' : $('input[name="cashier:secret"]').val(),
-          'cashier:webhook:secret': $('input[name="cashier:webhook:secret"]').val() === '***' ? '' : $('input[name="cashier:webhook:secret"]').val(),
+          'cashier:secret': $('input[name="cashier:secret"]').val(),
+          'cashier:webhook:secret': $('input[name="cashier:webhook:secret"]').val(),
           'cashier:currency': $('input[name="cashier:currency"]').val(),
           'cashier:currency_locale': $('input[name="cashier:currency_locale"]').val(),
           'billing:enable_server_creation': $('input[name="billing:enable_server_creation"]').is(':checked') ? '1' : '0',
