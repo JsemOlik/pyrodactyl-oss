@@ -8,16 +8,38 @@
 
 core.register_fetches("minecraft_hostname", function(txn)
     -- Get the request buffer (TCP payload)
-    -- For TCP mode, we use txn.req:get() to get the request data
+    -- For TCP mode with tcp-request content accept, we can access raw TCP data
     if not txn.req then
         return nil
     end
     
     -- Get the request data as a string
     -- In TCP mode, this contains the raw packet bytes
-    local data = txn.req:get()
+    -- Note: This fetch is called during ACL evaluation, so data should be available
+    -- after tcp-request inspect-delay has collected it
+    local data = nil
     
-    if not data or #data == 0 then
+    -- Try to get the data - in TCP mode, txn.req:get() should work
+    -- But we need to be careful about when it's called
+    local ok, result = pcall(function()
+        -- In TCP mode, get() returns the raw TCP payload
+        return txn.req:get()
+    end)
+    
+    if not ok then
+        -- If get() fails, return nil (data not available yet)
+        return nil
+    end
+    
+    data = result
+    
+    -- Check if we have valid data
+    if not data or type(data) ~= "string" or #data == 0 then
+        return nil
+    end
+    
+    -- Need at least 3 bytes for a valid handshake packet (packet ID + some data)
+    if #data < 3 then
         return nil
     end
     
