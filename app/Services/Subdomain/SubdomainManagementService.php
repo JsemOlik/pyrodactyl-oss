@@ -74,7 +74,7 @@ class SubdomainManagementService
 
         // Get DNS records to create
         $newDomain = $this->createDnsRecord($subdomain, $domain->name);
-        $dnsRecords = $feature->getDnsRecords($server, $newDomain, $domain->name);
+        $dnsRecords = $feature->getDnsRecords($server, $newDomain, $domain->name, $proxyPort);
 
         // Normalize IP addresses in DNS records
         $dnsRecords = $this->normalizeIpAddresses($dnsRecords, $server);
@@ -165,7 +165,7 @@ class SubdomainManagementService
             throw new \Exception('DNS service temporarily unavailable.');
         }
 
-        $newDnsRecords = $feature->getDnsRecords($server, $serverSubdomain->subdomain, $domain->name);
+        $newDnsRecords = $feature->getDnsRecords($server, $serverSubdomain->subdomain, $domain->name, $serverSubdomain->proxy_port);
         $newDnsRecords = $this->normalizeIpAddresses($newDnsRecords, $server);
 
         DB::transaction(function () use ($serverSubdomain, $dnsProvider, $domain, $newDnsRecords) {

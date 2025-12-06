@@ -18,10 +18,10 @@ class ScpSlSubdomainFeature implements SubdomainFeatureInterface
     /**
      * Get the DNS records that need to be created for SCP:SL.
      */
-    public function getDnsRecords(Server $server, string $subdomain, string $domain): array
+    public function getDnsRecords(Server $server, string $subdomain, string $domain, ?int $proxyPort = null): array
     {
         $ip = $server->allocation->ip;
-        $port = $server->allocation->port;
+        $port = $proxyPort ?? $server->allocation->port;
         $subdomain_split = explode(".", $subdomain);
         $fullDomain = $subdomain_split[0] . '.' . $domain;
 

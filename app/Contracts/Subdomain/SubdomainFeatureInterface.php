@@ -17,7 +17,8 @@ interface SubdomainFeatureInterface
      * @param Server $server The server instance
      * @param string $subdomain The subdomain name
      * @param string $domain The domain name
+     * @param int|null $proxyPort The proxy port if using HAProxy/NGINX proxy (null if not using proxy)
      * @return array Array of DNS record configurations
      */
-    public function getDnsRecords(Server $server, string $subdomain, string $domain): array;
+    public function getDnsRecords(Server $server, string $subdomain, string $domain, ?int $proxyPort = null): array;
 }
