@@ -57,8 +57,13 @@ class HaproxyService
 
 backend subdomain_{$subdomain->id}_backend
     mode tcp
+    option tcplog
+    # Enable TCP keep-alive to maintain connection
+    option clitcpka
+    option srvtcpka
     # No health check - Minecraft requires proper handshake, simple TCP checks fail
     # HAProxy will still route to the server even if marked as DOWN
+    # Ensure full connection flow - don't interfere with packet forwarding
     server container_{$subdomain->id} {$containerIp}:{$containerPort}
     # Note: Removing 'check' disables health checks - connections will always work
 
@@ -214,6 +219,9 @@ defaults
     mode tcp
     option tcplog
     option dontlognull
+    # Enable TCP keep-alive to maintain connection after initial handshake
+    option clitcpka
+    option srvtcpka
     timeout connect 5s
     timeout client 50s
     timeout server 50s
@@ -239,13 +247,15 @@ frontend minecraft_frontend
     tcp-request inspect-delay {$inspectDelay}s
     
     # Accept the content to make data available for Lua script
-    # This must come BEFORE Lua action so data can be read
+    # This must come BEFORE Lua action so data can be read via dup()
     # The data will be buffered and forwarded after routing decision
+    # Note: This only affects packet inspection - after routing, connection flows normally
     tcp-request content accept
     
     # Extract hostname using Lua action and store in variable
     # The Lua script uses dup() which creates a copy without consuming the data
     # This must run AFTER accept so data is available, but BEFORE routing rules
+    # The original packet data remains intact and will be forwarded to the backend
     tcp-request content lua.extract_minecraft_hostname
     
     # Route based on extracted hostname
