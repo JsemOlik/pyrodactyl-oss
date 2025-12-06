@@ -115,6 +115,14 @@ class SubdomainController extends ClientApiController
                 $data['proxy_port'] ?? null
             );
 
+            // Reload relationships to ensure they're available
+            $serverSubdomain->loadMissing(['domain', 'server']);
+
+            // Ensure domain is loaded before accessing properties
+            if (!$serverSubdomain->domain) {
+                throw new \RuntimeException("Subdomain created but domain relationship is missing");
+            }
+
             return response()->json([
                 'message' => $existingSubdomains->isNotEmpty() ? 'Subdomain replaced successfully.' : 'Subdomain created successfully.',
                 'subdomain' => [

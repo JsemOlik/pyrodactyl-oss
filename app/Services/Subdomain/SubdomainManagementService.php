@@ -129,6 +129,9 @@ class SubdomainManagementService
                     'is_active' => true,
                 ]);
 
+                // Load relationships before returning (needed for accessors and observer)
+                $serverSubdomain->load(['domain', 'server.allocation']);
+
                 return $serverSubdomain;
             } catch (\Exception $e) {
                 $rollbackRequired = true;
