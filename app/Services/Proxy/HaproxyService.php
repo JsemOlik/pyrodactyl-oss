@@ -76,8 +76,9 @@ HAPROXY;
                 
                 // Add ACL rule for this hostname using Lua fetch function
                 // The Lua script extracts the hostname from the Minecraft handshake packet
+                // Note: The fetch is registered as "minecraft_hostname", so it's accessed as lua.minecraft_hostname
                 $frontendAcls .= "    # ACL for {$hostname}\n";
-                $frontendAcls .= "    use_backend {$backendName} if { lua.fetch(minecraft_hostname) -m str {$hostname} }\n";
+                $frontendAcls .= "    use_backend {$backendName} if { lua.minecraft_hostname -m str {$hostname} }\n";
                 
                 // Generate backend config
                 $backendDefs .= $this->generateBackendConfig($subdomain);
@@ -156,6 +157,7 @@ HAPROXY;
      * 
      * Note: HAProxy uses chroot, so the Lua script path in the config must be relative to the chroot.
      * The chroot is typically /var/lib/haproxy, so we write the script there.
+     * Uses sudo to write to protected directories.
      */
     public function writeLuaScript(): bool
     {
@@ -185,21 +187,54 @@ HAPROXY;
         }
 
         try {
-            // Write to /etc/haproxy/ (for reference and if chroot is disabled)
+            // Write to temporary file first (web server can write to storage)
+            $tempFile = storage_path('app/haproxy_lua_script_temp.lua');
+            File::put($tempFile, $luaScriptContent);
+            
+            // Use sudo to copy to /etc/haproxy/ (for reference and if chroot is disabled)
             $luaScriptDir = dirname($luaScriptPath);
-            if (!File::isDirectory($luaScriptDir)) {
-                File::makeDirectory($luaScriptDir, 0755, true);
+            $createDirCmd = "sudo mkdir -p {$luaScriptDir}";
+            $copyCmd = "sudo cp {$tempFile} {$luaScriptPath}";
+            $chmodCmd = "sudo chmod 644 {$luaScriptPath}";
+            
+            exec("{$createDirCmd} 2>&1", $output1, $returnCode1);
+            if ($returnCode1 !== 0) {
+                throw new \Exception("Failed to create directory: " . implode("\n", $output1));
             }
-            File::put($luaScriptPath, $luaScriptContent);
-            File::chmod($luaScriptPath, 0644);
+            
+            exec("{$copyCmd} 2>&1", $output2, $returnCode2);
+            if ($returnCode2 !== 0) {
+                throw new \Exception("Failed to copy Lua script: " . implode("\n", $output2));
+            }
+            
+            exec("{$chmodCmd} 2>&1", $output3, $returnCode3);
+            if ($returnCode3 !== 0) {
+                throw new \Exception("Failed to set permissions: " . implode("\n", $output3));
+            }
 
             // Also write to chroot directory (HAProxy with chroot needs it here)
             $chrootLuaScriptDir = dirname($chrootLuaScriptPath);
-            if (!File::isDirectory($chrootLuaScriptDir)) {
-                File::makeDirectory($chrootLuaScriptDir, 0755, true);
+            $createChrootDirCmd = "sudo mkdir -p {$chrootLuaScriptDir}";
+            $copyChrootCmd = "sudo cp {$tempFile} {$chrootLuaScriptPath}";
+            $chmodChrootCmd = "sudo chmod 644 {$chrootLuaScriptPath}";
+            
+            exec("{$createChrootDirCmd} 2>&1", $output4, $returnCode4);
+            if ($returnCode4 !== 0) {
+                throw new \Exception("Failed to create chroot directory: " . implode("\n", $output4));
             }
-            File::put($chrootLuaScriptPath, $luaScriptContent);
-            File::chmod($chrootLuaScriptPath, 0644);
+            
+            exec("{$copyChrootCmd} 2>&1", $output5, $returnCode5);
+            if ($returnCode5 !== 0) {
+                throw new \Exception("Failed to copy Lua script to chroot: " . implode("\n", $output5));
+            }
+            
+            exec("{$chmodChrootCmd} 2>&1", $output6, $returnCode6);
+            if ($returnCode6 !== 0) {
+                throw new \Exception("Failed to set chroot permissions: " . implode("\n", $output6));
+            }
+            
+            // Clean up temp file
+            File::delete($tempFile);
 
             Log::info('HAProxy Lua script written', [
                 'script_file' => $luaScriptPath,
@@ -208,6 +243,11 @@ HAPROXY;
 
             return true;
         } catch (\Exception $e) {
+            // Clean up temp file if it exists
+            if (isset($tempFile) && File::exists($tempFile)) {
+                File::delete($tempFile);
+            }
+            
             Log::error('Failed to write HAProxy Lua script', [
                 'script_file' => $luaScriptPath,
                 'error' => $e->getMessage(),
