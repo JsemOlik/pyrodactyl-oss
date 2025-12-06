@@ -36,6 +36,16 @@ class HaproxyService
         $containerIp = ($allocationIp === '0.0.0.0' || $allocationIp === '::') ? '127.0.0.1' : $allocationIp;
         $containerPort = $allocation->port;
         $hostname = $subdomain->full_domain;
+        
+        // Log backend configuration for debugging
+        Log::debug('HAProxy backend configuration', [
+            'subdomain_id' => $subdomain->id,
+            'hostname' => $hostname,
+            'allocation_ip' => $allocationIp,
+            'container_ip' => $containerIp,
+            'container_port' => $containerPort,
+            'server_id' => $server->id,
+        ]);
 
         $config = <<<HAPROXY
 # Backend for subdomain: {$hostname}
@@ -46,8 +56,10 @@ class HaproxyService
 
 backend subdomain_{$subdomain->id}_backend
     mode tcp
-    server container_{$subdomain->id} {$containerIp}:{$containerPort} check inter 3s fall 3 rise 2
-    # Note: Health check may fail if server is restarting - connections will still work
+    # No health check - Minecraft requires proper handshake, simple TCP checks fail
+    # HAProxy will still route to the server even if marked as DOWN
+    server container_{$subdomain->id} {$containerIp}:{$containerPort}
+    # Note: Removing 'check' disables health checks - connections will always work
 
 HAPROXY;
 
@@ -131,8 +143,6 @@ HAPROXY;
         }
 
         // Default backend (if configured and exists)
-        // If no default backend is configured but we have subdomains, use the first one as fallback
-        // This helps with testing - connections that don't match ACLs will still route to a backend
         $defaultBackendLine = '';
         if ($defaultBackend) {
             // Verify the default backend actually exists in our backends
@@ -146,28 +156,43 @@ HAPROXY;
             
             if ($backendExists) {
                 $defaultBackendLine = "    default_backend {$defaultBackend}\n";
+                Log::info('Using configured default backend', [
+                    'default_backend' => $defaultBackend,
+                ]);
             } else {
-                // Default backend doesn't exist, log warning
+                // Default backend doesn't exist, log warning but don't use it
                 $availableBackends = [];
                 foreach ($subdomains as $subdomain) {
                     $availableBackends[] = "subdomain_{$subdomain->id}_backend";
                 }
-                Log::warning('Default backend specified but does not exist', [
+                Log::warning('Default backend specified but does not exist - ignoring', [
                     'default_backend' => $defaultBackend,
                     'available_backends' => $availableBackends,
                 ]);
-                // Fall through to use first subdomain as default if available
             }
         }
         
-        // Do NOT use first subdomain as default backend - this causes all connections to route to server1
-        // If hostname extraction fails, connections should be rejected so we can debug the issue
-        if (empty($defaultBackendLine)) {
-            $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
-            $defaultBackendLine .= "    # This ensures we can debug hostname extraction issues\n";
-            Log::info('No default backend configured - unmatched connections will be rejected', [
+        // If no default backend configured, create a catch-all backend for debugging
+        // This will help us see what hostnames are being extracted
+        if (empty($defaultBackendLine) && $subdomains->isNotEmpty()) {
+            // Create a debug backend that logs the extracted hostname
+            $firstSubdomain = $subdomains->first();
+            $firstBackend = "subdomain_{$firstSubdomain->id}_backend";
+            
+            // Use first subdomain as default, but log it as a warning
+            // This allows connections to work while we debug hostname extraction
+            $defaultBackendLine = "    # Default backend (fallback for unmatched connections)\n";
+            $defaultBackendLine .= "    # WARNING: If connections route here, hostname extraction may be failing\n";
+            $defaultBackendLine .= "    # Check HAProxy logs to see which hostnames are being extracted\n";
+            $defaultBackendLine .= "    default_backend {$firstBackend}\n";
+            
+            Log::warning('Using first subdomain as default backend - hostname extraction may need debugging', [
+                'default_backend' => $firstBackend,
+                'subdomain_id' => $firstSubdomain->id,
                 'total_subdomains' => $subdomains->count(),
             ]);
+        } else if (empty($defaultBackendLine)) {
+            $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
         }
 
         $config = <<<HAPROXY
