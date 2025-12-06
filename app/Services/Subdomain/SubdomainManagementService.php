@@ -82,7 +82,7 @@ class SubdomainManagementService
         $featureName = $feature->getFeatureName();
         $gameType = str_replace('subdomain_', '', $featureName);
 
-        // Transform records: A record becomes subdomain-target, SRV records use game type and point to A record
+        // Transform records: SRV records use game type and point to subdomain
         $dnsRecords = $this->transformDnsRecords($dnsRecords, $server, $subdomain, $domain->name, $gameType);
 
         // Add a generic SRV record if one doesn't already exist
@@ -182,7 +182,7 @@ class SubdomainManagementService
         $featureName = $feature->getFeatureName();
         $gameType = str_replace('subdomain_', '', $featureName);
 
-        // Transform records: A record becomes subdomain-target, SRV records use game type and point to A record
+        // Transform records: SRV records use game type and point to subdomain
         $newDnsRecords = $this->transformDnsRecords($newDnsRecords, $server, $serverSubdomain->subdomain, $domain->name, $gameType);
 
         // Add a generic SRV record if one doesn't already exist
@@ -642,9 +642,9 @@ class SubdomainManagementService
 
     /**
      * Transform DNS records:
-     * - A record name becomes "subdomain-target"
+     * - A record name stays as subdomain (no -target suffix)
      * - SRV records use game type as service (e.g., _minecraft instead of subdomain name)
-     * - SRV targets point to "subdomain-target.domain.com"
+     * - SRV targets point to "subdomain.domain.com"
      *
      * @param array $dnsRecords
      * @param Server $server
@@ -655,39 +655,25 @@ class SubdomainManagementService
      */
     private function transformDnsRecords(array $dnsRecords, Server $server, string $subdomain, string $domain, string $gameType): array
     {
-        $aRecordName = $subdomain . '-target';
-        $aRecordFullDomain = $aRecordName . '.' . $domain;
+        $aRecordFullDomain = $subdomain . '.' . $domain;
         $dnsRecordName = $this->createDnsRecord($subdomain, $domain);
-        $targetDnsRecordName = $this->createDnsRecord($aRecordName, $domain);
 
         foreach ($dnsRecords as &$record) {
-            if ($record['type'] === 'A') {
-                // Change A record name to subdomain-target
-                // Extract base name if it includes hierarchy
-                $currentName = $record['name'];
-                $nameParts = explode('.', $currentName);
-                $baseName = $nameParts[0];
-                
-                // Replace the base name with subdomain-target, preserving any hierarchy
-                if (count($nameParts) > 1) {
-                    // Has hierarchy, replace first part
-                    $nameParts[0] = $aRecordName;
-                    $record['name'] = implode('.', $nameParts);
-                } else {
-                    // No hierarchy, just replace
-                    $record['name'] = $aRecordName;
-                }
-            } elseif ($record['type'] === 'SRV') {
+            if ($record['type'] === 'SRV') {
                 // Update SRV record to use game type as service name (e.g., _minecraft._tcp.macucu)
                 $record['name'] = '_' . $gameType . '._tcp.' . $dnsRecordName;
                 
                 // Update SRV content
                 if (is_array($record['content'])) {
                     $record['content']['service'] = '_' . $gameType;
-                    // Target should be the A record's full domain (e.g., hardcore-target.domain.com)
+                    // Target should be the subdomain's full domain (e.g., macucu.domain.com)
                     // The Cloudflare provider will preserve full FQDNs
                     $record['content']['target'] = $aRecordFullDomain;
+                    // Set weight to 0
+                    $record['content']['weight'] = 0;
                 }
+                // Set TTL to 1 (auto in Cloudflare)
+                $record['ttl'] = 1;
             }
         }
 
@@ -748,9 +734,8 @@ class SubdomainManagementService
             $allocation = $server->allocation;
             $port = $allocation->port;
             
-            // A record name is subdomain-target (e.g., "night-target")
-            $aRecordName = $subdomain . '-target';
-            $aRecordFullDomain = $aRecordName . '.' . $domain;
+            // Subdomain's full domain (e.g., "macucu.domain.com")
+            $subdomainFullDomain = $subdomain . '.' . $domain;
             
             // Get the DNS record name for the SRV record name (might include hierarchy)
             $dnsRecordName = $this->createDnsRecord($subdomain, $domain);
@@ -758,7 +743,7 @@ class SubdomainManagementService
             // Use the game type as the service name (e.g., "minecraft" -> "_minecraft._tcp.macucu")
             $serviceName = '_' . $gameType;
 
-            // The target will be the A record's full domain (e.g., night-target.jsemolik.dev)
+            // The target will be the subdomain's full domain (e.g., macucu.jsemolik.dev)
             // The A record already uses the correct IP based on trust_alias (ip_alias if trust_alias is true, otherwise ip)
             // The Cloudflare provider will preserve full FQDNs
             $dnsRecords[] = [
@@ -768,11 +753,11 @@ class SubdomainManagementService
                     'service' => $serviceName,
                     'proto' => '_tcp',
                     'priority' => 0,
-                    'weight' => 5,
+                    'weight' => 0,
                     'port' => $port,
-                    'target' => $aRecordFullDomain,
+                    'target' => $subdomainFullDomain,
                 ],
-                'ttl' => 300,
+                'ttl' => 1, // 1 = auto in Cloudflare
             ];
         }
 
