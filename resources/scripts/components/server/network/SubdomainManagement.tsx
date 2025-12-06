@@ -282,25 +282,28 @@ const SubdomainManagement = () => {
                             </div>
                         </div>
                     </div>
-                    <div className='flex items-center justify-end gap-3 pt-4 border-t border-[#ffffff15]'>
-                        <ActionButton
-                            type='button'
-                            variant='danger'
-                            onClick={handleDeleteSubdomain}
-                            disabled={loading}
-                            size='sm'
-                        >
-                            {loading ? 'Deleting...' : 'Delete Subdomain'}
-                        </ActionButton>
-                        <ActionButton
-                            type='button'
-                            variant='primary'
-                            onClick={() => setIsEditing(true)}
-                            disabled={loading}
-                            size='sm'
-                        >
-                            Edit Subdomain
-                        </ActionButton>
+                    <div className='flex items-center justify-between gap-3 pt-4 border-t border-[#ffffff15]'>
+                        <p className='text-sm text-zinc-400'>This can take a few minutes, please be patient.</p>
+                        <div className='flex items-center gap-3'>
+                            <ActionButton
+                                type='button'
+                                variant='danger'
+                                onClick={handleDeleteSubdomain}
+                                disabled={loading}
+                                size='sm'
+                            >
+                                {loading ? 'Deleting...' : 'Delete Subdomain'}
+                            </ActionButton>
+                            <ActionButton
+                                type='button'
+                                variant='primary'
+                                onClick={() => setIsEditing(true)}
+                                disabled={loading}
+                                size='sm'
+                            >
+                                Edit Subdomain
+                            </ActionButton>
+                        </div>
                     </div>
                 </div>
             ) : (
@@ -399,22 +402,41 @@ const SubdomainManagement = () => {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className='flex items-center justify-end gap-3 pt-6 border-t border-[#ffffff15]'>
-                                {isEditing ? (
-                                    <>
-                                        <ActionButton
-                                            type='button'
-                                            variant='secondary'
-                                            size='sm'
-                                            onClick={() => {
-                                                setIsEditing(false);
-                                                resetForm();
-                                                setAvailabilityStatus(null);
-                                            }}
-                                            disabled={isSubmitting || loading}
-                                        >
-                                            Cancel
-                                        </ActionButton>
+                            <div className='flex items-center justify-between gap-3 pt-6 border-t border-[#ffffff15]'>
+                                <p className='text-sm text-zinc-400'>This can take a few minutes, please be patient.</p>
+                                <div className='flex items-center gap-3'>
+                                    {isEditing ? (
+                                        <>
+                                            <ActionButton
+                                                type='button'
+                                                variant='secondary'
+                                                size='sm'
+                                                onClick={() => {
+                                                    setIsEditing(false);
+                                                    resetForm();
+                                                    setAvailabilityStatus(null);
+                                                }}
+                                                disabled={isSubmitting || loading}
+                                            >
+                                                Cancel
+                                            </ActionButton>
+                                            <ActionButton
+                                                type='submit'
+                                                variant='primary'
+                                                size='sm'
+                                                disabled={
+                                                    isSubmitting ||
+                                                    loading ||
+                                                    !isValid ||
+                                                    !values.subdomain.trim() ||
+                                                    !values.domain_id ||
+                                                    (availabilityStatus?.checked && !availabilityStatus?.available)
+                                                }
+                                            >
+                                                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                                            </ActionButton>
+                                        </>
+                                    ) : (
                                         <ActionButton
                                             type='submit'
                                             variant='primary'
@@ -428,26 +450,10 @@ const SubdomainManagement = () => {
                                                 (availabilityStatus?.checked && !availabilityStatus?.available)
                                             }
                                         >
-                                            {isSubmitting ? 'Saving...' : 'Save Changes'}
+                                            {isSubmitting ? 'Creating...' : 'Create Subdomain'}
                                         </ActionButton>
-                                    </>
-                                ) : (
-                                    <ActionButton
-                                        type='submit'
-                                        variant='primary'
-                                        size='sm'
-                                        disabled={
-                                            isSubmitting ||
-                                            loading ||
-                                            !isValid ||
-                                            !values.subdomain.trim() ||
-                                            !values.domain_id ||
-                                            (availabilityStatus?.checked && !availabilityStatus?.available)
-                                        }
-                                    >
-                                        {isSubmitting ? 'Creating...' : 'Create Subdomain'}
-                                    </ActionButton>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </Form>
                     )}
