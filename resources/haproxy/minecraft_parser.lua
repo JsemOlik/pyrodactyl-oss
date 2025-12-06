@@ -70,13 +70,22 @@ core.register_fetches("minecraft_hostname", function(txn)
     -- Try to get the data in TCP mode
     -- In TCP mode, we use dup() to get a copy of the request buffer
     local ok, result = pcall(function()
+        -- Check if channel can receive data
+        if not txn.req:may_recv() then
+            return nil
+        end
         -- Use dup() to duplicate the request buffer (works in TCP mode)
         -- This creates a copy of the data without consuming it
-        return txn.req:dup()
+        local dupData = txn.req:dup()
+        -- Check if we got valid data (not empty string or nil)
+        if dupData and type(dupData) == "string" and #dupData > 0 then
+            return dupData
+        end
+        return nil
     end)
     
     if not ok or not result then
-        -- If dup() fails, data not available yet
+        -- If dup() fails or returns nil/empty, data not available yet
         return nil
     end
     
@@ -92,11 +101,23 @@ core.register_action("extract_minecraft_hostname", { "tcp-req" }, function(txn)
         return
     end
     
+    -- Check if channel can receive data (data should be available after inspect-delay)
+    if not txn.req:may_recv() then
+        -- Channel is closed, no data available
+        return
+    end
+    
     local ok, data = pcall(function()
-        return txn.req:dup()
+        -- Try to get data - dup() should work after inspect-delay
+        local dupData = txn.req:dup()
+        -- Check if we got valid data (not empty string or nil)
+        if dupData and type(dupData) == "string" and #dupData > 0 then
+            return dupData
+        end
+        return nil
     end)
     
-    if ok and data then
+    if ok and data and type(data) == "string" and #data > 0 then
         local hostname = extractHostnameFromPacket(data)
         if hostname then
             -- Set a transaction variable with the hostname

@@ -157,12 +157,25 @@ HAPROXY;
             }
         }
         
-        // If no default backend configured, don't set one
-        // This ensures connections that don't match any ACL are rejected
-        // This helps us identify when the Lua fetch isn't working
+        // If no default backend configured, use first subdomain as fallback for debugging
+        // This allows connections to work even if Lua fetch fails, but logs will show the issue
+        if (empty($defaultBackendLine) && $subdomains->isNotEmpty()) {
+            $firstSubdomain = $subdomains->first();
+            if ($firstSubdomain) {
+                $firstBackend = "subdomain_{$firstSubdomain->id}_backend";
+                $defaultBackendLine = "    # Default backend (fallback if Lua fetch fails)\n";
+                $defaultBackendLine .= "    # WARNING: If all connections route here, Lua fetch is not extracting hostnames\n";
+                $defaultBackendLine .= "    default_backend {$firstBackend}\n";
+                Log::warning('Using first subdomain as default backend - Lua fetch may not be working', [
+                    'default_backend' => $firstBackend,
+                    'subdomain_id' => $firstSubdomain->id,
+                    'total_subdomains' => $subdomains->count(),
+                ]);
+            }
+        }
+        
         if (empty($defaultBackendLine)) {
             $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
-            $defaultBackendLine .= "    # If connections fail, check that Lua fetch is extracting hostnames correctly\n";
         }
 
         $config = <<<HAPROXY
@@ -214,12 +227,13 @@ frontend minecraft_frontend
     # The inspect-delay ensures data is available before ACL evaluation
     tcp-request inspect-delay {$inspectDelay}s
     
-    # Extract hostname using Lua action and store in variable
-    # This runs during tcp-request content phase, before routing decisions
-    tcp-request content lua.extract_minecraft_hostname
-    
     # Accept the connection to allow data to be read
+    # This must come BEFORE the Lua action so data is available
     tcp-request content accept
+    
+    # Extract hostname using Lua action and store in variable
+    # This runs during tcp-request content phase, after data is accepted
+    tcp-request content lua.extract_minecraft_hostname
     
     # Route based on extracted hostname
     # First try using the transaction variable (set by Lua action)
