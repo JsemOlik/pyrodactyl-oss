@@ -117,24 +117,35 @@ const ServerRow = ({
         alarms.disk = server.limits.disk === 0 ? false : isAlarmState(stats.diskUsageInBytes, server.limits.disk);
     }
 
-    // Build default allocation string (ip:port)
+    // Build connection string: subdomain with proxy port, or fallback to alias/ip with container port
     const defaultAllocation = server.allocations.find((alloc) => alloc.isDefault);
-    const allocationText = defaultAllocation
-        ? `${defaultAllocation.alias || ip(defaultAllocation.ip)}:${defaultAllocation.port}`
-        : '';
+    let connectionText = '';
+
+    if (server.active_subdomain && server.active_subdomain.is_active) {
+        // Use subdomain with proxy port if available
+        const proxyPort = server.active_subdomain.proxy_port;
+        if (proxyPort) {
+            connectionText = `${server.active_subdomain.full_domain}:${proxyPort}`;
+        } else {
+            connectionText = server.active_subdomain.full_domain;
+        }
+    } else if (defaultAllocation) {
+        // Fallback to alias/ip with container port
+        connectionText = `${defaultAllocation.alias || ip(defaultAllocation.ip)}:${defaultAllocation.port}`;
+    }
 
     const handleCopyAllocation = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         e.stopPropagation();
 
-        if (!allocationText) return;
+        if (!connectionText) return;
 
         try {
-            await navigator.clipboard.writeText(allocationText);
+            await navigator.clipboard.writeText(connectionText);
             setCopied(true);
             setTimeout(() => setCopied(false), 1200);
         } catch (err) {
-            console.error('Failed to copy allocation to clipboard', err);
+            console.error('Failed to copy connection string to clipboard', err);
         }
     };
 
@@ -187,11 +198,9 @@ const ServerRow = ({
                         <div className='status-bar' />
                     </div>
 
-                    {defaultAllocation && (
+                    {connectionText && (
                         <div className='mt-1 flex items-center gap-2 text-sm text-[#ffffff66]'>
-                            <span>
-                                {defaultAllocation.alias || ip(defaultAllocation.ip)}:{defaultAllocation.port}
-                            </span>
+                            <span>{connectionText}</span>
 
                             <button
                                 onClick={handleCopyAllocation}

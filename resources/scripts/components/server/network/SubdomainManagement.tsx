@@ -174,7 +174,9 @@ const SubdomainManagement = () => {
             clearFlashes();
             setLoading(true);
             const proxyPort =
-                values.proxy_port && String(values.proxy_port).trim() !== '' ? parseInt(String(values.proxy_port), 10) : null;
+                values.proxy_port && String(values.proxy_port).trim() !== ''
+                    ? parseInt(String(values.proxy_port), 10)
+                    : null;
             await setSubdomain(uuid, values.subdomain.trim(), parseInt(values.domain_id), proxyPort);
             await loadSubdomainInfo();
             setAvailabilityStatus(null);
@@ -289,6 +291,11 @@ const SubdomainManagement = () => {
                                 <p className='text-sm text-zinc-400 mb-2'>Current Subdomain</p>
                                 <p className='text-lg font-medium text-white font-mono'>
                                     {subdomainInfo?.current_subdomain?.attributes?.full_domain}
+                                    {subdomainInfo?.current_subdomain?.attributes?.proxy_port && (
+                                        <span className='text-zinc-400'>
+                                            :{subdomainInfo.current_subdomain.attributes.proxy_port}
+                                        </span>
+                                    )}
                                 </p>
                             </div>
                         </div>

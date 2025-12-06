@@ -11,6 +11,18 @@ export interface Allocation {
     isDefault: boolean;
 }
 
+export interface ServerSubdomain {
+    subdomain: string;
+    domain: string;
+    domain_id: number;
+    full_domain: string;
+    record_type: string;
+    proxy_port: number | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface Server {
     id: string;
     internalId: number | string;
@@ -46,6 +58,7 @@ export interface Server {
     allocations: Allocation[];
     egg: string;
     nest: number;
+    active_subdomain?: ServerSubdomain | null;
 }
 
 export const rawDataToServerObject = ({ attributes: data }: FractalResponseData): Server => ({
@@ -75,6 +88,21 @@ export const rawDataToServerObject = ({ attributes: data }: FractalResponseData)
     ),
     egg: data.egg,
     nest: data.nest,
+    active_subdomain: data.relationships?.active_subdomain &&
+        typeof data.relationships.active_subdomain === 'object' &&
+        'attributes' in data.relationships.active_subdomain
+        ? {
+              subdomain: (data.relationships.active_subdomain as FractalResponseData).attributes.subdomain,
+              domain: (data.relationships.active_subdomain as FractalResponseData).attributes.domain,
+              domain_id: (data.relationships.active_subdomain as FractalResponseData).attributes.domain_id,
+              full_domain: (data.relationships.active_subdomain as FractalResponseData).attributes.full_domain,
+              record_type: (data.relationships.active_subdomain as FractalResponseData).attributes.record_type,
+              proxy_port: (data.relationships.active_subdomain as FractalResponseData).attributes.proxy_port,
+              is_active: (data.relationships.active_subdomain as FractalResponseData).attributes.is_active,
+              created_at: (data.relationships.active_subdomain as FractalResponseData).attributes.created_at,
+              updated_at: (data.relationships.active_subdomain as FractalResponseData).attributes.updated_at,
+          }
+        : null,
 });
 
 export default (uuid: string): Promise<[Server, string[]]> => {
