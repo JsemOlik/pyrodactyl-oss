@@ -78,6 +78,9 @@ class SubdomainManagementService
         // Normalize IP addresses in DNS records
         $dnsRecords = $this->normalizeIpAddresses($dnsRecords, $server);
 
+        // Transform records: A record becomes subdomain-target, SRV records use subdomain name and point to A record
+        $dnsRecords = $this->transformDnsRecords($dnsRecords, $server, $subdomain, $domain->name);
+
         // Add a generic SRV record if one doesn't already exist
         // Pass the actual subdomain name (e.g., "bunnycraft") and domain to construct full domain
         $dnsRecords = $this->ensureGenericSrvRecord($dnsRecords, $server, $subdomain, $domain->name);
@@ -170,6 +173,9 @@ class SubdomainManagementService
         $newDomain = $this->createDnsRecord($serverSubdomain->subdomain, $domain->name);
         $newDnsRecords = $feature->getDnsRecords($server, $newDomain, $domain->name);
         $newDnsRecords = $this->normalizeIpAddresses($newDnsRecords, $server);
+
+        // Transform records: A record becomes subdomain-target, SRV records use subdomain name and point to A record
+        $newDnsRecords = $this->transformDnsRecords($newDnsRecords, $server, $serverSubdomain->subdomain, $domain->name);
 
         // Add a generic SRV record if one doesn't already exist
         // Pass the actual subdomain name and domain to construct full domain
@@ -627,6 +633,58 @@ class SubdomainManagementService
     }
 
     /**
+     * Transform DNS records:
+     * - A record name becomes "subdomain-target"
+     * - SRV records use subdomain name as service (e.g., _night instead of _minecraft)
+     * - SRV targets point to "subdomain-target.domain.com"
+     *
+     * @param array $dnsRecords
+     * @param Server $server
+     * @param string $subdomain The actual subdomain name (e.g., "night")
+     * @param string $domain The base domain name (e.g., "jsemolik.dev")
+     * @return array
+     */
+    private function transformDnsRecords(array $dnsRecords, Server $server, string $subdomain, string $domain): array
+    {
+        $aRecordName = $subdomain . '-target';
+        $aRecordFullDomain = $aRecordName . '.' . $domain;
+        $dnsRecordName = $this->createDnsRecord($subdomain, $domain);
+        $targetDnsRecordName = $this->createDnsRecord($aRecordName, $domain);
+
+        foreach ($dnsRecords as &$record) {
+            if ($record['type'] === 'A') {
+                // Change A record name to subdomain-target
+                // Extract base name if it includes hierarchy
+                $currentName = $record['name'];
+                $nameParts = explode('.', $currentName);
+                $baseName = $nameParts[0];
+                
+                // Replace the base name with subdomain-target, preserving any hierarchy
+                if (count($nameParts) > 1) {
+                    // Has hierarchy, replace first part
+                    $nameParts[0] = $aRecordName;
+                    $record['name'] = implode('.', $nameParts);
+                } else {
+                    // No hierarchy, just replace
+                    $record['name'] = $aRecordName;
+                }
+            } elseif ($record['type'] === 'SRV') {
+                // Update SRV record to use subdomain as service name
+                $record['name'] = '_' . $subdomain . '._tcp.' . $dnsRecordName;
+                
+                // Update SRV content
+                if (is_array($record['content'])) {
+                    $record['content']['service'] = '_' . $subdomain;
+                    // Target should be the A record's full domain (subdomain-target.domain.com)
+                    $record['content']['target'] = $aRecordFullDomain;
+                }
+            }
+        }
+
+        return $dnsRecords;
+    }
+
+    /**
      * Normalize IP addresses in DNS records (convert localhost to 127.0.0.1).
      * Or if using ip_aliases convert to the correct ip
      *
@@ -679,18 +737,17 @@ class SubdomainManagementService
             $allocation = $server->allocation;
             $port = $allocation->port;
             
-            // Construct the full domain name (e.g., "bunnycraft.jsemolik.dev")
-            // The $subdomain parameter is the actual subdomain name from the database
-            // Full domain is: subdomain + domain (e.g., "bunnycraft" + ".jsemolik.dev" = "bunnycraft.jsemolik.dev")
-            $fullDomain = $subdomain . '.' . $domain;
+            // A record name is subdomain-target (e.g., "night-target")
+            $aRecordName = $subdomain . '-target';
+            $aRecordFullDomain = $aRecordName . '.' . $domain;
             
             // Get the DNS record name for the SRV record name (might include hierarchy)
             $dnsRecordName = $this->createDnsRecord($subdomain, $domain);
-            
-            // Use the subdomain name as the service name (e.g., "vorp" -> "_vorp._tcp.vorp")
+
+            // Use the subdomain name as the service name (e.g., "night" -> "_night._tcp.night")
             $serviceName = '_' . $subdomain;
 
-            // The target will be the full domain (e.g., bunnycraft.jsemolik.dev), which will resolve via the A record
+            // The target will be the A record's full domain (e.g., night-target.jsemolik.dev)
             // The A record already uses the correct IP based on trust_alias (ip_alias if trust_alias is true, otherwise ip)
             $dnsRecords[] = [
                 'name' => $serviceName . '._tcp.' . $dnsRecordName,
@@ -701,7 +758,7 @@ class SubdomainManagementService
                     'priority' => 0,
                     'weight' => 5,
                     'port' => $port,
-                    'target' => $fullDomain,
+                    'target' => $aRecordFullDomain,
                 ],
                 'ttl' => 300,
             ];
