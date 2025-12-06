@@ -35,17 +35,18 @@ class HaproxyService
         $allocationIp = $allocation->ip;
         $containerIp = ($allocationIp === '0.0.0.0' || $allocationIp === '::') ? '127.0.0.1' : $allocationIp;
         $containerPort = $allocation->port;
-        $hostname = $subdomain->full_domain;
         
-        // Log backend configuration for debugging
-        Log::debug('HAProxy backend configuration', [
-            'subdomain_id' => $subdomain->id,
-            'hostname' => $hostname,
-            'allocation_ip' => $allocationIp,
-            'container_ip' => $containerIp,
-            'container_port' => $containerPort,
-            'server_id' => $server->id,
-        ]);
+        // Ensure domain is loaded before accessing full_domain
+        if (!$subdomain->relationLoaded('domain')) {
+            $subdomain->load('domain');
+        }
+        
+        // Get hostname with error handling
+        try {
+            $hostname = $subdomain->full_domain;
+        } catch (\RuntimeException $e) {
+            throw new \Exception("Subdomain {$subdomain->id} has no domain relationship: {$e->getMessage()}");
+        }
 
         $config = <<<HAPROXY
 # Backend for subdomain: {$hostname}
@@ -116,7 +117,17 @@ HAPROXY;
                 }
                 
                 // Use the accessor, but ensure domain is loaded first
-                $hostname = $subdomain->full_domain;
+                // Wrap in try-catch to handle any exceptions from the accessor
+                try {
+                    $hostname = $subdomain->full_domain;
+                } catch (\RuntimeException $e) {
+                    Log::warning('Skipping subdomain - failed to get full domain', [
+                        'subdomain_id' => $subdomain->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    continue;
+                }
+                
                 if (empty($hostname)) {
                     Log::warning('Skipping subdomain with empty hostname', [
                         'subdomain_id' => $subdomain->id,
