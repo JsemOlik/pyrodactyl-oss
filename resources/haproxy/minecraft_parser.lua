@@ -57,7 +57,7 @@ end
 -- Register a fetch function to extract hostname
 core.register_fetches("minecraft_hostname", function(txn)
     -- Get the request buffer (TCP payload)
-    -- For TCP mode with tcp-request content accept, we can access raw TCP data
+    -- For TCP mode with inspect-delay, we can access raw TCP data
     if not txn.req then
         return nil
     end
@@ -69,6 +69,8 @@ core.register_fetches("minecraft_hostname", function(txn)
     
     -- Try to get the data in TCP mode
     -- In TCP mode, we use dup() to get a copy of the request buffer
+    -- IMPORTANT: dup() creates a copy without consuming the original data
+    -- The original data will be forwarded to the backend automatically
     local ok, result = pcall(function()
         -- Check if channel can receive data
         if not txn.req:may_recv() then
@@ -76,6 +78,7 @@ core.register_fetches("minecraft_hostname", function(txn)
         end
         -- Use dup() to duplicate the request buffer (works in TCP mode)
         -- This creates a copy of the data without consuming it
+        -- The original data remains in the buffer for forwarding
         local dupData = txn.req:dup()
         -- Check if we got valid data (not empty string or nil)
         if dupData and type(dupData) == "string" and #dupData > 0 then
@@ -92,6 +95,7 @@ core.register_fetches("minecraft_hostname", function(txn)
     data = result
     
     -- Extract hostname using helper function
+    -- The original data is still in the buffer and will be forwarded
     return extractHostnameFromPacket(data)
 end)
 
@@ -109,6 +113,8 @@ core.register_action("extract_minecraft_hostname", { "tcp-req" }, function(txn)
     
     local ok, data = pcall(function()
         -- Try to get data - dup() should work after inspect-delay
+        -- IMPORTANT: dup() creates a copy without consuming the original data
+        -- The original data will be forwarded to the backend automatically
         local dupData = txn.req:dup()
         -- Check if we got valid data (not empty string or nil)
         if dupData and type(dupData) == "string" and #dupData > 0 then
@@ -121,6 +127,7 @@ core.register_action("extract_minecraft_hostname", { "tcp-req" }, function(txn)
         local hostname = extractHostnameFromPacket(data)
         if hostname then
             -- Set a transaction variable with the hostname
+            -- The original packet data is still in the buffer and will be forwarded
             txn:set_var("txn.minecraft_hostname", hostname)
         end
     end

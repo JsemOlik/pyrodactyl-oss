@@ -240,16 +240,14 @@ frontend minecraft_frontend
     option tcplog
     
     # Inspect first packet for hostname extraction
-    # This allows us to read the Minecraft handshake packet
-    # The inspect-delay ensures data is available before ACL evaluation
+    # The inspect-delay allows HAProxy to wait for data before processing
+    # This ensures the Minecraft handshake packet is available for inspection
     tcp-request inspect-delay {$inspectDelay}s
     
-    # Accept the connection to allow data to be read
-    # This must come BEFORE the Lua action so data is available
-    tcp-request content accept
-    
     # Extract hostname using Lua action and store in variable
-    # This runs during tcp-request content phase, after data is accepted
+    # This must come before ACL evaluation so the variable is set
+    # The Lua script uses dup() which creates a copy without consuming the data
+    # The original data will be forwarded to the backend automatically
     tcp-request content lua.extract_minecraft_hostname
     
     # Route based on extracted hostname
