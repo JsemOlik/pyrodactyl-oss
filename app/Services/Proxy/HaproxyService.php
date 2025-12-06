@@ -74,12 +74,10 @@ HAPROXY;
                 $hostname = $subdomain->full_domain;
                 $backendName = "subdomain_{$subdomain->id}_backend";
                 
-                // Add ACL rule for this hostname
-                // Phase 3: Will use Lua fetch function to extract hostname from Minecraft packet
-                // For now, we'll comment it out and add a note - will be enabled in Phase 3
+                // Add ACL rule for this hostname using Lua fetch function
+                // The Lua script extracts the hostname from the Minecraft handshake packet
                 $frontendAcls .= "    # ACL for {$hostname}\n";
-                $frontendAcls .= "    # use_backend {$backendName} if { lua.fetch(minecraft_hostname) -m str {$hostname} }\n";
-                $frontendAcls .= "    # TODO: Enable in Phase 3 after Lua script implementation\n";
+                $frontendAcls .= "    use_backend {$backendName} if { lua.fetch(minecraft_hostname) -m str {$hostname} }\n";
                 
                 // Generate backend config
                 $backendDefs .= $this->generateBackendConfig($subdomain);
@@ -91,7 +89,7 @@ HAPROXY;
         if ($defaultBackend) {
             $defaultBackendLine = "    default_backend {$defaultBackend}\n";
         } else {
-            $defaultBackendLine = "    # No default backend - connections will be rejected until Phase 3 Lua script is implemented\n";
+            $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
         }
 
         $config = <<<HAPROXY
@@ -112,8 +110,8 @@ global
     group haproxy
     daemon
     maxconn 4096
-    # Lua script for Minecraft protocol parsing (to be added in Phase 3)
-    # lua-load /etc/haproxy/minecraft_parser.lua
+    # Lua script for Minecraft protocol parsing
+    lua-load /etc/haproxy/minecraft_parser.lua
 
 defaults
     log global
@@ -154,6 +152,71 @@ HAPROXY;
     }
 
     /**
+     * Write Lua script to file.
+     * 
+     * Note: HAProxy uses chroot, so the Lua script path in the config must be relative to the chroot.
+     * The chroot is typically /var/lib/haproxy, so we write the script there.
+     */
+    public function writeLuaScript(): bool
+    {
+        if (!config('proxy.enabled', false)) {
+            Log::info('Proxy functionality is disabled, skipping Lua script write');
+            return false;
+        }
+
+        // HAProxy chroot is /var/lib/haproxy, so we need to place the script there
+        // The path in the config should be relative to chroot: /etc/haproxy/minecraft_parser.lua
+        // But we write it to the actual filesystem: /var/lib/haproxy/etc/haproxy/minecraft_parser.lua
+        // OR we can write it outside chroot and use absolute path (if chroot allows)
+        // Let's use the simpler approach: write to /etc/haproxy/ and reference it with absolute path
+        // But HAProxy with chroot needs it inside chroot, so we'll write to both locations
+        
+        $luaScriptPath = '/etc/haproxy/minecraft_parser.lua';
+        $chrootLuaScriptPath = '/var/lib/haproxy/etc/haproxy/minecraft_parser.lua';
+        
+        try {
+            $luaScriptContent = File::get(resource_path('haproxy/minecraft_parser.lua'));
+        } catch (\Exception $e) {
+            Log::error('Failed to read Lua script source', [
+                'source' => resource_path('haproxy/minecraft_parser.lua'),
+                'error' => $e->getMessage(),
+            ]);
+            throw new \Exception("Failed to read Lua script source: {$e->getMessage()}");
+        }
+
+        try {
+            // Write to /etc/haproxy/ (for reference and if chroot is disabled)
+            $luaScriptDir = dirname($luaScriptPath);
+            if (!File::isDirectory($luaScriptDir)) {
+                File::makeDirectory($luaScriptDir, 0755, true);
+            }
+            File::put($luaScriptPath, $luaScriptContent);
+            File::chmod($luaScriptPath, 0644);
+
+            // Also write to chroot directory (HAProxy with chroot needs it here)
+            $chrootLuaScriptDir = dirname($chrootLuaScriptPath);
+            if (!File::isDirectory($chrootLuaScriptDir)) {
+                File::makeDirectory($chrootLuaScriptDir, 0755, true);
+            }
+            File::put($chrootLuaScriptPath, $luaScriptContent);
+            File::chmod($chrootLuaScriptPath, 0644);
+
+            Log::info('HAProxy Lua script written', [
+                'script_file' => $luaScriptPath,
+                'chroot_script_file' => $chrootLuaScriptPath,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to write HAProxy Lua script', [
+                'script_file' => $luaScriptPath,
+                'error' => $e->getMessage(),
+            ]);
+            throw new \Exception("Failed to write HAProxy Lua script: {$e->getMessage()}");
+        }
+    }
+
+    /**
      * Write HAProxy configuration to file.
      */
     public function writeConfig(): bool
@@ -161,6 +224,16 @@ HAPROXY;
         if (!config('proxy.enabled', false)) {
             Log::info('Proxy functionality is disabled, skipping HAProxy config write');
             return false;
+        }
+
+        // First, write the Lua script
+        try {
+            $this->writeLuaScript();
+        } catch (\Exception $e) {
+            Log::warning('Failed to write Lua script, continuing with config generation', [
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail completely - config can be written without Lua script (will fail validation though)
         }
 
         $configPath = config('proxy.haproxy_config_path', '/etc/haproxy/haproxy.cfg');
