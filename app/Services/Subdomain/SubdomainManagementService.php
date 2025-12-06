@@ -79,7 +79,8 @@ class SubdomainManagementService
         $dnsRecords = $this->normalizeIpAddresses($dnsRecords, $server);
 
         // Add a generic SRV record if one doesn't already exist
-        $dnsRecords = $this->ensureGenericSrvRecord($dnsRecords, $server, $newDomain, $domain->name);
+        // Pass the actual subdomain name (e.g., "bunnycraft") and domain to construct full domain
+        $dnsRecords = $this->ensureGenericSrvRecord($dnsRecords, $server, $subdomain, $domain->name);
 
 
         // Use database transaction for consistency
@@ -171,7 +172,8 @@ class SubdomainManagementService
         $newDnsRecords = $this->normalizeIpAddresses($newDnsRecords, $server);
 
         // Add a generic SRV record if one doesn't already exist
-        $newDnsRecords = $this->ensureGenericSrvRecord($newDnsRecords, $server, $newDomain, $domain->name);
+        // Pass the actual subdomain name and domain to construct full domain
+        $newDnsRecords = $this->ensureGenericSrvRecord($newDnsRecords, $server, $serverSubdomain->subdomain, $domain->name);
 
         DB::transaction(function () use ($serverSubdomain, $dnsProvider, $domain, $newDnsRecords) {
             $recordIds = $serverSubdomain->dns_records;
@@ -657,8 +659,8 @@ class SubdomainManagementService
      *
      * @param array $dnsRecords
      * @param Server $server
-     * @param string $subdomain The DNS record name (e.g., "myserver" or "myserver.hierarchy")
-     * @param string $domain The base domain name (e.g., "example.com")
+     * @param string $subdomain The actual subdomain name (e.g., "bunnycraft")
+     * @param string $domain The base domain name (e.g., "jsemolik.dev")
      * @return array
      */
     private function ensureGenericSrvRecord(array $dnsRecords, Server $server, string $subdomain, string $domain): array
@@ -677,16 +679,18 @@ class SubdomainManagementService
             $allocation = $server->allocation;
             $port = $allocation->port;
             
-            // Construct the full domain name (same way the feature classes do it)
-            // Handle cases where subdomain might already include hierarchy (e.g., "myserver.hierarchy")
-            $subdomainParts = explode('.', $subdomain);
-            $baseSubdomain = $subdomainParts[0];
-            $fullDomain = $baseSubdomain . '.' . $domain;
+            // Construct the full domain name (e.g., "bunnycraft.jsemolik.dev")
+            // The $subdomain parameter is the actual subdomain name from the database
+            // Full domain is: subdomain + domain (e.g., "bunnycraft" + ".jsemolik.dev" = "bunnycraft.jsemolik.dev")
+            $fullDomain = $subdomain . '.' . $domain;
+            
+            // Get the DNS record name for the SRV record name (might include hierarchy)
+            $dnsRecordName = $this->createDnsRecord($subdomain, $domain);
 
-            // The target will be the subdomain itself, which will resolve via the A record
+            // The target will be the full domain (e.g., bunnycraft.jsemolik.dev), which will resolve via the A record
             // The A record already uses the correct IP based on trust_alias (ip_alias if trust_alias is true, otherwise ip)
             $dnsRecords[] = [
-                'name' => '_game._tcp.' . $subdomain,
+                'name' => '_game._tcp.' . $dnsRecordName,
                 'type' => 'SRV',
                 'content' => [
                     'service' => '_game',
