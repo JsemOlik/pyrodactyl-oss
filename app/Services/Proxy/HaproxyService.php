@@ -250,19 +250,23 @@ frontend minecraft_frontend
     mode tcp
     option tcplog
     
+    # Accept the connection at connection level
+    # This allows the connection to proceed to content inspection
+    tcp-request connection accept
+    
     # Inspect first packet for hostname extraction
     # The inspect-delay allows HAProxy to wait for data before processing
     # This ensures the Minecraft handshake packet is available for inspection
     tcp-request inspect-delay {$inspectDelay}s
     
-    # Accept the connection to make data available for inspection
-    # This allows the Lua script to read the data without consuming it
-    tcp-request content accept if TRUE
+    # Accept the content to make data available for Lua script
+    # This must come BEFORE Lua action so data can be read
+    tcp-request content accept
     
     # Extract hostname using Lua action and store in variable
     # The Lua script uses dup() which creates a copy without consuming the data
     # This must run AFTER accept so data is available, but BEFORE routing rules
-    tcp-request content lua.extract_minecraft_hostname if TRUE
+    tcp-request content lua.extract_minecraft_hostname
     
     # Route based on extracted hostname
     # ACL rules are evaluated in order - first matching rule wins
