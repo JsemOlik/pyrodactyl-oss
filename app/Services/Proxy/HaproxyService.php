@@ -244,11 +244,14 @@ frontend minecraft_frontend
     # This ensures the Minecraft handshake packet is available for inspection
     tcp-request inspect-delay {$inspectDelay}s
     
+    # Accept the connection to make data available for inspection
+    # This allows the Lua script to read the data without consuming it
+    tcp-request content accept if TRUE
+    
     # Extract hostname using Lua action and store in variable
-    # This must come before ACL evaluation so the variable is set
     # The Lua script uses dup() which creates a copy without consuming the data
-    # The original data will be forwarded to the backend automatically
-    tcp-request content lua.extract_minecraft_hostname
+    # This must run AFTER accept so data is available, but BEFORE routing rules
+    tcp-request content lua.extract_minecraft_hostname if TRUE
     
     # Route based on extracted hostname
     # ACL rules are evaluated in order - first matching rule wins
