@@ -686,14 +686,17 @@ class SubdomainManagementService
             
             // Get the DNS record name for the SRV record name (might include hierarchy)
             $dnsRecordName = $this->createDnsRecord($subdomain, $domain);
+            
+            // Use the subdomain name as the service name (e.g., "vorp" -> "_vorp._tcp.vorp")
+            $serviceName = '_' . $subdomain;
 
             // The target will be the full domain (e.g., bunnycraft.jsemolik.dev), which will resolve via the A record
             // The A record already uses the correct IP based on trust_alias (ip_alias if trust_alias is true, otherwise ip)
             $dnsRecords[] = [
-                'name' => '_game._tcp.' . $dnsRecordName,
+                'name' => $serviceName . '._tcp.' . $dnsRecordName,
                 'type' => 'SRV',
                 'content' => [
-                    'service' => '_game',
+                    'service' => $serviceName,
                     'proto' => '_tcp',
                     'priority' => 0,
                     'weight' => 5,
