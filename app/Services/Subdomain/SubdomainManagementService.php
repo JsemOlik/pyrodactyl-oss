@@ -78,6 +78,9 @@ class SubdomainManagementService
         // Normalize IP addresses in DNS records
         $dnsRecords = $this->normalizeIpAddresses($dnsRecords, $server);
 
+        // Add a generic SRV record if one doesn't already exist
+        $dnsRecords = $this->ensureGenericSrvRecord($dnsRecords, $server, $newDomain, $domain->name);
+
 
         // Use database transaction for consistency
         return DB::transaction(function () use ($server, $domain, $subdomain, $feature, $dnsProvider, $dnsRecords) {
@@ -163,8 +166,12 @@ class SubdomainManagementService
             throw new \Exception('DNS service temporarily unavailable.');
         }
 
-        $newDnsRecords = $feature->getDnsRecords($server, $serverSubdomain->subdomain, $domain->name);
+        $newDomain = $this->createDnsRecord($serverSubdomain->subdomain, $domain->name);
+        $newDnsRecords = $feature->getDnsRecords($server, $newDomain, $domain->name);
         $newDnsRecords = $this->normalizeIpAddresses($newDnsRecords, $server);
+
+        // Add a generic SRV record if one doesn't already exist
+        $newDnsRecords = $this->ensureGenericSrvRecord($newDnsRecords, $server, $newDomain, $domain->name);
 
         DB::transaction(function () use ($serverSubdomain, $dnsProvider, $domain, $newDnsRecords) {
             $recordIds = $serverSubdomain->dns_records;
@@ -643,6 +650,58 @@ class SubdomainManagementService
         return $dnsRecords;
     }
 
+
+    /**
+     * Ensure a generic SRV record exists for the subdomain.
+     * Only adds it if no SRV record already exists in the records array.
+     *
+     * @param array $dnsRecords
+     * @param Server $server
+     * @param string $subdomain The DNS record name (e.g., "myserver" or "myserver.hierarchy")
+     * @param string $domain The base domain name (e.g., "example.com")
+     * @return array
+     */
+    private function ensureGenericSrvRecord(array $dnsRecords, Server $server, string $subdomain, string $domain): array
+    {
+        // Check if any SRV record already exists
+        $hasSrvRecord = false;
+        foreach ($dnsRecords as $record) {
+            if (isset($record['type']) && strtoupper($record['type']) === 'SRV') {
+                $hasSrvRecord = true;
+                break;
+            }
+        }
+
+        // If no SRV record exists, create a generic one
+        if (!$hasSrvRecord) {
+            $allocation = $server->allocation;
+            $port = $allocation->port;
+            
+            // Construct the full domain name (same way the feature classes do it)
+            // Handle cases where subdomain might already include hierarchy (e.g., "myserver.hierarchy")
+            $subdomainParts = explode('.', $subdomain);
+            $baseSubdomain = $subdomainParts[0];
+            $fullDomain = $baseSubdomain . '.' . $domain;
+
+            // The target will be the subdomain itself, which will resolve via the A record
+            // The A record already uses the correct IP based on trust_alias (ip_alias if trust_alias is true, otherwise ip)
+            $dnsRecords[] = [
+                'name' => '_game._tcp.' . $subdomain,
+                'type' => 'SRV',
+                'content' => [
+                    'service' => '_game',
+                    'proto' => '_tcp',
+                    'priority' => 0,
+                    'weight' => 5,
+                    'port' => $port,
+                    'target' => $fullDomain,
+                ],
+                'ttl' => 300,
+            ];
+        }
+
+        return $dnsRecords;
+    }
 
     private static function getDnsSubdomainHierarchy($domain)
     {
