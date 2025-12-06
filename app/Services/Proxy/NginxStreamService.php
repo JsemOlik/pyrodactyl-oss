@@ -66,28 +66,46 @@ NGINX;
         $configFile = $configPath . '/subdomain-' . $subdomain->id . '.conf';
 
         // Check for existing config files that might conflict (same port)
+        // This is a safety check in case validation was bypassed or there are orphaned configs
         if (File::isDirectory($configPath)) {
             $proxyPort = $subdomain->proxy_port;
-            $existingConfigs = File::glob($configPath . '/subdomain-*.conf');
-            foreach ($existingConfigs as $existingConfig) {
-                // Extract subdomain ID from filename
-                if (preg_match('/subdomain-(\d+)\.conf$/', $existingConfig, $matches)) {
-                    $existingSubdomainId = (int) $matches[1];
-                    if ($existingSubdomainId === $subdomain->id) {
-                        continue; // Skip our own config
-                    }
+            if ($proxyPort) {
+                $existingConfigs = File::glob($configPath . '/subdomain-*.conf');
+                foreach ($existingConfigs as $existingConfig) {
+                    // Extract subdomain ID from filename
+                    if (preg_match('/subdomain-(\d+)\.conf$/', $existingConfig, $matches)) {
+                        $existingSubdomainId = (int) $matches[1];
+                        if ($existingSubdomainId === $subdomain->id) {
+                            continue; // Skip our own config
+                        }
 
-                    // Read existing config to check if it uses the same port
-                    $existingContent = File::get($existingConfig);
-                    if (preg_match('/listen\s+(\d+);/', $existingContent, $portMatch)) {
-                        $existingPort = (int) $portMatch[1];
-                        if ($existingPort === $proxyPort) {
-                            Log::warning('Port conflict detected in NGINX config', [
-                                'subdomain_id' => $subdomain->id,
-                                'proxy_port' => $proxyPort,
-                                'conflicting_config' => $existingConfig,
+                        // Read existing config to check if it uses the same port
+                        try {
+                            $existingContent = File::get($existingConfig);
+                            if (preg_match('/listen\s+(\d+);/', $existingContent, $portMatch)) {
+                                $existingPort = (int) $portMatch[1];
+                                if ($existingPort === $proxyPort) {
+                                    // Try to get the subdomain info for better error message
+                                    $conflictingSubdomain = \Pterodactyl\Models\ServerSubdomain::find($existingSubdomainId);
+                                    $conflictInfo = $conflictingSubdomain 
+                                        ? "subdomain {$conflictingSubdomain->full_domain} (ID: {$existingSubdomainId})"
+                                        : "config file {$existingConfig}";
+                                    
+                                    Log::warning('Port conflict detected in NGINX config', [
+                                        'subdomain_id' => $subdomain->id,
+                                        'proxy_port' => $proxyPort,
+                                        'conflicting_config' => $existingConfig,
+                                        'conflicting_subdomain_id' => $existingSubdomainId,
+                                    ]);
+                                    throw new \Exception("Port {$proxyPort} is already in use by {$conflictInfo}. Each subdomain must use a unique proxy port because NGINX cannot route TCP connections by domain name.");
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            // If we can't read the file, log but don't fail - validation should have caught this
+                            Log::warning('Could not read existing NGINX config for conflict check', [
+                                'config_file' => $existingConfig,
+                                'error' => $e->getMessage(),
                             ]);
-                            throw new \Exception("Port {$proxyPort} is already in use by another subdomain proxy. Each subdomain must use a unique proxy port.");
                         }
                     }
                 }
