@@ -675,7 +675,8 @@ class SubdomainManagementService
                 // Update SRV content
                 if (is_array($record['content'])) {
                     $record['content']['service'] = '_' . $subdomain;
-                    // Target should be the A record's full domain (subdomain-target.domain.com)
+                    // Target should be the A record's full domain (e.g., hardcore-target.domain.com)
+                    // The Cloudflare provider will preserve full FQDNs
                     $record['content']['target'] = $aRecordFullDomain;
                 }
             }
@@ -749,6 +750,7 @@ class SubdomainManagementService
 
             // The target will be the A record's full domain (e.g., night-target.jsemolik.dev)
             // The A record already uses the correct IP based on trust_alias (ip_alias if trust_alias is true, otherwise ip)
+            // The Cloudflare provider will preserve full FQDNs
             $dnsRecords[] = [
                 'name' => $serviceName . '._tcp.' . $dnsRecordName,
                 'type' => 'SRV',

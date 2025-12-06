@@ -84,10 +84,23 @@ class CloudflareProvider implements DnsProviderInterface
                     $weight = isset($content['weight']) ? (int) $content['weight'] : 5;
                     $port = isset($content['port']) ? (int) $content['port'] : 0;
                     
-                    // Target should be normalized to be relative to the zone
+                    // Target should be normalized to be relative to the zone, unless it's a full FQDN
                     $target = '';
                     if (!empty($content['target'])) {
-                        $target = $this->normalizeRecordName((string) $content['target'], $domain);
+                        $targetString = (string) $content['target'];
+                        // Remove trailing dot if present (from absolute FQDN)
+                        $targetString = rtrim($targetString, '.');
+                        
+                        // Check if target is a full FQDN (contains the domain)
+                        // If it's a full FQDN, preserve it as-is (don't normalize)
+                        $domainPattern = '.' . rtrim($domain, '.');
+                        if (str_ends_with($targetString, $domainPattern)) {
+                            // It's a full FQDN, preserve it
+                            $target = $targetString;
+                        } else {
+                            // Normalize to relative name
+                            $target = $this->normalizeRecordName($targetString, $domain);
+                        }
                     }
                     
                     // If target is empty, fall back to using the name without the service prefix
