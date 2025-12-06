@@ -78,12 +78,16 @@ class SubdomainManagementService
         // Normalize IP addresses in DNS records
         $dnsRecords = $this->normalizeIpAddresses($dnsRecords, $server);
 
-        // Transform records: A record becomes subdomain-target, SRV records use subdomain name and point to A record
-        $dnsRecords = $this->transformDnsRecords($dnsRecords, $server, $subdomain, $domain->name);
+        // Extract game type from feature name (e.g., "subdomain_minecraft" -> "minecraft")
+        $featureName = $feature->getFeatureName();
+        $gameType = str_replace('subdomain_', '', $featureName);
+
+        // Transform records: A record becomes subdomain-target, SRV records use game type and point to A record
+        $dnsRecords = $this->transformDnsRecords($dnsRecords, $server, $subdomain, $domain->name, $gameType);
 
         // Add a generic SRV record if one doesn't already exist
         // Pass the actual subdomain name (e.g., "bunnycraft") and domain to construct full domain
-        $dnsRecords = $this->ensureGenericSrvRecord($dnsRecords, $server, $subdomain, $domain->name);
+        $dnsRecords = $this->ensureGenericSrvRecord($dnsRecords, $server, $subdomain, $domain->name, $gameType);
 
 
         // Use database transaction for consistency
@@ -174,12 +178,16 @@ class SubdomainManagementService
         $newDnsRecords = $feature->getDnsRecords($server, $newDomain, $domain->name);
         $newDnsRecords = $this->normalizeIpAddresses($newDnsRecords, $server);
 
-        // Transform records: A record becomes subdomain-target, SRV records use subdomain name and point to A record
-        $newDnsRecords = $this->transformDnsRecords($newDnsRecords, $server, $serverSubdomain->subdomain, $domain->name);
+        // Extract game type from feature name (e.g., "subdomain_minecraft" -> "minecraft")
+        $featureName = $feature->getFeatureName();
+        $gameType = str_replace('subdomain_', '', $featureName);
+
+        // Transform records: A record becomes subdomain-target, SRV records use game type and point to A record
+        $newDnsRecords = $this->transformDnsRecords($newDnsRecords, $server, $serverSubdomain->subdomain, $domain->name, $gameType);
 
         // Add a generic SRV record if one doesn't already exist
         // Pass the actual subdomain name and domain to construct full domain
-        $newDnsRecords = $this->ensureGenericSrvRecord($newDnsRecords, $server, $serverSubdomain->subdomain, $domain->name);
+        $newDnsRecords = $this->ensureGenericSrvRecord($newDnsRecords, $server, $serverSubdomain->subdomain, $domain->name, $gameType);
 
         DB::transaction(function () use ($serverSubdomain, $dnsProvider, $domain, $newDnsRecords) {
             $recordIds = $serverSubdomain->dns_records;
@@ -635,16 +643,17 @@ class SubdomainManagementService
     /**
      * Transform DNS records:
      * - A record name becomes "subdomain-target"
-     * - SRV records use subdomain name as service (e.g., _night instead of _minecraft)
+     * - SRV records use game type as service (e.g., _minecraft instead of subdomain name)
      * - SRV targets point to "subdomain-target.domain.com"
      *
      * @param array $dnsRecords
      * @param Server $server
-     * @param string $subdomain The actual subdomain name (e.g., "night")
+     * @param string $subdomain The actual subdomain name (e.g., "macucu")
      * @param string $domain The base domain name (e.g., "jsemolik.dev")
+     * @param string $gameType The game type (e.g., "minecraft", "rust")
      * @return array
      */
-    private function transformDnsRecords(array $dnsRecords, Server $server, string $subdomain, string $domain): array
+    private function transformDnsRecords(array $dnsRecords, Server $server, string $subdomain, string $domain, string $gameType): array
     {
         $aRecordName = $subdomain . '-target';
         $aRecordFullDomain = $aRecordName . '.' . $domain;
@@ -669,12 +678,12 @@ class SubdomainManagementService
                     $record['name'] = $aRecordName;
                 }
             } elseif ($record['type'] === 'SRV') {
-                // Update SRV record to use subdomain as service name
-                $record['name'] = '_' . $subdomain . '._tcp.' . $dnsRecordName;
+                // Update SRV record to use game type as service name (e.g., _minecraft._tcp.macucu)
+                $record['name'] = '_' . $gameType . '._tcp.' . $dnsRecordName;
                 
                 // Update SRV content
                 if (is_array($record['content'])) {
-                    $record['content']['service'] = '_' . $subdomain;
+                    $record['content']['service'] = '_' . $gameType;
                     // Target should be the A record's full domain (e.g., hardcore-target.domain.com)
                     // The Cloudflare provider will preserve full FQDNs
                     $record['content']['target'] = $aRecordFullDomain;
@@ -718,11 +727,12 @@ class SubdomainManagementService
      *
      * @param array $dnsRecords
      * @param Server $server
-     * @param string $subdomain The actual subdomain name (e.g., "bunnycraft")
+     * @param string $subdomain The actual subdomain name (e.g., "macucu")
      * @param string $domain The base domain name (e.g., "jsemolik.dev")
+     * @param string $gameType The game type (e.g., "minecraft", "rust")
      * @return array
      */
-    private function ensureGenericSrvRecord(array $dnsRecords, Server $server, string $subdomain, string $domain): array
+    private function ensureGenericSrvRecord(array $dnsRecords, Server $server, string $subdomain, string $domain, string $gameType): array
     {
         // Check if any SRV record already exists
         $hasSrvRecord = false;
@@ -745,8 +755,8 @@ class SubdomainManagementService
             // Get the DNS record name for the SRV record name (might include hierarchy)
             $dnsRecordName = $this->createDnsRecord($subdomain, $domain);
 
-            // Use the subdomain name as the service name (e.g., "night" -> "_night._tcp.night")
-            $serviceName = '_' . $subdomain;
+            // Use the game type as the service name (e.g., "minecraft" -> "_minecraft._tcp.macucu")
+            $serviceName = '_' . $gameType;
 
             // The target will be the A record's full domain (e.g., night-target.jsemolik.dev)
             // The A record already uses the correct IP based on trust_alias (ip_alias if trust_alias is true, otherwise ip)
