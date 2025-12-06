@@ -5,6 +5,7 @@ import * as yup from 'yup';
 
 import FlashMessageRender from '@/components/FlashMessageRender';
 import ActionButton from '@/components/elements/ActionButton';
+import ConfirmationModal from '@/components/elements/ConfirmationModal';
 import FormikFieldWrapper from '@/components/elements/FormikFieldWrapper';
 
 import {
@@ -78,6 +79,7 @@ const SubdomainManagement = () => {
         message: string;
     } | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const { clearFlashes, clearAndAddHttpError } = useFlashKey('server:network:subdomain');
@@ -181,20 +183,13 @@ const SubdomainManagement = () => {
     };
 
     const handleDeleteSubdomain = async () => {
-        if (
-            !confirm(
-                'Are you sure you want to delete this subdomain? This will remove all associated DNS records and cannot be undone.',
-            )
-        ) {
-            return;
-        }
-
         try {
             clearFlashes();
             setLoading(true);
             await deleteSubdomain(uuid);
             await loadSubdomainInfo();
             setAvailabilityStatus(null);
+            setShowDeleteModal(false);
         } catch (error) {
             clearAndAddHttpError(error as Error);
         } finally {
@@ -288,11 +283,11 @@ const SubdomainManagement = () => {
                             <ActionButton
                                 type='button'
                                 variant='danger'
-                                onClick={handleDeleteSubdomain}
+                                onClick={() => setShowDeleteModal(true)}
                                 disabled={loading}
                                 size='sm'
                             >
-                                {loading ? 'Deleting...' : 'Delete Subdomain'}
+                                Delete Subdomain
                             </ActionButton>
                             <ActionButton
                                 type='button'
@@ -459,6 +454,25 @@ const SubdomainManagement = () => {
                     )}
                 </Formik>
             )}
+
+            <ConfirmationModal
+                title='Delete Subdomain?'
+                buttonText='Delete Subdomain'
+                visible={showDeleteModal}
+                showSpinnerOverlay={loading}
+                onConfirmed={handleDeleteSubdomain}
+                onModalDismissed={() => setShowDeleteModal(false)}
+            >
+                <p className='text-zinc-300 mb-2'>
+                    Are you sure you want to delete this subdomain? Your server will only be accessible via its IP
+                    address and Port number.
+                </p>
+                {subdomainInfo?.current_subdomain && (
+                    <p className='text-sm text-zinc-400 font-mono'>
+                        {subdomainInfo.current_subdomain.attributes.full_domain}
+                    </p>
+                )}
+            </ConfirmationModal>
         </div>
     );
 };
