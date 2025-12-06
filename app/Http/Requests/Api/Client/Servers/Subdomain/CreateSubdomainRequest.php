@@ -71,12 +71,8 @@ class CreateSubdomainRequest extends ClientApiRequest
                         return; // Null is allowed
                     }
 
-                    // Get server from route
-                    $server = $this->route('server');
-                    if (!$server) {
-                        // If server is not available in route, try to get it from attributes
-                        $server = $this->attributes->get('server');
-                    }
+                    // Get server from route or attributes (set by middleware)
+                    $server = $this->route('server') ?? $this->attributes->get('server');
 
                     $excludeSubdomainId = null;
 
