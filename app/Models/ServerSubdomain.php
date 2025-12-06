@@ -92,6 +92,15 @@ class ServerSubdomain extends Model
      */
     public function getFullDomainAttribute(): string
     {
+        if (!$this->domain) {
+            // If domain relationship is not loaded, try to load it
+            $this->load('domain');
+        }
+        
+        if (!$this->domain) {
+            throw new \RuntimeException("Subdomain {$this->id} has no domain relationship");
+        }
+        
         return $this->subdomain . '.' . $this->domain->name;
     }
 

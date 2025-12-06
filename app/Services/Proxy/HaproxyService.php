@@ -89,8 +89,27 @@ HAPROXY;
                     $subdomain->load('domain');
                 }
                 
+                // Ensure server and allocation are loaded
+                if (!$subdomain->relationLoaded('server') || !$subdomain->server) {
+                    $subdomain->load('server.allocation');
+                }
+                
+                // Skip if relationships are still missing
+                if (!$subdomain->domain || !$subdomain->server || !$subdomain->server->allocation) {
+                    Log::warning('Skipping subdomain due to missing relationships', [
+                        'subdomain_id' => $subdomain->id,
+                    ]);
+                    continue;
+                }
+                
                 // Use the accessor, but ensure domain is loaded first
                 $hostname = $subdomain->full_domain;
+                if (empty($hostname)) {
+                    Log::warning('Skipping subdomain with empty hostname', [
+                        'subdomain_id' => $subdomain->id,
+                    ]);
+                    continue;
+                }
                 $backendName = "subdomain_{$subdomain->id}_backend";
                 
                 // Add ACL rule for this hostname
@@ -367,7 +386,16 @@ HAPROXY;
         }
 
         try {
-            $config = $this->generateFullConfig();
+            // Generate config with error handling
+            try {
+                $config = $this->generateFullConfig();
+            } catch (\Exception $e) {
+                Log::error('Failed to generate HAProxy config', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                throw new \Exception("Failed to generate HAProxy config: {$e->getMessage()}", 0, $e);
+            }
             
             // Validate config before writing
             if (!$this->validateConfig($config)) {

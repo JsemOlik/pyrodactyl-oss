@@ -23,12 +23,16 @@ class ServerSubdomainObserver
         }
 
         try {
+            // Ensure relationships are loaded before creating proxy
+            $subdomain->loadMissing(['server.allocation', 'domain']);
+            
             $this->proxyService->createProxy($subdomain);
         } catch (\Exception $e) {
             // Log error but don't fail the subdomain creation
             Log::error('Failed to create proxy after subdomain creation', [
                 'subdomain_id' => $subdomain->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
@@ -41,6 +45,9 @@ class ServerSubdomainObserver
         // Check if proxy_port or allocation changed
         if ($subdomain->wasChanged('proxy_port') || $subdomain->wasChanged('is_active')) {
             try {
+                // Ensure relationships are loaded before updating proxy
+                $subdomain->loadMissing(['server.allocation', 'domain']);
+                
                 if ($subdomain->is_active && $subdomain->proxy_port) {
                     $this->proxyService->updateProxy($subdomain);
                 } else {
@@ -52,6 +59,7 @@ class ServerSubdomainObserver
                 Log::error('Failed to update proxy after subdomain update', [
                     'subdomain_id' => $subdomain->id,
                     'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
                 ]);
             }
         }
@@ -80,12 +88,16 @@ class ServerSubdomainObserver
     public function deleted(ServerSubdomain $subdomain): void
     {
         try {
+            // Ensure relationships are loaded before deleting proxy (if still available)
+            $subdomain->loadMissing(['server.allocation', 'domain']);
+            
             $this->proxyService->deleteProxy($subdomain);
         } catch (\Exception $e) {
             // Log error but don't fail the subdomain deletion
             Log::error('Failed to delete proxy after subdomain deletion', [
                 'subdomain_id' => $subdomain->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
