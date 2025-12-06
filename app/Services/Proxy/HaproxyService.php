@@ -96,8 +96,9 @@ HAPROXY;
                 // Add ACL rule for this hostname using Lua fetch function
                 // The Lua script extracts the hostname from the Minecraft handshake packet
                 // Note: The fetch is registered as "minecraft_hostname", so it's accessed as lua.minecraft_hostname
+                // Using case-insensitive matching (-i flag) for more reliable matching
                 $frontendAcls .= "    # ACL for {$hostname}\n";
-                $frontendAcls .= "    use_backend {$backendName} if { lua.minecraft_hostname -m str {$hostname} }\n";
+                $frontendAcls .= "    use_backend {$backendName} if { lua.minecraft_hostname -i -m str {$hostname} }\n";
                 
                 // Generate backend config
                 $backendDefs .= $this->generateBackendConfig($subdomain);
@@ -202,13 +203,21 @@ frontend minecraft_frontend
     
     # Inspect first packet for hostname extraction
     # This allows us to read the Minecraft handshake packet
-    # Note: inspect-delay must come BEFORE content accept to ensure data is available
+    # Note: inspect-delay must come FIRST to ensure data is available for ACL evaluation
+    # The delay ensures the full handshake packet is received before routing decisions
+    # Increased delay helps with network latency and packet fragmentation
     tcp-request inspect-delay {$inspectDelay}s
-    tcp-request content accept
     
     # Route based on extracted hostname using Lua fetch
     # The Lua script extracts the hostname from the Minecraft handshake packet
-{$frontendAcls}{$defaultBackendLine}
+    # ACLs are evaluated after inspect-delay, so data should be available
+    # Using case-insensitive matching (-i) for more reliable hostname matching
+{$frontendAcls}
+    
+    # Accept the connection after routing decision is made
+    tcp-request content accept
+    
+{$defaultBackendLine}
 # Backend definitions
 {$backendDefs}
 HAPROXY;

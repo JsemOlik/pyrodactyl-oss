@@ -19,19 +19,15 @@ core.register_fetches("minecraft_hostname", function(txn)
     local data = nil
     
     -- Try to get the data - in TCP mode, txn.req:get() should work
-    -- We need to use dup() to get a copy of the data without consuming it
+    -- The data should be available after tcp-request inspect-delay
     local ok, result = pcall(function()
-        -- Try dup() first (creates a copy, doesn't consume the buffer)
-        local dupData = txn.req:dup()
-        if dupData and type(dupData) == "string" and #dupData > 0 then
-            return dupData
-        end
-        -- Fallback to get() if dup() doesn't work
+        -- Use get() to retrieve the data
+        -- Note: In TCP mode, this returns the raw packet bytes
         return txn.req:get()
     end)
     
     if not ok or not result then
-        -- If both fail, return nil (data not available yet)
+        -- If get() fails, data not available yet
         return nil
     end
     
@@ -42,8 +38,9 @@ core.register_fetches("minecraft_hostname", function(txn)
         return nil
     end
     
-    -- Need at least 3 bytes for a valid handshake packet
-    if #data < 3 then
+    -- Need at least 5 bytes for a valid handshake packet
+    -- (length prefix + packet ID + some data)
+    if #data < 5 then
         return nil
     end
     
@@ -74,9 +71,12 @@ core.register_fetches("minecraft_hostname", function(txn)
     local hostname, offset = readString(data, offset)
     
     if hostname and hostname ~= "" then
-        -- Log successful extraction (for debugging - remove in production)
-        -- core.Info("Minecraft hostname extracted: " .. hostname)
-        return hostname
+        -- Trim any whitespace and return the hostname
+        -- This ensures exact matching with ACL rules
+        hostname = hostname:match("^%s*(.-)%s*$")  -- Trim leading/trailing whitespace
+        if hostname and hostname ~= "" then
+            return hostname
+        end
     end
     
     return nil
