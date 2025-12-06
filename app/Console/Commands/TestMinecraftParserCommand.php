@@ -121,11 +121,14 @@ class TestMinecraftParserCommand extends Command
 
         // Protocol Version: 763 (VarInt) - Minecraft 1.20.1
         // VarInt encoding for 763:
-        // 763 = 0x02FB = 251 + (2 << 7) = 251 + 256
-        // First byte: 251 (0xFB) with continuation bit = 0xFB
-        // Second byte: 2 (0x02) without continuation bit = 0x02
-        // So: 0xFB 0x02
-        $packet .= "\xFB\x02";
+        // 763 = 0x02FB = 2*256 + 251
+        // Lower 7 bits: 763 & 0x7F = 123 (0x7B)
+        // Upper bits: 763 >> 7 = 5
+        // First byte: 123 | 0x80 = 0xFB (with continuation bit)
+        // Second byte: 5 (0x05) without continuation bit
+        // So: 0xFB 0x05
+        // Verification: 123 + (5 << 7) = 123 + 640 = 763 ✓
+        $packet .= "\xFB\x05";
 
         // Hostname: "smp.cool.com" (String)
         $hostname = 'smp.cool.com';
