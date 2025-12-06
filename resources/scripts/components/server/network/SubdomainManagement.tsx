@@ -174,7 +174,7 @@ const SubdomainManagement = () => {
             clearFlashes();
             setLoading(true);
             const proxyPort =
-                values.proxy_port && values.proxy_port.trim() !== '' ? parseInt(values.proxy_port, 10) : null;
+                values.proxy_port && String(values.proxy_port).trim() !== '' ? parseInt(String(values.proxy_port), 10) : null;
             await setSubdomain(uuid, values.subdomain.trim(), parseInt(values.domain_id), proxyPort);
             await loadSubdomainInfo();
             setAvailabilityStatus(null);
