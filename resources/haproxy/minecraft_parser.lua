@@ -15,18 +15,23 @@ core.register_fetches("minecraft_hostname", function(txn)
     
     -- Get the request data as a string
     -- In TCP mode, this contains the raw packet bytes
-    -- Note: This fetch is called during ACL evaluation, so data should be available
-    -- after tcp-request inspect-delay has collected it
+    -- Note: This fetch is called during ACL evaluation after inspect-delay
     local data = nil
     
     -- Try to get the data - in TCP mode, txn.req:get() should work
+    -- We need to use dup() to get a copy of the data without consuming it
     local ok, result = pcall(function()
-        -- In TCP mode, get() returns the raw TCP payload
+        -- Try dup() first (creates a copy, doesn't consume the buffer)
+        local dupData = txn.req:dup()
+        if dupData and type(dupData) == "string" and #dupData > 0 then
+            return dupData
+        end
+        -- Fallback to get() if dup() doesn't work
         return txn.req:get()
     end)
     
-    if not ok then
-        -- If get() fails, return nil (data not available yet)
+    if not ok or not result then
+        -- If both fail, return nil (data not available yet)
         return nil
     end
     
@@ -37,13 +42,23 @@ core.register_fetches("minecraft_hostname", function(txn)
         return nil
     end
     
-    -- Need at least 3 bytes for a valid handshake packet (packet ID + some data)
+    -- Need at least 3 bytes for a valid handshake packet
     if #data < 3 then
         return nil
     end
     
+    -- Minecraft packets have a length prefix (VarInt) before the packet ID
+    -- Structure: [Packet Length: VarInt] [Packet ID: VarInt] [Protocol Version: VarInt] [Server Address: String] ...
+    local offset = 1
+    
+    -- Read packet length (VarInt) - skip this, we don't need it
+    local packetLength, offset = readVarInt(data, offset)
+    if not packetLength then
+        return nil
+    end
+    
     -- Read VarInt (packet ID) - should be 0x00 for Handshake
-    local packetId, offset = readVarInt(data, 1)
+    local packetId, offset = readVarInt(data, offset)
     if not packetId or packetId ~= 0 then
         -- Not a handshake packet
         return nil
@@ -59,6 +74,8 @@ core.register_fetches("minecraft_hostname", function(txn)
     local hostname, offset = readString(data, offset)
     
     if hostname and hostname ~= "" then
+        -- Log successful extraction (for debugging - remove in production)
+        -- core.Info("Minecraft hostname extracted: " .. hostname)
         return hostname
     end
     

@@ -134,17 +134,20 @@ HAPROXY;
             }
         }
         
-        // If no default backend configured or it doesn't exist, use first subdomain as fallback
-        // This allows testing even if Lua fetch doesn't work
+        // If no default backend configured, use first subdomain as fallback
+        // This allows connections to work even if Lua fetch fails, but it means
+        // all connections will route to the first subdomain if hostname extraction fails
         if (empty($defaultBackendLine) && $subdomains->isNotEmpty()) {
             $firstSubdomain = $subdomains->first();
             if ($firstSubdomain) {
                 $firstBackend = "subdomain_{$firstSubdomain->id}_backend";
-                $defaultBackendLine = "    # Using first subdomain as default backend (for testing)\n";
+                $defaultBackendLine = "    # Using first subdomain as default backend (fallback if Lua fetch fails)\n";
+                $defaultBackendLine .= "    # If all connections route here, the Lua fetch isn't extracting hostnames correctly\n";
                 $defaultBackendLine .= "    default_backend {$firstBackend}\n";
-                Log::info('Using first subdomain as default backend for testing', [
+                Log::info('Using first subdomain as default backend', [
                     'default_backend' => $firstBackend,
                     'subdomain_id' => $firstSubdomain->id,
+                    'note' => 'This is a fallback - if all connections use this, Lua fetch is not working',
                 ]);
             }
         }
@@ -199,12 +202,12 @@ frontend minecraft_frontend
     
     # Inspect first packet for hostname extraction
     # This allows us to read the Minecraft handshake packet
-    tcp-request content accept
+    # Note: inspect-delay must come BEFORE content accept to ensure data is available
     tcp-request inspect-delay {$inspectDelay}s
+    tcp-request content accept
     
-    # Route based on extracted hostname
-    # Note: Hostname extraction will be implemented using Lua script in Phase 3
-    # For now, this is a placeholder structure
+    # Route based on extracted hostname using Lua fetch
+    # The Lua script extracts the hostname from the Minecraft handshake packet
 {$frontendAcls}{$defaultBackendLine}
 # Backend definitions
 {$backendDefs}
