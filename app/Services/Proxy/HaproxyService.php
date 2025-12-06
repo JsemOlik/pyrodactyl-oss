@@ -250,10 +250,6 @@ frontend minecraft_frontend
     mode tcp
     option tcplog
     
-    # Accept the connection at connection level
-    # This allows the connection to proceed to content inspection
-    tcp-request connection accept
-    
     # Inspect first packet for hostname extraction
     # The inspect-delay allows HAProxy to wait for data before processing
     # This ensures the Minecraft handshake packet is available for inspection
@@ -261,6 +257,7 @@ frontend minecraft_frontend
     
     # Accept the content to make data available for Lua script
     # This must come BEFORE Lua action so data can be read
+    # The data will be buffered and forwarded after routing decision
     tcp-request content accept
     
     # Extract hostname using Lua action and store in variable
