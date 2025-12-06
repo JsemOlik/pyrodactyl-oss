@@ -84,17 +84,25 @@ class CloudflareProvider implements DnsProviderInterface
                     $weight = isset($content['weight']) ? (int) $content['weight'] : 5;
                     $port = isset($content['port']) ? (int) $content['port'] : 0;
                     
-                    // Target should be normalized to be relative to the zone
+                    // Target for SRV records should be the full domain name, not normalized
+                    // This ensures clients can resolve it correctly when not specifying a port
                     $target = '';
                     if (!empty($content['target'])) {
-                        $target = $this->normalizeRecordName((string) $content['target'], $domain);
+                        // For SRV records, keep the full domain in the target (don't normalize)
+                        // This allows clients to resolve the target correctly
+                        $target = (string) $content['target'];
+                        // Remove trailing dot if present, but keep the full domain
+                        $target = rtrim($target, '.');
                     }
                     
                     // If target is empty, fall back to using the name without the service prefix
                     if (empty($target)) {
                         // Extract the base subdomain from the SRV name (e.g., "_ts3._udp.teamspeak3" -> "teamspeak3")
-                        $target = preg_replace('/^_[^._]+\._[^._]+\./', '', $name);
-                        if (empty($target)) {
+                        $extractedSubdomain = preg_replace('/^_[^._]+\._[^._]+\./', '', $name);
+                        if (!empty($extractedSubdomain)) {
+                            // Build full domain from extracted subdomain
+                            $target = $extractedSubdomain . '.' . $domain;
+                        } else {
                             $target = $name;
                         }
                     }
