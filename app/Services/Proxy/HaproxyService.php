@@ -15,9 +15,17 @@ class HaproxyService
      */
     public function generateBackendConfig(ServerSubdomain $subdomain): string
     {
+        // Ensure relationships are loaded
+        if (!$subdomain->relationLoaded('server')) {
+            $subdomain->load('server.allocation');
+        }
+        
         $server = $subdomain->server;
+        if (!$server) {
+            throw new \Exception('Subdomain does not have a server.');
+        }
+        
         $allocation = $server->allocation;
-
         if (!$allocation) {
             throw new \Exception('Server does not have an allocation.');
         }
@@ -58,7 +66,8 @@ HAPROXY;
             ->filter(function ($subdomain) {
                 // Filter out subdomains with missing relationships
                 return $subdomain->server && $subdomain->server->allocation && $subdomain->domain;
-            });
+            })
+            ->values(); // Re-index the collection after filtering
 
         $defaultProxyPort = config('proxy.default_proxy_port', 25565);
         $inspectDelay = config('proxy.haproxy_inspect_delay', 5);
@@ -75,6 +84,12 @@ HAPROXY;
             $frontendAcls .= "    # Add a subdomain with proxy_port to enable routing\n";
         } else {
             foreach ($subdomains as $subdomain) {
+                // Ensure relationships are loaded (should already be loaded from with(), but double-check)
+                if (!$subdomain->relationLoaded('domain') || !$subdomain->domain) {
+                    $subdomain->load('domain');
+                }
+                
+                // Use the accessor, but ensure domain is loaded first
                 $hostname = $subdomain->full_domain;
                 $backendName = "subdomain_{$subdomain->id}_backend";
                 
