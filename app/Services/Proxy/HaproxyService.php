@@ -53,7 +53,11 @@ HAPROXY;
         $subdomains = \Pterodactyl\Models\ServerSubdomain::where('is_active', true)
             ->whereNotNull('proxy_port')
             ->with(['server.allocation', 'domain'])
-            ->get();
+            ->get()
+            ->filter(function ($subdomain) {
+                // Filter out subdomains with missing relationships
+                return $subdomain->server && $subdomain->server->allocation && $subdomain->domain;
+            });
 
         $defaultProxyPort = config('proxy.default_proxy_port', 25565);
         $inspectDelay = config('proxy.haproxy_inspect_delay', 5);
@@ -102,9 +106,13 @@ HAPROXY;
                 $defaultBackendLine = "    default_backend {$defaultBackend}\n";
             } else {
                 // Default backend doesn't exist, log warning
+                $availableBackends = [];
+                foreach ($subdomains as $subdomain) {
+                    $availableBackends[] = "subdomain_{$subdomain->id}_backend";
+                }
                 Log::warning('Default backend specified but does not exist', [
                     'default_backend' => $defaultBackend,
-                    'available_backends' => $subdomains->map(fn($s) => "subdomain_{$s->id}_backend")->toArray(),
+                    'available_backends' => $availableBackends,
                 ]);
                 // Fall through to use first subdomain as default if available
             }
@@ -114,14 +122,18 @@ HAPROXY;
         // This allows testing even if Lua fetch doesn't work
         if (empty($defaultBackendLine) && $subdomains->isNotEmpty()) {
             $firstSubdomain = $subdomains->first();
-            $firstBackend = "subdomain_{$firstSubdomain->id}_backend";
-            $defaultBackendLine = "    # Using first subdomain as default backend (for testing)\n";
-            $defaultBackendLine .= "    default_backend {$firstBackend}\n";
-            Log::info('Using first subdomain as default backend for testing', [
-                'default_backend' => $firstBackend,
-                'subdomain_id' => $firstSubdomain->id,
-            ]);
-        } else if (empty($defaultBackendLine)) {
+            if ($firstSubdomain) {
+                $firstBackend = "subdomain_{$firstSubdomain->id}_backend";
+                $defaultBackendLine = "    # Using first subdomain as default backend (for testing)\n";
+                $defaultBackendLine .= "    default_backend {$firstBackend}\n";
+                Log::info('Using first subdomain as default backend for testing', [
+                    'default_backend' => $firstBackend,
+                    'subdomain_id' => $firstSubdomain->id,
+                ]);
+            }
+        }
+        
+        if (empty($defaultBackendLine)) {
             $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
         }
 
