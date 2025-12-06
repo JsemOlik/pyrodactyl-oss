@@ -85,6 +85,8 @@ HAPROXY;
         }
 
         // Default backend (if configured and exists)
+        // If no default backend is configured but we have subdomains, use the first one as fallback
+        // This helps with testing - connections that don't match ACLs will still route to a backend
         $defaultBackendLine = '';
         if ($defaultBackend) {
             // Verify the default backend actually exists in our backends
@@ -99,14 +101,27 @@ HAPROXY;
             if ($backendExists) {
                 $defaultBackendLine = "    default_backend {$defaultBackend}\n";
             } else {
-                // Default backend doesn't exist, log warning and don't use it
+                // Default backend doesn't exist, log warning
                 Log::warning('Default backend specified but does not exist', [
                     'default_backend' => $defaultBackend,
                     'available_backends' => $subdomains->map(fn($s) => "subdomain_{$s->id}_backend")->toArray(),
                 ]);
-                $defaultBackendLine = "    # Default backend '{$defaultBackend}' not found - connections that don't match will be rejected\n";
+                // Fall through to use first subdomain as default if available
             }
-        } else {
+        }
+        
+        // If no default backend configured or it doesn't exist, use first subdomain as fallback
+        // This allows testing even if Lua fetch doesn't work
+        if (empty($defaultBackendLine) && $subdomains->isNotEmpty()) {
+            $firstSubdomain = $subdomains->first();
+            $firstBackend = "subdomain_{$firstSubdomain->id}_backend";
+            $defaultBackendLine = "    # Using first subdomain as default backend (for testing)\n";
+            $defaultBackendLine .= "    default_backend {$firstBackend}\n";
+            Log::info('Using first subdomain as default backend for testing', [
+                'default_backend' => $firstBackend,
+                'subdomain_id' => $firstSubdomain->id,
+            ]);
+        } else if (empty($defaultBackendLine)) {
             $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
         }
 

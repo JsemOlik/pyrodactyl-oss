@@ -20,7 +20,6 @@ core.register_fetches("minecraft_hostname", function(txn)
     local data = nil
     
     -- Try to get the data - in TCP mode, txn.req:get() should work
-    -- But we need to be careful about when it's called
     local ok, result = pcall(function()
         -- In TCP mode, get() returns the raw TCP payload
         return txn.req:get()
