@@ -14,6 +14,21 @@ class ProxyManagementService
     }
 
     /**
+     * Check if a proxy port is already in use.
+     */
+    public function isProxyPortInUse(int $proxyPort, ?int $excludeSubdomainId = null): bool
+    {
+        $query = ServerSubdomain::where('proxy_port', $proxyPort)
+            ->where('is_active', true);
+
+        if ($excludeSubdomainId) {
+            $query->where('id', '!=', $excludeSubdomainId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
      * Create proxy configuration for a subdomain.
      */
     public function createProxy(ServerSubdomain $subdomain): bool
@@ -31,6 +46,11 @@ class ProxyManagementService
                 'subdomain_id' => $subdomain->id,
             ]);
             return false;
+        }
+
+        // Check for port conflicts
+        if ($this->isProxyPortInUse($subdomain->proxy_port, $subdomain->id)) {
+            throw new \Exception("Proxy port {$subdomain->proxy_port} is already in use by another active subdomain. Each subdomain must use a unique proxy port.");
         }
 
         try {
@@ -78,6 +98,11 @@ class ProxyManagementService
         // If proxy_port was removed, delete the proxy
         if (!$subdomain->proxy_port) {
             return $this->deleteProxy($subdomain);
+        }
+
+        // Check for port conflicts (excluding current subdomain)
+        if ($this->isProxyPortInUse($subdomain->proxy_port, $subdomain->id)) {
+            throw new \Exception("Proxy port {$subdomain->proxy_port} is already in use by another active subdomain. Each subdomain must use a unique proxy port.");
         }
 
         try {

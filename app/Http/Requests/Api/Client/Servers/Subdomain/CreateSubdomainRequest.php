@@ -66,6 +66,37 @@ class CreateSubdomainRequest extends ClientApiRequest
                 'integer',
                 'min:1024',
                 'max:65535',
+                function ($attribute, $value, $fail) {
+                    if (!$value) {
+                        return; // Null is allowed
+                    }
+
+                    // Check if another active subdomain is already using this proxy port
+                    $server = $this->route('server');
+                    $excludeSubdomainId = null;
+
+                    // If editing an existing subdomain, exclude it from the check
+                    if ($server) {
+                        $currentSubdomain = $server->subdomains()->where('is_active', true)->first();
+                        if ($currentSubdomain) {
+                            $excludeSubdomainId = $currentSubdomain->id;
+                        }
+                    }
+
+                    $query = \Pterodactyl\Models\ServerSubdomain::where('proxy_port', $value)
+                        ->where('is_active', true);
+
+                    if ($excludeSubdomainId) {
+                        $query->where('id', '!=', $excludeSubdomainId);
+                    }
+
+                    $existingSubdomain = $query->first();
+
+                    if ($existingSubdomain) {
+                        $fail("Port {$value} is already in use by another subdomain ({$existingSubdomain->full_domain}). Each subdomain must use a unique proxy port because NGINX cannot route TCP connections by domain name.");
+                        return;
+                    }
+                },
             ],
         ];
     }

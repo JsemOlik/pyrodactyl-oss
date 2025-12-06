@@ -65,6 +65,35 @@ NGINX;
         $configPath = config('proxy.nginx_config_path', '/etc/nginx/stream.d');
         $configFile = $configPath . '/subdomain-' . $subdomain->id . '.conf';
 
+        // Check for existing config files that might conflict (same port)
+        if (File::isDirectory($configPath)) {
+            $proxyPort = $subdomain->proxy_port;
+            $existingConfigs = File::glob($configPath . '/subdomain-*.conf');
+            foreach ($existingConfigs as $existingConfig) {
+                // Extract subdomain ID from filename
+                if (preg_match('/subdomain-(\d+)\.conf$/', $existingConfig, $matches)) {
+                    $existingSubdomainId = (int) $matches[1];
+                    if ($existingSubdomainId === $subdomain->id) {
+                        continue; // Skip our own config
+                    }
+
+                    // Read existing config to check if it uses the same port
+                    $existingContent = File::get($existingConfig);
+                    if (preg_match('/listen\s+(\d+);/', $existingContent, $portMatch)) {
+                        $existingPort = (int) $portMatch[1];
+                        if ($existingPort === $proxyPort) {
+                            Log::warning('Port conflict detected in NGINX config', [
+                                'subdomain_id' => $subdomain->id,
+                                'proxy_port' => $proxyPort,
+                                'conflicting_config' => $existingConfig,
+                            ]);
+                            throw new \Exception("Port {$proxyPort} is already in use by another subdomain proxy. Each subdomain must use a unique proxy port.");
+                        }
+                    }
+                }
+            }
+        }
+
         // Ensure directory exists
         if (!File::isDirectory($configPath)) {
             try {
