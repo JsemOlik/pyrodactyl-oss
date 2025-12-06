@@ -246,17 +246,23 @@ frontend minecraft_frontend
     # Reduced to 2s for better performance (Minecraft clients typically send handshake immediately)
     tcp-request inspect-delay {$inspectDelay}s
     
-    # Accept the content to make data available for Lua script
+    # Accept the content ONLY for the first packet to make data available for Lua script
     # This must come BEFORE Lua action so data can be read via dup()
-    # The data will be buffered and forwarded after routing decision
-    # Note: This only affects packet inspection - after routing, connection flows normally
-    tcp-request content accept
+    # We use a condition to only accept the first packet - subsequent packets flow normally
+    # This prevents interference with the login/join packets after initial routing
+    # Check if hostname hasn't been extracted yet (first packet only)
+    acl hostname_not_extracted !{ var(txn.hostname_extracted) -m bool true }
+    tcp-request content accept if hostname_not_extracted
     
     # Extract hostname using Lua action and store in variable
     # The Lua script uses dup() which creates a copy without consuming the data
     # This must run AFTER accept so data is available, but BEFORE routing rules
     # The original packet data remains intact and will be forwarded to the backend
-    tcp-request content lua.extract_minecraft_hostname
+    tcp-request content lua.extract_minecraft_hostname if hostname_not_extracted
+    
+    # Mark hostname as extracted so we don't process subsequent packets
+    # This ensures login/join packets flow normally without inspection
+    tcp-request content set-var(txn.hostname_extracted) bool true if hostname_not_extracted
     
     # Route based on extracted hostname
     # ACL rules are evaluated in order - first matching rule wins
