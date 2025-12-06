@@ -88,21 +88,30 @@ export const rawDataToServerObject = ({ attributes: data }: FractalResponseData)
     ),
     egg: data.egg,
     nest: data.nest,
-    active_subdomain: data.relationships?.active_subdomain &&
-        typeof data.relationships.active_subdomain === 'object' &&
-        'attributes' in data.relationships.active_subdomain
-        ? {
-              subdomain: (data.relationships.active_subdomain as FractalResponseData).attributes.subdomain,
-              domain: (data.relationships.active_subdomain as FractalResponseData).attributes.domain,
-              domain_id: (data.relationships.active_subdomain as FractalResponseData).attributes.domain_id,
-              full_domain: (data.relationships.active_subdomain as FractalResponseData).attributes.full_domain,
-              record_type: (data.relationships.active_subdomain as FractalResponseData).attributes.record_type,
-              proxy_port: (data.relationships.active_subdomain as FractalResponseData).attributes.proxy_port,
-              is_active: (data.relationships.active_subdomain as FractalResponseData).attributes.is_active,
-              created_at: (data.relationships.active_subdomain as FractalResponseData).attributes.created_at,
-              updated_at: (data.relationships.active_subdomain as FractalResponseData).attributes.updated_at,
-          }
-        : null,
+    active_subdomain: (() => {
+        const subdomainRel = data.relationships?.active_subdomain;
+        if (
+            subdomainRel &&
+            typeof subdomainRel === 'object' &&
+            'attributes' in subdomainRel &&
+            subdomainRel.attributes &&
+            subdomainRel.attributes !== null
+        ) {
+            const attrs = (subdomainRel as FractalResponseData).attributes;
+            return {
+                subdomain: attrs.subdomain,
+                domain: attrs.domain,
+                domain_id: attrs.domain_id,
+                full_domain: attrs.full_domain,
+                record_type: attrs.record_type,
+                proxy_port: attrs.proxy_port,
+                is_active: attrs.is_active,
+                created_at: attrs.created_at,
+                updated_at: attrs.updated_at,
+            };
+        }
+        return null;
+    })(),
 });
 
 export default (uuid: string): Promise<[Server, string[]]> => {
