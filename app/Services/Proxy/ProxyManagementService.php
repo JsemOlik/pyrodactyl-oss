@@ -9,8 +9,19 @@ use Illuminate\Support\Facades\DB;
 class ProxyManagementService
 {
     public function __construct(
-        private NginxStreamService $nginxService
+        private NginxStreamService $nginxService,
+        private HaproxyService $haproxyService
     ) {
+    }
+
+    /**
+     * Get the appropriate proxy service based on configuration.
+     */
+    private function getProxyService(): NginxStreamService|HaproxyService
+    {
+        $proxyType = config('proxy.proxy_type', 'haproxy');
+        
+        return $proxyType === 'haproxy' ? $this->haproxyService : $this->nginxService;
     }
 
     /**
@@ -48,18 +59,29 @@ class ProxyManagementService
             return false;
         }
 
-        // Check for port conflicts
-        if ($this->isProxyPortInUse($subdomain->proxy_port, $subdomain->id)) {
+        // Check for port conflicts (only for NGINX - HAProxy allows same port for multiple subdomains)
+        $proxyType = config('proxy.proxy_type', 'haproxy');
+        if ($proxyType === 'nginx' && $this->isProxyPortInUse($subdomain->proxy_port, $subdomain->id)) {
             throw new \Exception("Proxy port {$subdomain->proxy_port} is already in use by another active subdomain. Each subdomain must use a unique proxy port.");
         }
 
         try {
-            $this->nginxService->writeConfig($subdomain);
-            $this->nginxService->reloadNginx();
+            $proxyType = config('proxy.proxy_type', 'haproxy');
+            
+            if ($proxyType === 'haproxy') {
+                // HAProxy uses a single config file for all subdomains
+                $this->haproxyService->writeConfig();
+                $this->haproxyService->reloadHaproxy();
+            } else {
+                // NGINX uses individual config files per subdomain
+                $this->nginxService->writeConfig($subdomain);
+                $this->nginxService->reloadNginx();
+            }
 
             Log::info('Proxy created successfully', [
                 'subdomain_id' => $subdomain->id,
                 'proxy_port' => $subdomain->proxy_port,
+                'proxy_type' => $proxyType,
             ]);
 
             return true;
@@ -69,14 +91,16 @@ class ProxyManagementService
                 'error' => $e->getMessage(),
             ]);
 
-            // Attempt to clean up on failure
-            try {
-                $this->nginxService->deleteConfig($subdomain);
-            } catch (\Exception $cleanupException) {
-                Log::warning('Failed to cleanup proxy config after creation failure', [
-                    'subdomain_id' => $subdomain->id,
-                    'error' => $cleanupException->getMessage(),
-                ]);
+            // Attempt to clean up on failure (only for NGINX)
+            if (config('proxy.proxy_type', 'haproxy') === 'nginx') {
+                try {
+                    $this->nginxService->deleteConfig($subdomain);
+                } catch (\Exception $cleanupException) {
+                    Log::warning('Failed to cleanup proxy config after creation failure', [
+                        'subdomain_id' => $subdomain->id,
+                        'error' => $cleanupException->getMessage(),
+                    ]);
+                }
             }
 
             throw $e;
@@ -100,18 +124,29 @@ class ProxyManagementService
             return $this->deleteProxy($subdomain);
         }
 
-        // Check for port conflicts (excluding current subdomain)
-        if ($this->isProxyPortInUse($subdomain->proxy_port, $subdomain->id)) {
+        // Check for port conflicts (only for NGINX - HAProxy allows same port for multiple subdomains)
+        $proxyType = config('proxy.proxy_type', 'haproxy');
+        if ($proxyType === 'nginx' && $this->isProxyPortInUse($subdomain->proxy_port, $subdomain->id)) {
             throw new \Exception("Proxy port {$subdomain->proxy_port} is already in use by another active subdomain. Each subdomain must use a unique proxy port.");
         }
 
         try {
-            $this->nginxService->writeConfig($subdomain);
-            $this->nginxService->reloadNginx();
+            $proxyType = config('proxy.proxy_type', 'haproxy');
+            
+            if ($proxyType === 'haproxy') {
+                // HAProxy uses a single config file for all subdomains
+                $this->haproxyService->writeConfig();
+                $this->haproxyService->reloadHaproxy();
+            } else {
+                // NGINX uses individual config files per subdomain
+                $this->nginxService->writeConfig($subdomain);
+                $this->nginxService->reloadNginx();
+            }
 
             Log::info('Proxy updated successfully', [
                 'subdomain_id' => $subdomain->id,
                 'proxy_port' => $subdomain->proxy_port,
+                'proxy_type' => $proxyType,
             ]);
 
             return true;
@@ -137,11 +172,21 @@ class ProxyManagementService
         }
 
         try {
-            $this->nginxService->deleteConfig($subdomain);
-            $this->nginxService->reloadNginx();
+            $proxyType = config('proxy.proxy_type', 'haproxy');
+            
+            if ($proxyType === 'haproxy') {
+                // HAProxy uses a single config file - regenerate it without this subdomain
+                $this->haproxyService->writeConfig();
+                $this->haproxyService->reloadHaproxy();
+            } else {
+                // NGINX uses individual config files per subdomain
+                $this->nginxService->deleteConfig($subdomain);
+                $this->nginxService->reloadNginx();
+            }
 
             Log::info('Proxy deleted successfully', [
                 'subdomain_id' => $subdomain->id,
+                'proxy_type' => $proxyType,
             ]);
 
             return true;
@@ -173,27 +218,54 @@ class ProxyManagementService
         $successCount = 0;
         $failureCount = 0;
 
-        foreach ($subdomains as $subdomain) {
+        $proxyType = config('proxy.proxy_type', 'haproxy');
+        
+        if ($proxyType === 'haproxy') {
+            // HAProxy uses a single config file - generate it once
             try {
-                $this->nginxService->writeConfig($subdomain);
-                $successCount++;
+                $this->haproxyService->writeConfig();
+                $successCount = $subdomains->count();
             } catch (\Exception $e) {
-                Log::error('Failed to sync proxy for subdomain', [
-                    'subdomain_id' => $subdomain->id,
+                Log::error('Failed to sync HAProxy config', [
                     'error' => $e->getMessage(),
                 ]);
-                $failureCount++;
+                $failureCount = $subdomains->count();
             }
-        }
+            
+            // Reload HAProxy once
+            if ($successCount > 0) {
+                try {
+                    $this->haproxyService->reloadHaproxy();
+                } catch (\Exception $e) {
+                    Log::error('Failed to reload HAProxy after sync', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        } else {
+            // NGINX uses individual config files per subdomain
+            foreach ($subdomains as $subdomain) {
+                try {
+                    $this->nginxService->writeConfig($subdomain);
+                    $successCount++;
+                } catch (\Exception $e) {
+                    Log::error('Failed to sync proxy for subdomain', [
+                        'subdomain_id' => $subdomain->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $failureCount++;
+                }
+            }
 
-        // Reload NGINX once after all configs are written
-        if ($successCount > 0) {
-            try {
-                $this->nginxService->reloadNginx();
-            } catch (\Exception $e) {
-                Log::error('Failed to reload NGINX after sync', [
-                    'error' => $e->getMessage(),
-                ]);
+            // Reload NGINX once after all configs are written
+            if ($successCount > 0) {
+                try {
+                    $this->nginxService->reloadNginx();
+                } catch (\Exception $e) {
+                    Log::error('Failed to reload NGINX after sync', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
         }
 

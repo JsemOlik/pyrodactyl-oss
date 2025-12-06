@@ -84,20 +84,25 @@ class CreateSubdomainRequest extends ClientApiRequest
                         }
                     }
 
-                    // Check if another active subdomain is already using this proxy port
-                    $query = \Pterodactyl\Models\ServerSubdomain::where('proxy_port', $value)
-                        ->where('is_active', true);
+                    // Check for port conflicts (only for NGINX - HAProxy allows same port for multiple subdomains)
+                    $proxyType = config('proxy.proxy_type', 'haproxy');
+                    
+                    if ($proxyType === 'nginx') {
+                        $query = \Pterodactyl\Models\ServerSubdomain::where('proxy_port', $value)
+                            ->where('is_active', true);
 
-                    if ($excludeSubdomainId) {
-                        $query->where('id', '!=', $excludeSubdomainId);
+                        if ($excludeSubdomainId) {
+                            $query->where('id', '!=', $excludeSubdomainId);
+                        }
+
+                        $existingSubdomain = $query->first();
+
+                        if ($existingSubdomain) {
+                            $fail("Port {$value} is already in use by another subdomain ({$existingSubdomain->full_domain}). Each subdomain must use a unique proxy port because NGINX cannot route TCP connections by domain name.");
+                            return;
+                        }
                     }
-
-                    $existingSubdomain = $query->first();
-
-                    if ($existingSubdomain) {
-                        $fail("Port {$value} is already in use by another subdomain ({$existingSubdomain->full_domain}). Each subdomain must use a unique proxy port because NGINX cannot route TCP connections by domain name.");
-                        return;
-                    }
+                    // For HAProxy, multiple subdomains can use the same port - no conflict check needed
 
                     // Check if any server allocation is directly using this port
                     // This prevents conflicts where a server is directly listening on the proxy port

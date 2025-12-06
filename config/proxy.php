@@ -6,13 +6,26 @@ return [
     | Proxy Functionality
     |--------------------------------------------------------------------------
     |
-    | Enable or disable the NGINX reverse proxy functionality for subdomains.
+    | Enable or disable the reverse proxy functionality for subdomains.
     | When enabled, subdomains can forward traffic from a chosen port to the
     | container's actual port.
     |
     */
 
     'enabled' => env('PROXY_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Proxy Type
+    |--------------------------------------------------------------------------
+    |
+    | The proxy implementation to use. Options: 'nginx' or 'haproxy'.
+    | - 'nginx': Uses NGINX stream module (requires unique ports per subdomain)
+    | - 'haproxy': Uses HAProxy with TCP content inspection (allows same port for multiple subdomains)
+    |
+    */
+
+    'proxy_type' => env('PROXY_TYPE', 'haproxy'),
 
     /*
     |--------------------------------------------------------------------------
@@ -37,7 +50,57 @@ return [
     |
     */
 
-    'nginx_reload_command' => env('PROXY_NGINX_RELOAD_COMMAND', 'nginx -s reload'),
+    'nginx_reload_command' => env('PROXY_NGINX_RELOAD_COMMAND', 'sudo /usr/sbin/nginx -s reload'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HAProxy Configuration Path
+    |--------------------------------------------------------------------------
+    |
+    | The path to the HAProxy configuration file.
+    | This file must be writable by the web server user.
+    |
+    */
+
+    'haproxy_config_path' => env('PROXY_HAPROXY_CONFIG_PATH', '/etc/haproxy/haproxy.cfg'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HAProxy Reload Command
+    |--------------------------------------------------------------------------
+    |
+    | The command to reload HAProxy configuration after changes.
+    | This command should be executable by the web server user without password.
+    | Consider using sudoers configuration for secure execution.
+    |
+    */
+
+    'haproxy_reload_command' => env('PROXY_HAPROXY_RELOAD_COMMAND', 'sudo systemctl reload haproxy'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HAProxy Inspect Delay
+    |--------------------------------------------------------------------------
+    |
+    | The time in seconds to wait for the first packet before routing.
+    | This allows HAProxy to inspect the packet content for hostname extraction.
+    | Recommended: 5 seconds for Minecraft protocol.
+    |
+    */
+
+    'haproxy_inspect_delay' => env('PROXY_HAPROXY_INSPECT_DELAY', 5),
+
+    /*
+    |--------------------------------------------------------------------------
+    | HAProxy Default Backend
+    |--------------------------------------------------------------------------
+    |
+    | The default backend to use if hostname cannot be extracted or doesn't match.
+    | Set to null to reject connections that don't match any subdomain.
+    |
+    */
+
+    'haproxy_default_backend' => env('PROXY_HAPROXY_DEFAULT_BACKEND', null),
 
     /*
     |--------------------------------------------------------------------------

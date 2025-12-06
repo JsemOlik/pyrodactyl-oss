@@ -1,0 +1,281 @@
+<?php
+
+namespace Pterodactyl\Services\Proxy;
+
+use Pterodactyl\Models\ServerSubdomain;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
+
+class HaproxyService
+{
+    /**
+     * Generate HAProxy configuration for a subdomain.
+     * 
+     * This generates a backend configuration that will be included in the main HAProxy config.
+     */
+    public function generateBackendConfig(ServerSubdomain $subdomain): string
+    {
+        $server = $subdomain->server;
+        $allocation = $server->allocation;
+
+        if (!$allocation) {
+            throw new \Exception('Server does not have an allocation.');
+        }
+
+        // For HAProxy, we need to connect to the container.
+        // If the allocation IP is 0.0.0.0, use localhost since the container is on the same host.
+        $allocationIp = $allocation->ip;
+        $containerIp = ($allocationIp === '0.0.0.0' || $allocationIp === '::') ? '127.0.0.1' : $allocationIp;
+        $containerPort = $allocation->port;
+        $hostname = $subdomain->full_domain;
+
+        $config = <<<HAPROXY
+# Backend for subdomain: {$hostname}
+# Subdomain ID: {$subdomain->id}
+# Server ID: {$server->id}
+# Generated: {$subdomain->updated_at->toIso8601String()}
+# Routes: {$hostname} -> {$containerIp}:{$containerPort}
+
+backend subdomain_{$subdomain->id}_backend
+    mode tcp
+    option tcplog
+    server container_{$subdomain->id} {$containerIp}:{$containerPort} check
+
+HAPROXY;
+
+        return $config;
+    }
+
+    /**
+     * Generate the complete HAProxy configuration including all active subdomains.
+     */
+    public function generateFullConfig(): string
+    {
+        $subdomains = \Pterodactyl\Models\ServerSubdomain::where('is_active', true)
+            ->whereNotNull('proxy_port')
+            ->with(['server.allocation', 'domain'])
+            ->get();
+
+        $defaultProxyPort = config('proxy.default_proxy_port', 25565);
+        $inspectDelay = config('proxy.haproxy_inspect_delay', 5);
+        $defaultBackend = config('proxy.haproxy_default_backend');
+
+        // Build frontend ACL rules and backend definitions
+        // Note: In Phase 3, we'll use Lua script to extract hostname from Minecraft packet
+        // For now, we set up the structure with placeholder ACLs
+        $frontendAcls = '';
+        $backendDefs = '';
+
+        foreach ($subdomains as $subdomain) {
+            $hostname = $subdomain->full_domain;
+            $backendName = "subdomain_{$subdomain->id}_backend";
+            
+            // Add ACL rule for this hostname
+            // Phase 3: Will use Lua fetch function to extract hostname from Minecraft packet
+            // For now, we'll comment it out and add a note - will be enabled in Phase 3
+            $frontendAcls .= "    # ACL for {$hostname}\n";
+            $frontendAcls .= "    # use_backend {$backendName} if { lua.fetch(minecraft_hostname) -m str {$hostname} }\n";
+            $frontendAcls .= "    # TODO: Enable in Phase 3 after Lua script implementation\n";
+            
+            // Generate backend config
+            $backendDefs .= $this->generateBackendConfig($subdomain);
+        }
+
+        // Default backend (if configured)
+        $defaultBackendLine = '';
+        if ($defaultBackend) {
+            $defaultBackendLine = "    default_backend {$defaultBackend}\n";
+        } else {
+            $defaultBackendLine = "    # No default backend - reject unmatched connections\n";
+        }
+
+        $config = <<<HAPROXY
+# HAProxy Configuration for Pyrodactyl Subdomain Proxy
+# Auto-generated - Do not edit manually
+# Generated: {$this->getCurrentTimestamp()}
+
+global
+    log /dev/log local0
+    maxconn 4096
+    daemon
+    # Lua script for Minecraft protocol parsing (to be added in Phase 3)
+    # lua-load /etc/haproxy/minecraft_parser.lua
+    stats socket /var/run/haproxy.sock mode 660 level admin
+    stats timeout 2m
+
+defaults
+    mode tcp
+    timeout connect 5s
+    timeout client 50s
+    timeout server 50s
+    option tcplog
+
+# Frontend for Minecraft proxy
+frontend minecraft_frontend
+    bind *:{$defaultProxyPort}
+    mode tcp
+    option tcplog
+    
+    # Inspect first packet for hostname extraction
+    # This allows us to read the Minecraft handshake packet
+    tcp-request content accept
+    tcp-request inspect-delay {$inspectDelay}s
+    
+    # Route based on extracted hostname
+    # Note: Hostname extraction will be implemented using Lua script in Phase 3
+    # For now, this is a placeholder structure
+{$frontendAcls}{$defaultBackendLine}
+# Backend definitions
+{$backendDefs}
+HAPROXY;
+
+        return $config;
+    }
+
+    /**
+     * Write HAProxy configuration to file.
+     */
+    public function writeConfig(): bool
+    {
+        if (!config('proxy.enabled', false)) {
+            Log::info('Proxy functionality is disabled, skipping HAProxy config write');
+            return false;
+        }
+
+        $configPath = config('proxy.haproxy_config_path', '/etc/haproxy/haproxy.cfg');
+
+        // Ensure directory exists
+        $configDir = dirname($configPath);
+        if (!File::isDirectory($configDir)) {
+            try {
+                File::makeDirectory($configDir, 0755, true);
+            } catch (\Exception $e) {
+                Log::error('Failed to create HAProxy config directory', [
+                    'path' => $configDir,
+                    'error' => $e->getMessage(),
+                ]);
+                throw new \Exception("Failed to create HAProxy config directory: {$e->getMessage()}");
+            }
+        }
+
+        try {
+            $config = $this->generateFullConfig();
+            
+            // Validate config before writing
+            if (!$this->validateConfig($config)) {
+                throw new \Exception('HAProxy configuration validation failed');
+            }
+
+            File::put($configPath, $config);
+            File::chmod($configPath, 0644);
+
+            Log::info('HAProxy config written', [
+                'config_file' => $configPath,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to write HAProxy config', [
+                'config_file' => $configPath,
+                'error' => $e->getMessage(),
+            ]);
+            throw new \Exception("Failed to write HAProxy config: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Reload HAProxy configuration.
+     */
+    public function reloadHaproxy(): bool
+    {
+        if (!config('proxy.enabled', false)) {
+            Log::info('Proxy functionality is disabled, skipping HAProxy reload');
+            return false;
+        }
+
+        $command = config('proxy.haproxy_reload_command', 'sudo systemctl reload haproxy');
+
+        try {
+            $output = [];
+            $returnCode = 0;
+            
+            // Use exec to capture output
+            exec($command . ' 2>&1', $output, $returnCode);
+            $output = implode("\n", $output);
+
+            if ($returnCode === 0) {
+                Log::info('HAProxy reloaded successfully', [
+                    'command' => $command,
+                ]);
+                return true;
+            } else {
+                Log::error('HAProxy reload failed', [
+                    'command' => $command,
+                    'return_code' => $returnCode,
+                    'output' => $output,
+                ]);
+                throw new \Exception("HAProxy reload failed: {$output}");
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception during HAProxy reload', [
+                'command' => $command,
+                'error' => $e->getMessage(),
+            ]);
+            throw new \Exception("Failed to reload HAProxy: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Validate HAProxy configuration syntax.
+     */
+    public function validateConfig(?string $config = null): bool
+    {
+        $configPath = config('proxy.haproxy_config_path', '/etc/haproxy/haproxy.cfg');
+
+        // If config is provided, write to temp file for validation
+        if ($config !== null) {
+            $tempFile = tempnam(sys_get_temp_dir(), 'haproxy_validate_');
+            File::put($tempFile, $config);
+            $configPath = $tempFile;
+        }
+
+        try {
+            $command = "haproxy -c -f {$configPath} 2>&1";
+            $output = [];
+            $returnCode = 0;
+            exec($command, $output, $returnCode);
+            $output = implode("\n", $output);
+
+            // Clean up temp file if we created one
+            if ($config !== null && File::exists($tempFile)) {
+                File::delete($tempFile);
+            }
+
+            if ($returnCode === 0) {
+                return true;
+            } else {
+                Log::warning('HAProxy config validation failed', [
+                    'output' => $output,
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            // Clean up temp file on error
+            if ($config !== null && isset($tempFile) && File::exists($tempFile)) {
+                File::delete($tempFile);
+            }
+            Log::warning('Exception during HAProxy config validation', [
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Get current timestamp in ISO 8601 format.
+     */
+    private function getCurrentTimestamp(): string
+    {
+        return (new \DateTime())->format(\DateTime::ATOM);
+    }
+}
