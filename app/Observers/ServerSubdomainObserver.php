@@ -26,12 +26,25 @@ class ServerSubdomainObserver
             // Ensure relationships are loaded before creating proxy
             $subdomain->loadMissing(['server.allocation', 'domain']);
             
+            // Double-check relationships exist
+            if (!$subdomain->server || !$subdomain->server->allocation || !$subdomain->domain) {
+                Log::warning('Skipping proxy creation - missing relationships', [
+                    'subdomain_id' => $subdomain->id,
+                    'has_server' => $subdomain->server !== null,
+                    'has_allocation' => $subdomain->server && $subdomain->server->allocation !== null,
+                    'has_domain' => $subdomain->domain !== null,
+                ]);
+                return;
+            }
+            
             $this->proxyService->createProxy($subdomain);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Log error but don't fail the subdomain creation
             Log::error('Failed to create proxy after subdomain creation', [
                 'subdomain_id' => $subdomain->id,
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
             ]);
         }

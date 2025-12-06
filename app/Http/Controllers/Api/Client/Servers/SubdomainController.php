@@ -120,7 +120,24 @@ class SubdomainController extends ClientApiController
 
             // Ensure domain is loaded before accessing properties
             if (!$serverSubdomain->domain) {
+                Log::error('Subdomain created but domain relationship is missing', [
+                    'subdomain_id' => $serverSubdomain->id,
+                    'domain_id' => $serverSubdomain->domain_id,
+                ]);
                 throw new \RuntimeException("Subdomain created but domain relationship is missing");
+            }
+
+            // Safely build response
+            try {
+                $domainName = $serverSubdomain->domain->name;
+                $fullDomain = $serverSubdomain->full_domain;
+            } catch (\Throwable $e) {
+                Log::error('Failed to access subdomain properties', [
+                    'subdomain_id' => $serverSubdomain->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                throw new \RuntimeException("Failed to access subdomain properties: {$e->getMessage()}", 0, $e);
             }
 
             return response()->json([
@@ -129,24 +146,27 @@ class SubdomainController extends ClientApiController
                     'object' => 'server_subdomain',
                     'attributes' => [
                         'subdomain'  => $serverSubdomain->subdomain,
-                        'domain'     => $serverSubdomain->domain->name,
+                        'domain'     => $domainName,
                         'domain_id'  => $serverSubdomain->domain_id,
-                        'full_domain' => $serverSubdomain->full_domain,
+                        'full_domain' => $fullDomain,
                         'is_active'  => $serverSubdomain->is_active,
                     ],
                 ]
             ], 201);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Subdomain creation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'server_id' => $server->id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'server_id' => $server->id ?? null,
                 'domain_id' => $data['domain_id'] ?? null,
                 'subdomain' => $data['subdomain'] ?? null,
-                'existing_subdomains_count' => $existingSubdomains->count()
+                'existing_subdomains_count' => isset($existingSubdomains) ? $existingSubdomains->count() : 0
             ]);
             return response()->json([
-                'error' => $existingSubdomains->isNotEmpty() ? 'Failed to replace subdomain.' : 'Failed to create subdomain.'
+                'error' => (isset($existingSubdomains) && $existingSubdomains->isNotEmpty()) ? 'Failed to replace subdomain.' : 'Failed to create subdomain.',
+                'message' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred.'
             ], 422);
         }
     }
