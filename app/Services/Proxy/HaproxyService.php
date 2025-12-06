@@ -62,6 +62,7 @@ HAPROXY;
         $subdomains = \Pterodactyl\Models\ServerSubdomain::where('is_active', true)
             ->whereNotNull('proxy_port')
             ->with(['server.allocation', 'domain'])
+            ->orderBy('id') // Consistent ordering for ACL rule generation
             ->get()
             ->filter(function ($subdomain) {
                 // Filter out subdomains with missing relationships
@@ -113,13 +114,15 @@ HAPROXY;
                 $backendName = "subdomain_{$subdomain->id}_backend";
                 
                 // Add ACL rule for this hostname
-                // First try the transaction variable (set by Lua action), then fallback to Lua fetch
-                // Using case-insensitive matching (-i flag) for more reliable matching
+                // Use exact string matching with case-insensitive flag
                 // Escape the hostname to prevent issues with special characters
                 $escapedHostname = addcslashes($hostname, '\\"');
                 $frontendAcls .= "    # ACL for {$hostname} (subdomain ID: {$subdomain->id})\n";
+                // Try transaction variable first (set by Lua action), then fallback to Lua fetch
+                // Use exact string match: -m str does exact matching (not substring)
+                // The -i flag makes it case-insensitive
+                // We use two separate use_backend rules - HAProxy will use the first one that matches
                 $frontendAcls .= "    use_backend {$backendName} if { var(txn.minecraft_hostname) -i -m str \"{$escapedHostname}\" }\n";
-                // Fallback to Lua fetch if variable is not set
                 $frontendAcls .= "    use_backend {$backendName} if { lua.minecraft_hostname -i -m str \"{$escapedHostname}\" }\n";
                 
                 // Generate backend config
@@ -157,25 +160,14 @@ HAPROXY;
             }
         }
         
-        // If no default backend configured, use first subdomain as fallback for debugging
-        // This allows connections to work even if Lua fetch fails, but logs will show the issue
-        if (empty($defaultBackendLine) && $subdomains->isNotEmpty()) {
-            $firstSubdomain = $subdomains->first();
-            if ($firstSubdomain) {
-                $firstBackend = "subdomain_{$firstSubdomain->id}_backend";
-                $defaultBackendLine = "    # Default backend (fallback if Lua fetch fails)\n";
-                $defaultBackendLine .= "    # WARNING: If all connections route here, Lua fetch is not extracting hostnames\n";
-                $defaultBackendLine .= "    default_backend {$firstBackend}\n";
-                Log::warning('Using first subdomain as default backend - Lua fetch may not be working', [
-                    'default_backend' => $firstBackend,
-                    'subdomain_id' => $firstSubdomain->id,
-                    'total_subdomains' => $subdomains->count(),
-                ]);
-            }
-        }
-        
+        // Do NOT use first subdomain as default backend - this causes all connections to route to server1
+        // If hostname extraction fails, connections should be rejected so we can debug the issue
         if (empty($defaultBackendLine)) {
             $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
+            $defaultBackendLine .= "    # This ensures we can debug hostname extraction issues\n";
+            Log::info('No default backend configured - unmatched connections will be rejected', [
+                'total_subdomains' => $subdomains->count(),
+            ]);
         }
 
         $config = <<<HAPROXY
@@ -236,8 +228,9 @@ frontend minecraft_frontend
     tcp-request content lua.extract_minecraft_hostname
     
     # Route based on extracted hostname
-    # First try using the transaction variable (set by Lua action)
-    # Fallback to Lua fetch if variable is not set
+    # ACL rules are evaluated in order - first matching rule wins
+    # Each subdomain has two rules: one for var(txn.minecraft_hostname) and one for lua.minecraft_hostname
+    # This ensures routing works even if one method fails
 {$frontendAcls}
 {$defaultBackendLine}
 # Backend definitions
