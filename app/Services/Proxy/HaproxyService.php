@@ -278,43 +278,64 @@ HAPROXY;
 
         $configPath = config('proxy.haproxy_config_path', '/etc/haproxy/haproxy.cfg');
 
-        // Ensure directory exists
+        // Ensure directory exists (use sudo)
         $configDir = dirname($configPath);
-        if (!File::isDirectory($configDir)) {
-            try {
-                File::makeDirectory($configDir, 0755, true);
-            } catch (\Exception $e) {
+        if (!is_dir($configDir)) {
+            $createDirCmd = "sudo mkdir -p {$configDir}";
+            exec("{$createDirCmd} 2>&1", $dirOutput, $dirReturnCode);
+            if ($dirReturnCode !== 0) {
                 Log::error('Failed to create HAProxy config directory', [
                     'path' => $configDir,
-                    'error' => $e->getMessage(),
+                    'error' => implode("\n", $dirOutput),
                 ]);
-                throw new \Exception("Failed to create HAProxy config directory: {$e->getMessage()}");
+                throw new \Exception("Failed to create HAProxy config directory: " . implode("\n", $dirOutput));
             }
         }
 
         try {
             $config = $this->generateFullConfig();
             
-            // Backup existing config if it exists and is different
-            if (File::exists($configPath)) {
-                $existingConfig = File::get($configPath);
-                // Only backup if it's not our auto-generated config
-                if (!str_contains($existingConfig, '# HAProxy Configuration for Pyrodactyl Subdomain Proxy')) {
-                    $backupPath = $configPath . '.backup.' . date('Y-m-d_H-i-s');
-                    File::copy($configPath, $backupPath);
-                    Log::info('Backed up existing HAProxy config', [
-                        'backup_file' => $backupPath,
-                    ]);
-                }
-            }
-            
             // Validate config before writing
             if (!$this->validateConfig($config)) {
                 throw new \Exception('HAProxy configuration validation failed');
             }
-
-            File::put($configPath, $config);
-            File::chmod($configPath, 0644);
+            
+            // Backup existing config if it exists and is different
+            // Use sudo to check and backup
+            if (file_exists($configPath)) {
+                $existingConfig = file_get_contents($configPath);
+                // Only backup if it's not our auto-generated config
+                if (!str_contains($existingConfig, '# HAProxy Configuration for Pyrodactyl Subdomain Proxy')) {
+                    $backupPath = $configPath . '.backup.' . date('Y-m-d_H-i-s');
+                    exec("sudo cp {$configPath} {$backupPath} 2>&1", $backupOutput, $backupReturnCode);
+                    if ($backupReturnCode === 0) {
+                        Log::info('Backed up existing HAProxy config', [
+                            'backup_file' => $backupPath,
+                        ]);
+                    }
+                }
+            }
+            
+            // Write config to temp file first (web server can write to storage)
+            $tempConfigFile = storage_path('app/haproxy_config_temp.cfg');
+            File::put($tempConfigFile, $config);
+            
+            // Use sudo to copy to final location
+            $copyCmd = "sudo cp {$tempConfigFile} {$configPath}";
+            $chmodCmd = "sudo chmod 644 {$configPath}";
+            
+            exec("{$copyCmd} 2>&1", $copyOutput, $copyReturnCode);
+            if ($copyReturnCode !== 0) {
+                throw new \Exception("Failed to copy HAProxy config: " . implode("\n", $copyOutput));
+            }
+            
+            exec("{$chmodCmd} 2>&1", $chmodOutput, $chmodReturnCode);
+            if ($chmodReturnCode !== 0) {
+                throw new \Exception("Failed to set HAProxy config permissions: " . implode("\n", $chmodOutput));
+            }
+            
+            // Clean up temp file
+            File::delete($tempConfigFile);
 
             Log::info('HAProxy config written', [
                 'config_file' => $configPath,
@@ -322,6 +343,11 @@ HAPROXY;
 
             return true;
         } catch (\Exception $e) {
+            // Clean up temp file if it exists
+            if (isset($tempConfigFile) && File::exists($tempConfigFile)) {
+                File::delete($tempConfigFile);
+            }
+            
             Log::error('Failed to write HAProxy config', [
                 'config_file' => $configPath,
                 'error' => $e->getMessage(),
