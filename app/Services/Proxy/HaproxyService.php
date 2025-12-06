@@ -38,8 +38,7 @@ class HaproxyService
 
 backend subdomain_{$subdomain->id}_backend
     mode tcp
-    option tcplog
-    server container_{$subdomain->id} {$containerIp}:{$containerPort} check
+    server container_{$subdomain->id} {$containerIp}:{$containerPort} check inter 3s fall 3 rise 2
 
 HAPROXY;
 
@@ -85,10 +84,28 @@ HAPROXY;
             }
         }
 
-        // Default backend (if configured)
+        // Default backend (if configured and exists)
         $defaultBackendLine = '';
         if ($defaultBackend) {
-            $defaultBackendLine = "    default_backend {$defaultBackend}\n";
+            // Verify the default backend actually exists in our backends
+            $backendExists = false;
+            foreach ($subdomains as $subdomain) {
+                if ("subdomain_{$subdomain->id}_backend" === $defaultBackend) {
+                    $backendExists = true;
+                    break;
+                }
+            }
+            
+            if ($backendExists) {
+                $defaultBackendLine = "    default_backend {$defaultBackend}\n";
+            } else {
+                // Default backend doesn't exist, log warning and don't use it
+                Log::warning('Default backend specified but does not exist', [
+                    'default_backend' => $defaultBackend,
+                    'available_backends' => $subdomains->map(fn($s) => "subdomain_{$s->id}_backend")->toArray(),
+                ]);
+                $defaultBackendLine = "    # Default backend '{$defaultBackend}' not found - connections that don't match will be rejected\n";
+            }
         } else {
             $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
         }

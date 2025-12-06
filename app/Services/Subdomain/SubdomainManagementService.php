@@ -632,12 +632,12 @@ class SubdomainManagementService
         foreach ($dnsRecords as &$record) {
             // Only modify A records, not SRV or other record types
             if ($record['type'] === 'A' && isset($record['content'])) {
-                if ($useAlias == 1) {
-                    $record['content'] = $server->allocation->ip_alias;
+            if ($useAlias == 1) {
+                $record['content'] = $server->allocation->ip_alias;
                 } else if ($useAlias == 0) {
-                    // Convert localhost to 127.0.0.1 for A records
+                // Convert localhost to 127.0.0.1 for A records
                     if (strtolower($record['content']) === 'localhost') {
-                        $record['content'] = '127.0.0.1';
+                    $record['content'] = '127.0.0.1';
                     }
                 }
             }
