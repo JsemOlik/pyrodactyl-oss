@@ -84,11 +84,11 @@ return [
     |
     | The time in seconds to wait for the first packet before routing.
     | This allows HAProxy to inspect the packet content for hostname extraction.
-    | Recommended: 5 seconds for Minecraft protocol.
+    | Recommended: 2 seconds for Minecraft protocol (reduced from 5s for better performance).
     |
     */
 
-    'haproxy_inspect_delay' => env('PROXY_HAPROXY_INSPECT_DELAY', 5),
+    'haproxy_inspect_delay' => env('PROXY_HAPROXY_INSPECT_DELAY', 2),
 
     /*
     |--------------------------------------------------------------------------

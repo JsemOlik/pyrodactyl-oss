@@ -84,7 +84,7 @@ HAPROXY;
             ->values(); // Re-index the collection after filtering
 
         $defaultProxyPort = config('proxy.default_proxy_port', 25565);
-        $inspectDelay = config('proxy.haproxy_inspect_delay', 5);
+        $inspectDelay = config('proxy.haproxy_inspect_delay', 2);
         $defaultBackend = config('proxy.haproxy_default_backend');
 
         // Build frontend ACL rules and backend definitions
@@ -136,15 +136,13 @@ HAPROXY;
                 }
                 $backendName = "subdomain_{$subdomain->id}_backend";
                 
-                // Add ACL rule for this hostname
+                // Add ACL rules for this hostname
                 // Use exact string matching with case-insensitive flag
                 // Escape the hostname to prevent issues with special characters
                 $escapedHostname = addcslashes($hostname, '\\"');
                 $frontendAcls .= "    # ACL for {$hostname} (subdomain ID: {$subdomain->id})\n";
-                // Try transaction variable first (set by Lua action), then fallback to Lua fetch
-                // Use exact string match: -m str does exact matching (not substring)
-                // The -i flag makes it case-insensitive
-                // We use two separate use_backend rules - HAProxy will use the first one that matches
+                // Use both transaction variable (set by Lua action) and Lua fetch for redundancy
+                // HAProxy will use the first matching rule - this provides fallback if one method fails
                 $frontendAcls .= "    use_backend {$backendName} if { var(txn.minecraft_hostname) -i -m str \"{$escapedHostname}\" }\n";
                 $frontendAcls .= "    use_backend {$backendName} if { lua.minecraft_hostname -i -m str \"{$escapedHostname}\" }\n";
                 
@@ -176,34 +174,18 @@ HAPROXY;
                 foreach ($subdomains as $subdomain) {
                     $availableBackends[] = "subdomain_{$subdomain->id}_backend";
                 }
-                Log::warning('Default backend specified but does not exist - ignoring', [
+                Log::warning('Default backend specified but does not exist - connections without matching hostname will be rejected', [
                     'default_backend' => $defaultBackend,
                     'available_backends' => $availableBackends,
                 ]);
             }
         }
         
-        // If no default backend configured, create a catch-all backend for debugging
-        // This will help us see what hostnames are being extracted
-        if (empty($defaultBackendLine) && $subdomains->isNotEmpty()) {
-            // Create a debug backend that logs the extracted hostname
-            $firstSubdomain = $subdomains->first();
-            $firstBackend = "subdomain_{$firstSubdomain->id}_backend";
-            
-            // Use first subdomain as default, but log it as a warning
-            // This allows connections to work while we debug hostname extraction
-            $defaultBackendLine = "    # Default backend (fallback for unmatched connections)\n";
-            $defaultBackendLine .= "    # WARNING: If connections route here, hostname extraction may be failing\n";
-            $defaultBackendLine .= "    # Check HAProxy logs to see which hostnames are being extracted\n";
-            $defaultBackendLine .= "    default_backend {$firstBackend}\n";
-            
-            Log::warning('Using first subdomain as default backend - hostname extraction may need debugging', [
-                'default_backend' => $firstBackend,
-                'subdomain_id' => $firstSubdomain->id,
-                'total_subdomains' => $subdomains->count(),
-            ]);
-        } else if (empty($defaultBackendLine)) {
+        // If no default backend configured, reject unmatched connections
+        // This prevents routing unknown connections to the wrong server
+        if (empty($defaultBackendLine)) {
             $defaultBackendLine = "    # No default backend - connections that don't match any subdomain will be rejected\n";
+            $defaultBackendLine .= "    # Configure PROXY_HAPROXY_DEFAULT_BACKEND in .env to set a default backend\n";
         }
 
         $config = <<<HAPROXY
@@ -253,6 +235,7 @@ frontend minecraft_frontend
     # Inspect first packet for hostname extraction
     # The inspect-delay allows HAProxy to wait for data before processing
     # This ensures the Minecraft handshake packet is available for inspection
+    # Reduced to 2s for better performance (Minecraft clients typically send handshake immediately)
     tcp-request inspect-delay {$inspectDelay}s
     
     # Accept the content to make data available for Lua script
