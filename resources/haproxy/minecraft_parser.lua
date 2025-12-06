@@ -1,45 +1,18 @@
 -- Minecraft Protocol Parser for HAProxy
 -- Extracts hostname from Minecraft handshake packet for routing
 -- 
--- Packet Structure:
--- [Packet ID: VarInt] [Protocol Version: VarInt] [Server Address: String] [Server Port: Unsigned Short] [Next State: VarInt]
+-- Packet Structure (with length prefix):
+-- [Packet Length: VarInt] [Packet ID: VarInt] [Protocol Version: VarInt] [Server Address: String] [Server Port: Unsigned Short] [Next State: VarInt]
 --
 -- The Server Address field contains the hostname the client used to connect
 
-core.register_fetches("minecraft_hostname", function(txn)
-    -- Get the request buffer (TCP payload)
-    -- For TCP mode with tcp-request content accept, we can access raw TCP data
-    if not txn.req then
-        return nil
-    end
-    
-    -- Get the request data as a string
-    -- In TCP mode, this contains the raw packet bytes
-    -- Note: This fetch is called during ACL evaluation after inspect-delay
-    local data = nil
-    
-    -- Try to get the data - in TCP mode, txn.req:get() should work
-    -- The data should be available after tcp-request inspect-delay
-    local ok, result = pcall(function()
-        -- Use get() to retrieve the data
-        -- Note: In TCP mode, this returns the raw packet bytes
-        return txn.req:get()
-    end)
-    
-    if not ok or not result then
-        -- If get() fails, data not available yet
-        return nil
-    end
-    
-    data = result
-    
-    -- Check if we have valid data
+-- Helper function to extract hostname from Minecraft packet
+local function extractHostnameFromPacket(data)
     if not data or type(data) ~= "string" or #data == 0 then
         return nil
     end
     
     -- Need at least 5 bytes for a valid handshake packet
-    -- (length prefix + packet ID + some data)
     if #data < 5 then
         return nil
     end
@@ -72,7 +45,6 @@ core.register_fetches("minecraft_hostname", function(txn)
     
     if hostname and hostname ~= "" then
         -- Trim any whitespace and return the hostname
-        -- This ensures exact matching with ACL rules
         hostname = hostname:match("^%s*(.-)%s*$")  -- Trim leading/trailing whitespace
         if hostname and hostname ~= "" then
             return hostname
@@ -80,6 +52,57 @@ core.register_fetches("minecraft_hostname", function(txn)
     end
     
     return nil
+end
+
+-- Register a fetch function to extract hostname
+core.register_fetches("minecraft_hostname", function(txn)
+    -- Get the request buffer (TCP payload)
+    -- For TCP mode with tcp-request content accept, we can access raw TCP data
+    if not txn.req then
+        return nil
+    end
+    
+    -- Get the request data as a string
+    -- In TCP mode, this contains the raw packet bytes
+    -- Note: This fetch is called during ACL evaluation after inspect-delay
+    local data = nil
+    
+    -- Try to get the data in TCP mode
+    -- In TCP mode, we use dup() to get a copy of the request buffer
+    local ok, result = pcall(function()
+        -- Use dup() to duplicate the request buffer (works in TCP mode)
+        -- This creates a copy of the data without consuming it
+        return txn.req:dup()
+    end)
+    
+    if not ok or not result then
+        -- If dup() fails, data not available yet
+        return nil
+    end
+    
+    data = result
+    
+    -- Extract hostname using helper function
+    return extractHostnameFromPacket(data)
+end)
+
+-- Also register as an action to set a variable (alternative approach)
+core.register_action("extract_minecraft_hostname", { "tcp-req" }, function(txn)
+    if not txn.req then
+        return
+    end
+    
+    local ok, data = pcall(function()
+        return txn.req:dup()
+    end)
+    
+    if ok and data then
+        local hostname = extractHostnameFromPacket(data)
+        if hostname then
+            -- Set a transaction variable with the hostname
+            txn:set_var("txn.minecraft_hostname", hostname)
+        end
+    end
 end)
 
 -- Read a VarInt (Variable-length Integer) from the packet

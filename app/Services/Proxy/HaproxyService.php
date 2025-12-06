@@ -93,11 +93,12 @@ HAPROXY;
                 $hostname = $subdomain->full_domain;
                 $backendName = "subdomain_{$subdomain->id}_backend";
                 
-                // Add ACL rule for this hostname using Lua fetch function
-                // The Lua script extracts the hostname from the Minecraft handshake packet
-                // Note: The fetch is registered as "minecraft_hostname", so it's accessed as lua.minecraft_hostname
+                // Add ACL rule for this hostname
+                // First try the transaction variable (set by Lua action), then fallback to Lua fetch
                 // Using case-insensitive matching (-i flag) for more reliable matching
                 $frontendAcls .= "    # ACL for {$hostname}\n";
+                $frontendAcls .= "    use_backend {$backendName} if { var(txn.minecraft_hostname) -i -m str {$hostname} }\n";
+                // Fallback to Lua fetch if variable is not set
                 $frontendAcls .= "    use_backend {$backendName} if { lua.minecraft_hostname -i -m str {$hostname} }\n";
                 
                 // Generate backend config
@@ -203,20 +204,20 @@ frontend minecraft_frontend
     
     # Inspect first packet for hostname extraction
     # This allows us to read the Minecraft handshake packet
-    # Note: inspect-delay must come FIRST to ensure data is available for ACL evaluation
-    # The delay ensures the full handshake packet is received before routing decisions
-    # Increased delay helps with network latency and packet fragmentation
+    # The inspect-delay ensures data is available before ACL evaluation
     tcp-request inspect-delay {$inspectDelay}s
     
-    # Route based on extracted hostname using Lua fetch
-    # The Lua script extracts the hostname from the Minecraft handshake packet
-    # ACLs are evaluated after inspect-delay, so data should be available
-    # Using case-insensitive matching (-i) for more reliable hostname matching
-{$frontendAcls}
+    # Extract hostname using Lua action and store in variable
+    # This runs during tcp-request content phase, before routing decisions
+    tcp-request content lua.extract_minecraft_hostname
     
-    # Accept the connection after routing decision is made
+    # Accept the connection to allow data to be read
     tcp-request content accept
     
+    # Route based on extracted hostname
+    # First try using the transaction variable (set by Lua action)
+    # Fallback to Lua fetch if variable is not set
+{$frontendAcls}
 {$defaultBackendLine}
 # Backend definitions
 {$backendDefs}
