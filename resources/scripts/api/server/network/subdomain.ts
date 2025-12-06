@@ -10,7 +10,6 @@ export interface SubdomainInfo {
             domain_id: number;
             full_domain: string;
             is_active: boolean;
-            proxy_port?: number | null;
         };
     };
     available_domains: Array<{
@@ -34,12 +33,11 @@ export const getSubdomainInfo = (uuid: string): Promise<SubdomainInfo> => {
     });
 };
 
-export const setSubdomain = (uuid: string, subdomain: string, domainId: number, proxyPort?: number | null): Promise<void> => {
+export const setSubdomain = (uuid: string, subdomain: string, domainId: number): Promise<void> => {
     return new Promise((resolve, reject) => {
         http.post(`/api/client/servers/${uuid}/subdomain`, {
             subdomain,
             domain_id: domainId,
-            proxy_port: proxyPort || null,
         })
             .then(() => resolve())
             .catch(reject);

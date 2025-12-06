@@ -31,7 +31,6 @@ class ServerSubdomainTransformer extends BaseClientTransformer
             'domain_id' => $model->domain_id,
             'full_domain' => $model->full_domain,
             'record_type' => $model->record_type,
-            'proxy_port' => $model->proxy_port,
             'is_active' => $model->is_active,
             'created_at' => $model->created_at->toISOString(),
             'updated_at' => $model->updated_at->toISOString(),

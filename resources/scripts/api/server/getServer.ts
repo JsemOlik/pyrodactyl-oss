@@ -17,7 +17,6 @@ export interface ServerSubdomain {
     domain_id: number;
     full_domain: string;
     record_type: string;
-    proxy_port: number | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -104,7 +103,6 @@ export const rawDataToServerObject = ({ attributes: data }: FractalResponseData)
                 domain_id: attrs.domain_id,
                 full_domain: attrs.full_domain,
                 record_type: attrs.record_type,
-                proxy_port: attrs.proxy_port,
                 is_active: attrs.is_active,
                 created_at: attrs.created_at,
                 updated_at: attrs.updated_at,

@@ -29,7 +29,6 @@ interface AvailableDomain {
 interface SubdomainFormValues {
     subdomain: string;
     domain_id: string;
-    proxy_port: string;
 }
 
 const CleanInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
@@ -67,14 +66,6 @@ const validationSchema = yup.object().shape({
             'Subdomain can only contain lowercase letters, numbers, and hyphens. It must start and end with a letter or number.',
         ),
     domain_id: yup.string().required('A domain must be selected.'),
-    proxy_port: yup
-        .string()
-        .nullable()
-        .test('is-valid-port', 'Port must be between 1024 and 65535', (value) => {
-            if (!value || value.trim() === '') return true; // Optional field
-            const port = parseInt(value, 10);
-            return !isNaN(port) && port >= 1024 && port <= 65535;
-        }),
 });
 
 const SubdomainManagement = () => {
@@ -173,11 +164,7 @@ const SubdomainManagement = () => {
         try {
             clearFlashes();
             setLoading(true);
-            const proxyPort =
-                values.proxy_port && String(values.proxy_port).trim() !== ''
-                    ? parseInt(String(values.proxy_port), 10)
-                    : null;
-            await setSubdomain(uuid, values.subdomain.trim(), parseInt(values.domain_id), proxyPort);
+            await setSubdomain(uuid, values.subdomain.trim(), parseInt(values.domain_id));
             await loadSubdomainInfo();
             setAvailabilityStatus(null);
             if (isEditing) {
@@ -291,11 +278,6 @@ const SubdomainManagement = () => {
                                 <p className='text-sm text-zinc-400 mb-2'>Current Subdomain</p>
                                 <p className='text-lg font-medium text-white font-mono'>
                                     {subdomainInfo?.current_subdomain?.attributes?.full_domain}
-                                    {subdomainInfo?.current_subdomain?.attributes?.proxy_port && (
-                                        <span className='text-zinc-400'>
-                                            :{subdomainInfo.current_subdomain.attributes.proxy_port}
-                                        </span>
-                                    )}
                                 </p>
                             </div>
                         </div>
@@ -333,7 +315,6 @@ const SubdomainManagement = () => {
                                 ?.id.toString() ||
                             subdomainInfo?.available_domains?.[0]?.id.toString() ||
                             '',
-                        proxy_port: subdomainInfo?.current_subdomain?.attributes?.proxy_port?.toString() || '',
                     }}
                     validationSchema={validationSchema}
                     onSubmit={handleSetSubdomain}
@@ -389,22 +370,6 @@ const SubdomainManagement = () => {
                                             </Field>
                                         </div>
                                     </div>
-                                </FormikFieldWrapper>
-
-                                <FormikFieldWrapper
-                                    name='proxy_port'
-                                    label='Proxy Port (Optional)'
-                                    description='Port to use for the reverse proxy (e.g., 25565). Leave empty to disable proxy. Must be between 1024 and 65535.'
-                                >
-                                    <Field
-                                        as={CleanInput}
-                                        name='proxy_port'
-                                        type='number'
-                                        placeholder='25565'
-                                        min='1024'
-                                        max='65535'
-                                        className='w-full px-4 py-3 border border-[#ffffff15] rounded-lg hover:border-[#ffffff25] transition-colors'
-                                    />
                                 </FormikFieldWrapper>
 
                                 {/* Availability Status */}

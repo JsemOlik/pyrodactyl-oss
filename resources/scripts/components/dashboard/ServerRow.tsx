@@ -122,13 +122,8 @@ const ServerRow = ({
     let connectionText = '';
 
     if (server.active_subdomain && server.active_subdomain.is_active) {
-        // Use subdomain with proxy port if available
-        const proxyPort = server.active_subdomain.proxy_port;
-        if (proxyPort) {
-            connectionText = `${server.active_subdomain.full_domain}:${proxyPort}`;
-        } else {
-            connectionText = server.active_subdomain.full_domain;
-        }
+        // Use subdomain
+        connectionText = server.active_subdomain.full_domain;
     } else if (defaultAllocation) {
         // Fallback to alias/ip with container port
         connectionText = `${defaultAllocation.alias || ip(defaultAllocation.ip)}:${defaultAllocation.port}`;

@@ -111,8 +111,7 @@ class SubdomainController extends ClientApiController
             $serverSubdomain = $this->subdomainService->createSubdomain(
                 $server,
                 $domain,
-                $data['subdomain'],
-                $data['proxy_port'] ?? null
+                $data['subdomain']
             );
 
             return response()->json([
