@@ -178,7 +178,10 @@ NGINX;
         try {
             $output = [];
             $returnCode = 0;
+            
+            // Use exec to capture output
             exec($command . ' 2>&1', $output, $returnCode);
+            $output = implode("\n", $output);
 
             if ($returnCode === 0) {
                 Log::info('NGINX reloaded successfully', [
@@ -186,13 +189,12 @@ NGINX;
                 ]);
                 return true;
             } else {
-                $errorOutput = implode("\n", $output);
                 Log::error('NGINX reload failed', [
                     'command' => $command,
                     'return_code' => $returnCode,
-                    'output' => $errorOutput,
+                    'output' => $output,
                 ]);
-                throw new \Exception("NGINX reload failed: {$errorOutput}");
+                throw new \Exception("NGINX reload failed: {$output}");
             }
         } catch (\Exception $e) {
             Log::error('Exception during NGINX reload', [
