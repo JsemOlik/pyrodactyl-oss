@@ -129,16 +129,19 @@ class SubdomainController extends ClientApiController
                 ]
             ], 201);
         } catch (\Exception $e) {
+            $existingSubdomainsCount = isset($existingSubdomains) ? $existingSubdomains->count() : 0;
+            $hadExistingSubdomains = isset($existingSubdomains) && $existingSubdomains->isNotEmpty();
+            
             Log::error('Subdomain creation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'server_id' => $server->id,
                 'domain_id' => $data['domain_id'] ?? null,
                 'subdomain' => $data['subdomain'] ?? null,
-                'existing_subdomains_count' => $existingSubdomains->count()
+                'existing_subdomains_count' => $existingSubdomainsCount
             ]);
             return response()->json([
-                'error' => $existingSubdomains->isNotEmpty() ? 'Failed to replace subdomain.' : 'Failed to create subdomain.'
+                'error' => $hadExistingSubdomains ? 'Failed to replace subdomain.' : 'Failed to create subdomain.'
             ], 422);
         }
     }
@@ -169,18 +172,15 @@ class SubdomainController extends ClientApiController
                 'message' => 'Subdomain(s) deleted successfully.'
             ]);
         } catch (\Exception $e) {
-            Log::error('Subdomain creation failed', [
+            Log::error('Subdomain deletion failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'server_id' => $server->id,
-                'domain_id' => $data['domain_id'] ?? null,
-                'subdomain' => $data['subdomain'] ?? null,
-                'existing_subdomains_count' => $existingSubdomains->count()
+                'subdomains_count' => isset($serverSubdomains) ? $serverSubdomains->count() : 0,
             ]);
             return response()->json([
                 'error' => 'Failed to delete subdomain(s).'
             ], 422);
-
         }
     }
 
