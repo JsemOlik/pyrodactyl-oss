@@ -39,6 +39,7 @@ class HaproxyService
 backend subdomain_{$subdomain->id}_backend
     mode tcp
     server container_{$subdomain->id} {$containerIp}:{$containerPort} check inter 3s fall 3 rise 2
+    # Note: Health check may fail if server is restarting - connections will still work
 
 HAPROXY;
 
@@ -176,6 +177,7 @@ defaults
 
 # Frontend for Minecraft proxy
 frontend minecraft_frontend
+    bind :::{$defaultProxyPort} v4v6
     bind *:{$defaultProxyPort}
     mode tcp
     option tcplog
