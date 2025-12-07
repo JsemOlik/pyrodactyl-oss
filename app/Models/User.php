@@ -151,6 +151,7 @@ class User extends Model implements
         'gravatar' => 'boolean',
         'totp_authenticated_at' => 'datetime',
         'trial_ends_at' => 'datetime',
+        'credits_balance' => 'decimal:2',
     ];
 
     /**

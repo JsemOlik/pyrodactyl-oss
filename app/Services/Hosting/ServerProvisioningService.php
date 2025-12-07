@@ -8,6 +8,7 @@ use Pterodactyl\Models\User;
 use Pterodactyl\Models\Plan;
 use Pterodactyl\Models\Egg;
 use Pterodactyl\Models\Subscription;
+use Pterodactyl\Models\Subscription;
 use Pterodactyl\Models\Objects\DeploymentObject;
 use Pterodactyl\Services\Servers\ServerCreationService;
 
@@ -147,8 +148,29 @@ class ServerProvisioningService
     {
         $subscriptionId = $stripeSession->subscription;
         
-        if (!$subscriptionId) {
-            throw new \Exception('Checkout session does not have a subscription ID');
+        // Handle credits-based purchases (no Stripe subscription)
+        if (!$subscriptionId || str_starts_with($stripeSession->id ?? '', 'credits_')) {
+            $metadata = $this->convertMetadataToArray($stripeSession->metadata ?? []);
+            $plan = null;
+            
+            if (!empty($metadata['plan_id'])) {
+                $plan = Plan::find($metadata['plan_id']);
+            }
+
+            // Create a local-only subscription for credits-based purchases
+            $creditsSubscriptionId = 'credits_' . uniqid();
+            $subscription = Subscription::create([
+                'user_id' => $user->id,
+                'type' => 'default',
+                'stripe_id' => $creditsSubscriptionId,
+                'stripe_status' => 'active', // Credits-based subscriptions are always active
+                'stripe_price' => $plan?->stripe_price_id,
+                'quantity' => 1,
+                'trial_ends_at' => null,
+                'ends_at' => null,
+            ]);
+
+            return $subscription;
         }
 
         // Check if subscription already exists

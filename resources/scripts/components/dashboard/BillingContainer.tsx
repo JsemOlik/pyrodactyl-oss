@@ -14,8 +14,10 @@ import { PageListContainer } from '@/components/elements/pages/PageList';
 
 import cancelSubscription from '@/api/billing/cancelSubscription';
 import getBillingPortalUrl from '@/api/billing/getBillingPortalUrl';
+import getCreditsBalance from '@/api/billing/getCreditsBalance';
 import getInvoices from '@/api/billing/getInvoices';
 import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
+import purchaseCredits from '@/api/billing/purchaseCredits';
 import resumeSubscription from '@/api/billing/resumeSubscription';
 import { httpErrorToHuman } from '@/api/http';
 
@@ -38,6 +40,15 @@ const BillingContainer = () => {
         },
     );
 
+    // Load credits balance
+    const {
+        data: creditsBalance,
+        error: creditsError,
+        mutate: mutateCredits,
+    } = useSWR('/api/client/billing/credits/balance', getCreditsBalance, {
+        revalidateOnFocus: false,
+    });
+
     // State for managing dialogs
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [cancelConfirmDialogOpen, setCancelConfirmDialogOpen] = useState(false);
@@ -47,6 +58,9 @@ const BillingContainer = () => {
     const [cancelImmediate, setCancelImmediate] = useState<boolean | null>(null);
     const [billingPortalLoading, setBillingPortalLoading] = useState<number | null>(null);
     const [countdown, setCountdown] = useState<number>(0);
+    const [buyCreditsDialogOpen, setBuyCreditsDialogOpen] = useState(false);
+    const [creditsAmount, setCreditsAmount] = useState<string>('10');
+    const [isPurchasingCredits, setIsPurchasingCredits] = useState(false);
 
     // Handler functions
     const handleBillingPortal = useCallback(async (subscriptionId: number) => {
@@ -188,8 +202,56 @@ const BillingContainer = () => {
     const hidden = services.slice(visibleCount);
     const hasHidden = hidden.length > 0;
 
+    const handleBuyCredits = async () => {
+        const amount = parseFloat(creditsAmount);
+        if (!amount || amount < 1) {
+            toast.error('Please enter a valid amount (minimum $1).');
+            return;
+        }
+
+        setIsPurchasingCredits(true);
+        try {
+            const response = await purchaseCredits({ amount });
+            window.location.href = response.data.checkout_url;
+        } catch (error: any) {
+            toast.error(httpErrorToHuman(error) || 'Failed to create credits purchase session.');
+            setIsPurchasingCredits(false);
+        }
+    };
+
+    // Check if credits are enabled by checking if balance endpoint exists
+    const creditsEnabled = creditsBalance !== undefined || creditsError === undefined;
+
     return (
         <PageContentBlock title={'Billing'} showFlashKey={'billing'}>
+            {creditsEnabled && (
+                <div className='transform-gpu skeleton-anim-2 mb-6'>
+                    <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
+                        <div className='flex items-center justify-between flex-wrap gap-4'>
+                            <div>
+                                <h3 className='text-lg font-semibold text-white mb-1'>Account Credits</h3>
+                                <div className='text-2xl font-bold text-brand'>
+                                    {creditsBalance?.data ? (
+                                        <>
+                                            {new Intl.NumberFormat('en-US', {
+                                                style: 'currency',
+                                                currency: creditsBalance.data.currency.toUpperCase(),
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            }).format(creditsBalance.data.balance)}
+                                        </>
+                                    ) : (
+                                        'Loading...'
+                                    )}
+                                </div>
+                            </div>
+                            <ActionButton variant='primary' onClick={() => setBuyCreditsDialogOpen(true)}>
+                                Buy Credits
+                            </ActionButton>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'>
                 <MainPageHeader title='Active Services' />
                 <PageListContainer className='p-4 flex flex-col gap-3'>
@@ -531,6 +593,66 @@ const BillingContainer = () => {
                     Your subscription will continue from the end of the current billing period.
                 </p>
             </Dialog.Confirm>
+
+            {/* Buy Credits Dialog */}
+            <Dialog
+                open={buyCreditsDialogOpen}
+                onClose={() => {
+                    setBuyCreditsDialogOpen(false);
+                    setCreditsAmount('10');
+                }}
+                title='Purchase Credits'
+            >
+                <div className='space-y-4'>
+                    <p className='text-zinc-300'>
+                        Enter the amount of credits you want to purchase. Credits will be added to your account after
+                        payment is processed.
+                    </p>
+
+                    <div>
+                        <label htmlFor='credits-amount' className='block text-sm font-medium text-zinc-300 mb-2'>
+                            Amount (USD)
+                        </label>
+                        <input
+                            id='credits-amount'
+                            type='number'
+                            min='1'
+                            step='0.01'
+                            value={creditsAmount}
+                            onChange={(e) => setCreditsAmount(e.target.value)}
+                            className='w-full px-4 py-2 bg-[#ffffff08] border border-[#ffffff12] rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-brand transition-colors'
+                            placeholder='10.00'
+                        />
+                        <p className='mt-1 text-xs text-zinc-400'>Minimum purchase amount is $1.00</p>
+                    </div>
+                </div>
+
+                <Dialog.Footer>
+                    <ActionButton
+                        variant='secondary'
+                        onClick={() => {
+                            setBuyCreditsDialogOpen(false);
+                            setCreditsAmount('10');
+                        }}
+                    >
+                        Cancel
+                    </ActionButton>
+                    <ActionButton
+                        variant='primary'
+                        onClick={handleBuyCredits}
+                        disabled={isPurchasingCredits || !creditsAmount || parseFloat(creditsAmount) < 1}
+                    >
+                        {isPurchasingCredits ? (
+                            <>
+                                <Spinner size='small' className='mr-2' />
+                                Processing...
+                            </>
+                        ) : (
+                            'Continue to Payment'
+                        )}
+                    </ActionButton>
+                </Dialog.Footer>
+            </Dialog>
         </PageContentBlock>
     );
 };

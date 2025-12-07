@@ -120,9 +120,15 @@ class StripeWebhookController extends Controller
             'metadata' => $session->metadata,
         ]);
 
-        // Only process if this is a subscription checkout (not a one-time payment)
+        // Handle one-time payments (credits purchases)
+        if ($session->mode === 'payment') {
+            $this->handleCreditsPurchase($session);
+            return;
+        }
+
+        // Only process if this is a subscription checkout
         if ($session->mode !== 'subscription') {
-            Log::warning('Checkout session is not a subscription', [
+            Log::warning('Checkout session is not a subscription or payment', [
                 'session_id' => $session->id,
                 'mode' => $session->mode,
             ]);
@@ -372,6 +378,72 @@ class StripeWebhookController extends Controller
                 'stripe_status' => $subscription->status,
                 'ends_at' => now(),
             ]);
+        }
+    }
+
+    /**
+     * Handle credits purchase (one-time payment).
+     */
+    private function handleCreditsPurchase($session): void
+    {
+        Log::info('Processing credits purchase', [
+            'session_id' => $session->id,
+            'metadata' => $session->metadata,
+        ]);
+
+        $metadata = $session->metadata ?? [];
+        
+        // Check if this is a credits purchase
+        if (($metadata['type'] ?? null) !== 'credits_purchase') {
+            Log::warning('Payment session is not a credits purchase', [
+                'session_id' => $session->id,
+                'metadata_type' => $metadata['type'] ?? null,
+            ]);
+            return;
+        }
+
+        if (empty($metadata['user_id'])) {
+            Log::error('Credits purchase missing user_id in metadata', [
+                'session_id' => $session->id,
+            ]);
+            return;
+        }
+
+        $userId = (int) $metadata['user_id'];
+        $amount = isset($metadata['amount']) ? (float) $metadata['amount'] : null;
+
+        if (!$amount || $amount <= 0) {
+            Log::error('Invalid credits purchase amount', [
+                'session_id' => $session->id,
+                'user_id' => $userId,
+                'amount' => $amount,
+            ]);
+            return;
+        }
+
+        try {
+            $user = \Pterodactyl\Models\User::findOrFail($userId);
+            
+            // Add credits to user account
+            $user->increment('credits_balance', $amount);
+            
+            Log::info('Credits added to user account', [
+                'session_id' => $session->id,
+                'user_id' => $userId,
+                'amount' => $amount,
+                'new_balance' => $user->fresh()->credits_balance,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to add credits to user account', [
+                'session_id' => $session->id,
+                'user_id' => $userId,
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            // Re-throw to trigger webhook retry
+            throw $e;
         }
     }
 

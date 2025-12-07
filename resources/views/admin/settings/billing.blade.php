@@ -145,6 +145,29 @@
         </div>
       </div>
     </div>
+    <div class="col-xs-12">
+      <div class="box">
+        <div class="box-header with-border">
+          <h3 class="box-title">Payment Method</h3>
+        </div>
+        <div class="box-body">
+          <div class="row">
+            <div class="form-group col-md-12">
+              <div class="checkbox checkbox-primary">
+                @php
+                  $enableCredits = old('billing:enable_credits', config('billing.enable_credits', false));
+                  $enableCreditsValue = is_bool($enableCredits) ? $enableCredits : ($enableCredits === 'true' || $enableCredits === true || $enableCredits === '1');
+                @endphp
+                <input id="billingEnableCredits" type="checkbox" name="billing:enable_credits" value="1"
+                  {{ $enableCreditsValue ? 'checked' : '' }} />
+                <label for="billingEnableCredits">Enable Credits System</label>
+              </div>
+              <p class="text-muted small">When enabled, users must purchase credits to buy servers. Users can buy credits from their billing dashboard. When disabled, users pay directly with their card at checkout.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   </form>
 @endsection
@@ -168,7 +191,8 @@
           'billing:server_creation_disabled_message': $('textarea[name="billing:server_creation_disabled_message"]').val(),
           'billing:status_page_url': $('input[name="billing:status_page_url"]').val(),
           'billing:show_status_page_button': $('input[name="billing:show_status_page_button"]').is(':checked') ? '1' : '0',
-          'billing:show_logo_on_disabled_page': $('input[name="billing:show_logo_on_disabled_page"]').is(':checked') ? '1' : '0'
+          'billing:show_logo_on_disabled_page': $('input[name="billing:show_logo_on_disabled_page"]').is(':checked') ? '1' : '0',
+          'billing:enable_credits': $('input[name="billing:enable_credits"]').is(':checked') ? '1' : '0'
         }),
         headers: { 'X-CSRF-Token': $('input[name="_token"]').val() }
       }).fail(function (jqXHR) {

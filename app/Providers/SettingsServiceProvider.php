@@ -53,6 +53,7 @@ class SettingsServiceProvider extends ServiceProvider
     'billing:status_page_url',
     'billing:show_status_page_button',
     'billing:show_logo_on_disabled_page',
+    'billing:enable_credits',
   ];
 
 

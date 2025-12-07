@@ -13,11 +13,14 @@ use Pterodactyl\Models\User;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Http\Requests\Api\Client\Hosting\CheckoutRequest;
 use Pterodactyl\Services\Hosting\StripePriceService;
+use Pterodactyl\Services\Hosting\ServerProvisioningService;
+use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
     public function __construct(
-        private StripePriceService $stripePriceService
+        private StripePriceService $stripePriceService,
+        private ServerProvisioningService $serverProvisioningService
     ) {
         Stripe::setApiKey(config('cashier.secret'));
     }
@@ -44,25 +47,21 @@ class CheckoutController extends Controller
             ], 403);
         }
 
-        try {
-            // Get or create Stripe customer
-            $stripeCustomer = $this->getOrCreateStripeCustomer($user);
+        // Check if credits are enabled
+        $creditsEnabled = config('billing.enable_credits', false);
 
+        try {
             // Determine plan and pricing
             $plan = null;
-            $stripePriceId = null;
             $interval = 'month';
             $priceAmount = 0;
 
             if ($request->has('plan_id')) {
                 $plan = Plan::findOrFail($request->input('plan_id'));
                 $interval = $plan->interval;
-                
-                // Get or create Stripe Price for this plan
-                $stripePriceId = $this->stripePriceService->getOrCreatePriceForPlan($plan);
                 $priceAmount = $plan->price;
             } else {
-                // Custom plan - calculate price and create Stripe Price on-the-fly
+                // Custom plan - calculate price
                 $memory = $request->input('memory');
                 $interval = $request->input('interval', 'month');
                 
@@ -86,21 +85,114 @@ class CheckoutController extends Controller
                 };
                 
                 $priceAmount = round($pricePerMonth * ($intervalMonths - $discountMonths), 2);
-                
-                // Create Stripe Price for custom plan
-                $stripePriceId = $this->stripePriceService->createPriceForCustomPlan(
-                    $priceAmount,
-                    $interval,
-                    $memory
-                );
             }
 
             // Determine type from request or plan
             $type = $request->input('type', $plan?->type ?? 'game-server');
+
+            // If credits are enabled, process with credits instead of Stripe
+            if ($creditsEnabled) {
+                // Refresh user to get latest credits balance
+                $user->refresh();
+                
+                // Check if user has enough credits
+                if ($user->credits_balance < $priceAmount) {
+                    return response()->json([
+                        'errors' => [[
+                            'code' => 'InsufficientCredits',
+                            'status' => '402',
+                            'detail' => 'You do not have enough credits to purchase this server. Please purchase more credits first.',
+                        ]],
+                    ], 402);
+                }
+
+                // Deduct credits and provision server
+                return DB::transaction(function () use ($user, $priceAmount, $request, $plan, $interval, $type) {
+                    // Deduct credits
+                    $user->decrement('credits_balance', $priceAmount);
+                    
+                    // Build metadata for provisioning
+                    $metadata = [
+                        'user_id' => (string) $user->id,
+                        'type' => $type,
+                        'server_name' => $request->input('server_name'),
+                        'server_description' => $request->input('server_description', ''),
+                    ];
+
+                    if ($type === 'vps') {
+                        $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
+                    } else {
+                        $metadata['nest_id'] = (string) $request->input('nest_id');
+                        $metadata['egg_id'] = (string) $request->input('egg_id');
+                    }
+
+                    if ($plan) {
+                        $metadata['plan_id'] = (string) $plan->id;
+                    } else {
+                        $metadata['custom'] = 'true';
+                        $metadata['memory'] = (string) $request->input('memory');
+                        $metadata['interval'] = $interval;
+                    }
+
+                    // Create a mock Stripe session object for provisioning
+                    $mockSession = (object) [
+                        'id' => 'credits_' . uniqid(),
+                        'subscription' => null,
+                        'metadata' => $metadata,
+                    ];
+
+                    try {
+                        // Provision server (will need to handle subscription creation separately for credits)
+                        $server = $this->serverProvisioningService->provisionServer($mockSession);
+                        
+                        Log::info('Server purchased with credits', [
+                            'user_id' => $user->id,
+                            'server_id' => $server->id,
+                            'credits_deducted' => $priceAmount,
+                            'remaining_credits' => $user->fresh()->credits_balance,
+                        ]);
+
+                        return response()->json([
+                            'object' => 'checkout_session',
+                            'data' => [
+                                'checkout_url' => config('app.url') . '/server/' . $server->uuid,
+                                'session_id' => $mockSession->id,
+                                'server_uuid' => $server->uuid,
+                            ],
+                        ]);
+                    } catch (\Exception $e) {
+                        // Refund credits on error
+                        $user->increment('credits_balance', $priceAmount);
+                        Log::error('Failed to provision server after credit deduction, credits refunded', [
+                            'user_id' => $user->id,
+                            'error' => $e->getMessage(),
+                            'credits_refunded' => $priceAmount,
+                        ]);
+                        throw $e;
+                    }
+                });
+            }
+
+            // Credits disabled - use Stripe checkout flow
+            // Get or create Stripe customer
+            $stripeCustomer = $this->getOrCreateStripeCustomer($user);
+
+            $stripePriceId = null;
+            if ($plan) {
+                // Get or create Stripe Price for this plan
+                $stripePriceId = $this->stripePriceService->getOrCreatePriceForPlan($plan);
+            } else {
+                // Create Stripe Price for custom plan
+                $stripePriceId = $this->stripePriceService->createPriceForCustomPlan(
+                    $priceAmount,
+                    $interval,
+                    $request->input('memory')
+                );
+            }
             
             // Build metadata for webhook handler
             $metadata = [
-                'user_id' => $user->id,
+                'user_id' => (string) $user->id,
                 'type' => $type,
                 'server_name' => $request->input('server_name'),
                 'server_description' => $request->input('server_description', ''),
@@ -110,15 +202,15 @@ class CheckoutController extends Controller
             if ($type === 'vps') {
                 $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
             } else {
-                $metadata['nest_id'] = $request->input('nest_id');
-                $metadata['egg_id'] = $request->input('egg_id');
+                $metadata['nest_id'] = (string) $request->input('nest_id');
+                $metadata['egg_id'] = (string) $request->input('egg_id');
             }
 
             if ($plan) {
-                $metadata['plan_id'] = $plan->id;
+                $metadata['plan_id'] = (string) $plan->id;
             } else {
                 $metadata['custom'] = 'true';
-                $metadata['memory'] = $request->input('memory');
+                $metadata['memory'] = (string) $request->input('memory');
                 $metadata['interval'] = $interval;
             }
 
@@ -126,7 +218,6 @@ class CheckoutController extends Controller
             $cancelUrl = config('app.url') . '/hosting/checkout?' . http_build_query($request->only(['plan_id', 'custom', 'memory', 'interval', 'nest_id', 'egg_id']));
 
             // Create Stripe Checkout Session
-            // Stripe will replace {CHECKOUT_SESSION_ID} with the actual session ID in the success_url
             $checkoutSession = Session::create([
                 'customer' => $stripeCustomer->id,
                 'payment_method_types' => ['card'],

@@ -22,6 +22,7 @@ class BillingSettingsFormRequest extends AdminFormRequest
             'billing:status_page_url' => 'nullable|url|max:255',
             'billing:show_status_page_button' => 'nullable|boolean',
             'billing:show_logo_on_disabled_page' => 'nullable|boolean',
+            'billing:enable_credits' => 'nullable|boolean',
         ];
     }
 
