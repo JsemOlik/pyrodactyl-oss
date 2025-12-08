@@ -388,16 +388,27 @@ class StripeWebhookController extends Controller
     {
         Log::info('Processing credits purchase', [
             'session_id' => $session->id,
+            'mode' => $session->mode ?? null,
             'metadata' => $session->metadata,
+            'payment_status' => $session->payment_status ?? null,
         ]);
 
-        $metadata = $session->metadata ?? [];
+        // Convert metadata to array if it's an object
+        $rawMetadata = $session->metadata ?? [];
+        $metadata = $this->convertMetadataToArray($rawMetadata);
+        
+        Log::info('Credits purchase metadata converted', [
+            'session_id' => $session->id,
+            'metadata' => $metadata,
+            'metadata_type' => $metadata['type'] ?? null,
+        ]);
         
         // Check if this is a credits purchase
         if (($metadata['type'] ?? null) !== 'credits_purchase') {
             Log::warning('Payment session is not a credits purchase', [
                 'session_id' => $session->id,
                 'metadata_type' => $metadata['type'] ?? null,
+                'all_metadata' => $metadata,
             ]);
             return;
         }
@@ -405,6 +416,7 @@ class StripeWebhookController extends Controller
         if (empty($metadata['user_id'])) {
             Log::error('Credits purchase missing user_id in metadata', [
                 'session_id' => $session->id,
+                'metadata' => $metadata,
             ]);
             return;
         }
@@ -417,6 +429,7 @@ class StripeWebhookController extends Controller
                 'session_id' => $session->id,
                 'user_id' => $userId,
                 'amount' => $amount,
+                'metadata' => $metadata,
             ]);
             return;
         }
@@ -424,19 +437,26 @@ class StripeWebhookController extends Controller
         try {
             $user = \Pterodactyl\Models\User::findOrFail($userId);
             
+            // Get current balance before increment
+            $oldBalance = $user->credits_balance;
+            
             // Add credits to user account
             $user->increment('credits_balance', $amount);
+            
+            // Refresh to get updated balance
+            $user->refresh();
             
             Log::info('Credits added to user account', [
                 'session_id' => $session->id,
                 'user_id' => $userId,
                 'amount' => $amount,
-                'new_balance' => $user->fresh()->credits_balance,
+                'old_balance' => $oldBalance,
+                'new_balance' => $user->credits_balance,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to add credits to user account', [
                 'session_id' => $session->id,
-                'user_id' => $userId,
+                'user_id' => $userId ?? null,
                 'amount' => $amount,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

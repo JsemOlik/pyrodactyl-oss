@@ -75,8 +75,8 @@ class CreditsController extends Controller
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'success_url' => config('app.url') . '/account/billing?credits_purchased=true',
-                'cancel_url' => config('app.url') . '/account/billing',
+                'success_url' => config('app.url') . '/billing?credits_purchased=true',
+                'cancel_url' => config('app.url') . '/billing',
                 'metadata' => [
                     'user_id' => (string) $user->id,
                     'type' => 'credits_purchase',
