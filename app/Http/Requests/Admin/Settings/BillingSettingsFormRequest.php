@@ -48,6 +48,12 @@ class BillingSettingsFormRequest extends AdminFormRequest
             'billing:email_subscription_notifications' => 'nullable|boolean',
             'billing:admin_notifications' => 'nullable|boolean',
             'billing:admin_notification_email' => 'nullable|email|max:255',
+            'billing:email_template_payment_success' => 'nullable|string',
+            'billing:email_template_payment_failed' => 'nullable|string',
+            'billing:email_template_invoice_generated' => 'nullable|string',
+            'billing:email_template_subscription_cancelled' => 'nullable|string',
+            'billing:email_template_subscription_renewed' => 'nullable|string',
+            'billing:email_template_subscription_expiring' => 'nullable|string',
         ];
     }
 

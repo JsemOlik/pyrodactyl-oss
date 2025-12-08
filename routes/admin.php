@@ -125,6 +125,7 @@ Route::group(['prefix' => 'billing'], function () {
     Route::get('/credits', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.credits');
     Route::get('/invoices', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.invoices');
     Route::get('/notifications', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.notifications');
+    Route::get('/template/{type}', [Admin\Settings\BillingController::class, 'getTemplate'])->name('admin.billing.template');
     Route::patch('/', [Admin\Settings\BillingController::class, 'update'])->name('admin.billing.update');
     
     // Credits management routes
