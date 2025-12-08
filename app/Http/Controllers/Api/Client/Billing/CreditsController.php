@@ -20,6 +20,20 @@ class CreditsController extends Controller
     }
 
     /**
+     * Check if credits are enabled.
+     */
+    public function enabled(): JsonResponse
+    {
+        return response()->json([
+            'object' => 'credits_enabled',
+            'data' => [
+                'enabled' => config('billing.enable_credits', false),
+                'currency' => strtoupper(config('cashier.currency', 'usd')),
+            ],
+        ]);
+    }
+
+    /**
      * Get the current user's credits balance.
      */
     public function balance(): JsonResponse

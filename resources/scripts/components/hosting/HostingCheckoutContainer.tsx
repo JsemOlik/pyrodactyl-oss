@@ -15,6 +15,7 @@ import getHostingPlans, {
 import getVpsDistributions, { VpsDistribution } from '@/api/hosting/getVpsDistributions';
 import { httpErrorToHuman } from '@/api/http';
 import getNests from '@/api/nests/getNests';
+import getCreditsEnabled from '@/api/billing/getCreditsEnabled';
 
 type HostingType = 'game-server' | 'vps';
 
@@ -50,6 +51,14 @@ const HostingCheckoutContainer = () => {
         hostingType === 'vps' ? '/api/client/hosting/vps-distributions' : null,
         getVpsDistributions,
     );
+
+    // Check if credits are enabled
+    const { data: creditsEnabledData } = useSWR('/api/client/billing/credits/enabled', getCreditsEnabled, {
+        revalidateOnFocus: false,
+    });
+
+    const creditsEnabled = creditsEnabledData?.data?.enabled ?? false;
+    const currency = creditsEnabledData?.data?.currency || 'USD';
 
     // Calculate custom plan pricing
     const [customPlanCalculation, setCustomPlanCalculation] = useState<CustomPlanCalculation | null>(null);
@@ -94,10 +103,15 @@ const HostingCheckoutContainer = () => {
             : null;
     const selectedDistribution = hostingType === 'vps' ? distributions?.find((d) => d.id === distributionId) : null;
 
-    const formatPrice = (price: number, currency: string = 'USD'): string => {
+    const formatPrice = (price: number): string => {
+        if (creditsEnabled) {
+            // Show as credits when credits are enabled
+            return `${price.toFixed(2)} credits`;
+        }
+        // Show as currency when using card billing
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: currency,
+            currency: currency.toLowerCase(),
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }).format(price);

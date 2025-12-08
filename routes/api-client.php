@@ -47,6 +47,7 @@ Route::prefix('/billing')->group(function () {
     Route::post('/subscriptions/{subscription}/resume', [Client\Billing\SubscriptionController::class, 'resume']);
     Route::get('/subscriptions/{subscription}/billing-portal', [Client\Billing\SubscriptionController::class, 'billingPortal']);
     Route::get('/invoices', [Client\Billing\InvoiceController::class, 'index']);
+    Route::get('/credits/enabled', [Client\Billing\CreditsController::class, 'enabled']);
     Route::get('/credits/balance', [Client\Billing\CreditsController::class, 'balance']);
     Route::post('/credits/purchase', [Client\Billing\CreditsController::class, 'purchase']);
     Route::get('/credits/transactions', [Client\Billing\CreditsController::class, 'transactions']);

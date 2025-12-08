@@ -14,8 +14,9 @@ import { PageListContainer } from '@/components/elements/pages/PageList';
 
 import cancelSubscription from '@/api/billing/cancelSubscription';
 import getBillingPortalUrl from '@/api/billing/getBillingPortalUrl';
-import getCreditTransactions, { CreditTransaction } from '@/api/billing/getCreditTransactions';
 import getCreditsBalance from '@/api/billing/getCreditsBalance';
+import getCreditsEnabled from '@/api/billing/getCreditsEnabled';
+import getCreditTransactions, { CreditTransaction } from '@/api/billing/getCreditTransactions';
 import getInvoices from '@/api/billing/getInvoices';
 import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
 import purchaseCredits from '@/api/billing/purchaseCredits';
@@ -41,19 +42,30 @@ const BillingContainer = () => {
         },
     );
 
-    // Load credits balance
+    // Check if credits are enabled
+    const {
+        data: creditsEnabledData,
+        error: creditsEnabledError,
+    } = useSWR('/api/client/billing/credits/enabled', getCreditsEnabled, {
+        revalidateOnFocus: false,
+    });
+
+    const creditsEnabled = creditsEnabledData?.data?.enabled ?? false;
+
+    // Load credits balance (only if enabled)
     const {
         data: creditsBalance,
         error: creditsError,
         mutate: mutateCredits,
-    } = useSWR('/api/client/billing/credits/balance', getCreditsBalance, {
-        revalidateOnFocus: false,
-    });
+    } = useSWR(
+        creditsEnabled ? '/api/client/billing/credits/balance' : null,
+        getCreditsBalance,
+        {
+            revalidateOnFocus: false,
+        },
+    );
 
-    // Check if credits are enabled by checking if balance endpoint exists
-    const creditsEnabled = creditsBalance !== undefined || creditsError === undefined;
-
-    // Load credit transactions
+    // Load credit transactions (only if enabled)
     const { data: creditTransactionsData, error: transactionsError } = useSWR(
         creditsEnabled ? ['/api/client/billing/credits/transactions', { limit: 50 }] : null,
         ([url, params]) => getCreditTransactions(params),
