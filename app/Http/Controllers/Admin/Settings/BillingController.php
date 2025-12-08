@@ -29,21 +29,19 @@ class BillingController extends Controller
      */
     public function index(): View
     {
-        // Determine tab from route name
+        // Determine which view to return based on route name
         $routeName = request()->route()->getName();
-        $tab = 'settings';
         
         if (str_contains($routeName, 'server-creation')) {
-            $tab = 'server-creation';
+            return $this->view->make('admin.billing.server-creation');
         } elseif (str_contains($routeName, 'payment-method')) {
-            $tab = 'payment-method';
+            return $this->view->make('admin.billing.payment-method');
         } elseif (str_contains($routeName, 'credits')) {
-            $tab = 'credits';
+            return $this->view->make('admin.billing.credits');
         }
         
-        return $this->view->make('admin.billing.index', [
-            'activeTab' => $tab,
-        ]);
+        // Default to settings
+        return $this->view->make('admin.billing.settings');
     }
 
     /**
