@@ -20,9 +20,10 @@
         if (users.length === 0) {
           html = '<tr><td colspan="6" class="text-center">No users found.</td></tr>';
         } else {
-          users.forEach(function(user) {
+          users.forEach(function(user, index) {
             const name = (user.name_first || '') + ' ' + (user.name_last || '');
-            html += '<tr>';
+            const rowClass = (index % 2 === 0) ? 'style="background-color: #f4f4f4;"' : 'style="background-color: #f9f9f9;"';
+            html += '<tr ' + rowClass + '>';
             html += '<td>' + user.id + '</td>';
             html += '<td>' + (user.username || 'N/A') + '</td>';
             html += '<td>' + (user.email || 'N/A') + '</td>';
@@ -93,7 +94,7 @@
         if (transactions.length === 0) {
           html += '<tr><td colspan="6" class="text-center">No transactions found.</td></tr>';
         } else {
-          transactions.forEach(function(tx) {
+          transactions.forEach(function(tx, index) {
             const date = new Date(tx.created_at).toLocaleString();
             const typeColors = {
               'purchase': 'label-success',
@@ -105,8 +106,9 @@
             const typeColor = typeColors[tx.type] || 'label-default';
             const amountSign = (tx.type === 'purchase' || tx.type === 'refund') ? '+' : '-';
             const amountColor = (tx.type === 'purchase' || tx.type === 'refund') ? 'text-green' : 'text-red';
+            const rowClass = (index % 2 === 0) ? 'style="background-color: #f4f4f4;"' : 'style="background-color: #f9f9f9;"';
             
-            html += '<tr>';
+            html += '<tr ' + rowClass + '>';
             html += '<td>' + date + '</td>';
             html += '<td><span class="label ' + typeColor + '">' + tx.type.toUpperCase() + '</span></td>';
             html += '<td class="' + amountColor + '">' + amountSign + parseFloat(tx.amount).toFixed(2) + '</td>';
