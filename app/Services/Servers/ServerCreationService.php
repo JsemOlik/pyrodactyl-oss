@@ -94,11 +94,40 @@ class ServerCreationService
         }, 5);
 
         try {
+            \Illuminate\Support\Facades\Log::info('Attempting to create server on Wings daemon', [
+                'server_id' => $server->id,
+                'server_uuid' => $server->uuid,
+                'node_id' => $server->node_id,
+                'start_on_completion' => Arr::get($data, 'start_on_completion', false) ?? false,
+            ]);
+            
             $this->daemonServerRepository->setServer($server)->create(
                 Arr::get($data, 'start_on_completion', false) ?? false
             );
+            
+            \Illuminate\Support\Facades\Log::info('Server successfully created on Wings daemon', [
+                'server_id' => $server->id,
+                'server_uuid' => $server->uuid,
+            ]);
         } catch (DaemonConnectionException $exception) {
-            $this->serverDeletionService->withForce()->handle($server);
+            \Illuminate\Support\Facades\Log::error('Failed to create server on Wings daemon', [
+                'server_id' => $server->id,
+                'server_uuid' => $server->uuid,
+                'node_id' => $server->node_id,
+                'error' => $exception->getMessage(),
+                'previous_exception' => $exception->getPrevious() ? $exception->getPrevious()->getMessage() : null,
+                'trace' => $exception->getTraceAsString(),
+            ]);
+            
+            try {
+                $this->serverDeletionService->withForce()->handle($server);
+            } catch (\Exception $deleteException) {
+                \Illuminate\Support\Facades\Log::warning('Failed to cleanup server after Wings creation failure', [
+                    'server_id' => $server->id,
+                    'server_uuid' => $server->uuid,
+                    'error' => $deleteException->getMessage(),
+                ]);
+            }
 
             throw $exception;
         }
