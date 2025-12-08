@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Pterodactyl\Models\Plan;
 use Pterodactyl\Models\User;
+use Pterodactyl\Models\Subscription;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Http\Requests\Api\Client\Hosting\CheckoutRequest;
 use Pterodactyl\Services\Hosting\StripePriceService;
@@ -106,8 +107,20 @@ class CheckoutController extends Controller
                     ], 402);
                 }
 
+                // Create subscription first (outside the transaction to avoid nested transaction issues)
+                $subscription = \Pterodactyl\Models\Subscription::create([
+                    'user_id' => $user->id,
+                    'type' => 'default',
+                    'stripe_id' => 'credits_' . uniqid(),
+                    'stripe_status' => 'active',
+                    'stripe_price' => $plan?->stripe_price_id,
+                    'quantity' => 1,
+                    'trial_ends_at' => null,
+                    'ends_at' => null,
+                ]);
+
                 // Deduct credits and provision server
-                return DB::transaction(function () use ($user, $priceAmount, $request, $plan, $interval, $type) {
+                return DB::transaction(function () use ($user, $priceAmount, $request, $plan, $interval, $type, $subscription) {
                     // Deduct credits
                     $user->decrement('credits_balance', $priceAmount);
                     
@@ -137,12 +150,12 @@ class CheckoutController extends Controller
                     // Create a mock Stripe session object for provisioning
                     $mockSession = (object) [
                         'id' => 'credits_' . uniqid(),
-                        'subscription' => null,
+                        'subscription' => $subscription->stripe_id,
                         'metadata' => $metadata,
                     ];
 
                     try {
-                        // Provision server (will need to handle subscription creation separately for credits)
+                        // Provision server with subscription already created
                         $server = $this->serverProvisioningService->provisionServer($mockSession);
                         
                         Log::info('Server purchased with credits', [
@@ -163,6 +176,17 @@ class CheckoutController extends Controller
                     } catch (\Exception $e) {
                         // Refund credits on error
                         $user->increment('credits_balance', $priceAmount);
+                        
+                        // Delete the subscription if server creation failed
+                        try {
+                            $subscription->delete();
+                        } catch (\Exception $subException) {
+                            Log::warning('Failed to delete subscription after server creation failure', [
+                                'subscription_id' => $subscription->id,
+                                'error' => $subException->getMessage(),
+                            ]);
+                        }
+                        
                         Log::error('Failed to provision server after credit deduction, credits refunded', [
                             'user_id' => $user->id,
                             'error' => $e->getMessage(),

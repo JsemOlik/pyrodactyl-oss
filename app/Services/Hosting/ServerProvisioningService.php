@@ -148,7 +148,15 @@ class ServerProvisioningService
         $subscriptionId = $stripeSession->subscription;
         
         // Handle credits-based purchases (no Stripe subscription)
-        if (!$subscriptionId || str_starts_with($stripeSession->id ?? '', 'credits_')) {
+        if (!$subscriptionId || str_starts_with($stripeSession->id ?? '', 'credits_') || str_starts_with($subscriptionId ?? '', 'credits_')) {
+            // Check if subscription already exists (created before calling provisionServer)
+            if ($subscriptionId && str_starts_with($subscriptionId, 'credits_')) {
+                $subscription = Subscription::where('stripe_id', $subscriptionId)->first();
+                if ($subscription) {
+                    return $subscription;
+                }
+            }
+            
             $metadata = $this->convertMetadataToArray($stripeSession->metadata ?? []);
             $plan = null;
             
@@ -157,7 +165,9 @@ class ServerProvisioningService
             }
 
             // Create a local-only subscription for credits-based purchases
-            $creditsSubscriptionId = 'credits_' . uniqid();
+            $creditsSubscriptionId = $subscriptionId && str_starts_with($subscriptionId, 'credits_') 
+                ? $subscriptionId 
+                : 'credits_' . uniqid();
             $subscription = Subscription::create([
                 'user_id' => $user->id,
                 'type' => 'default',
