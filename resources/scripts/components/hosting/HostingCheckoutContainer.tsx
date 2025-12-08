@@ -19,7 +19,7 @@ import { httpErrorToHuman } from '@/api/http';
 import getNests from '@/api/nests/getNests';
 
 type HostingType = 'game-server' | 'vps';
-type CheckoutStep = 'game-selection' | 'customization' | 'subdomain' | 'payment';
+type CheckoutStep = 'game-selection' | 'customization' | 'payment';
 
 const HostingCheckoutContainer = () => {
     const navigate = useNavigate();
@@ -314,40 +314,12 @@ const HostingCheckoutContainer = () => {
                 toast.error('Please enter a server name.');
                 return;
             }
-            // Check if subdomain step should be shown
-            if (availableDomains && availableDomains.length > 0) {
-                goToStep('subdomain', 'forward');
-            } else {
-                goToStep('payment', 'forward');
-            }
-        } else if (currentStep === 'subdomain') {
-            // Validate subdomain if provided
-            if (subdomain.trim()) {
-                if (!selectedDomainId) {
-                    toast.error('Please select a domain.');
-                    return;
-                }
-                if (availabilityStatus && !availabilityStatus.available) {
-                    toast.error('Please choose an available subdomain.');
-                    return;
-                }
-                if (checkingAvailability) {
-                    toast.error('Please wait for availability check to complete.');
-                    return;
-                }
-            }
             goToStep('payment', 'forward');
         }
     };
 
     const handlePreviousStep = () => {
         if (currentStep === 'payment') {
-            if (availableDomains && availableDomains.length > 0) {
-                goToStep('subdomain', 'backward');
-            } else {
-                goToStep('customization', 'backward');
-            }
-        } else if (currentStep === 'subdomain') {
             goToStep('customization', 'backward');
         } else if (currentStep === 'customization') {
             goToStep('game-selection', 'backward');
@@ -430,21 +402,17 @@ const HostingCheckoutContainer = () => {
                 number: 1,
             },
             { id: 'customization', label: 'Customization', number: 2 },
-            ...(availableDomains && availableDomains.length > 0
-                ? [{ id: 'subdomain', label: 'Subdomain', number: 3 }]
-                : []),
             {
                 id: 'payment',
                 label: 'Payment',
-                number: availableDomains && availableDomains.length > 0 ? 4 : 3,
+                number: 3,
             },
         ];
 
         const getStepNumber = (stepId: CheckoutStep): number => {
             if (stepId === 'game-selection') return 1;
             if (stepId === 'customization') return 2;
-            if (stepId === 'subdomain') return 3;
-            return availableDomains && availableDomains.length > 0 ? 4 : 3;
+            return 3;
         };
 
         const currentStepNumber = getStepNumber(currentStep);
@@ -767,8 +735,8 @@ const HostingCheckoutContainer = () => {
                                     </div>
                                 )}
 
-                                {/* Step 3: Subdomain Selection */}
-                                {currentStep === 'subdomain' && availableDomains && availableDomains.length > 0 && (
+                                {/* Step 3: Payment */}
+                                {currentStep === 'payment' && (
                                     <div
                                         className='space-y-6'
                                         style={{
@@ -893,9 +861,6 @@ const HostingCheckoutContainer = () => {
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Step 4: Payment */}
-                                {currentStep === 'payment' && (
                                     <div
                                         className='space-y-6'
                                         style={{
@@ -905,7 +870,7 @@ const HostingCheckoutContainer = () => {
                                         <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
                                             <h3 className='text-lg font-semibold text-white mb-6 flex items-center gap-2'>
                                                 <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
-                                                    {availableDomains && availableDomains.length > 0 ? '4' : '3'}
+                                                    3
                                                 </span>
                                                 Review & Payment
                                             </h3>
@@ -948,19 +913,6 @@ const HostingCheckoutContainer = () => {
                                                             <div className='flex justify-between'>
                                                                 <span>Distribution:</span>
                                                                 <span>{selectedDistribution.name}</span>
-                                                            </div>
-                                                        )}
-                                                        {subdomain.trim() && selectedDomainId && (
-                                                            <div className='flex justify-between'>
-                                                                <span>Subdomain:</span>
-                                                                <span className='font-mono'>
-                                                                    {subdomain}.
-                                                                    {
-                                                                        availableDomains?.find(
-                                                                            (d) => d.id === selectedDomainId,
-                                                                        )?.name
-                                                                    }
-                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1039,23 +991,6 @@ const HostingCheckoutContainer = () => {
                                         size='lg'
                                         onClick={handleNextStep}
                                         disabled={!serverName.trim() || isTransitioning}
-                                        className='flex-1'
-                                    >
-                                        Continue
-                                    </ActionButton>
-                                )}
-                                {currentStep === 'subdomain' && (
-                                    <ActionButton
-                                        variant='primary'
-                                        size='lg'
-                                        onClick={handleNextStep}
-                                        disabled={
-                                            (subdomain.trim() &&
-                                                (!selectedDomainId ||
-                                                    (availabilityStatus && !availabilityStatus.available) ||
-                                                    checkingAvailability)) ||
-                                            isTransitioning
-                                        }
                                         className='flex-1'
                                     >
                                         Continue
