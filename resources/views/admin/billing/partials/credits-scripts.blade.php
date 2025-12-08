@@ -20,10 +20,9 @@
         if (users.length === 0) {
           html = '<tr><td colspan="6" class="text-center">No users found.</td></tr>';
         } else {
-          users.forEach(function(user, index) {
+          users.forEach(function(user) {
             const name = (user.name_first || '') + ' ' + (user.name_last || '');
-            const rowClass = (index % 2 === 0) ? 'style="background-color: #f4f4f4;"' : 'style="background-color: #f9f9f9;"';
-            html += '<tr ' + rowClass + '>';
+            html += '<tr>';
             html += '<td>' + user.id + '</td>';
             html += '<td>' + (user.username || 'N/A') + '</td>';
             html += '<td>' + (user.email || 'N/A') + '</td>';
@@ -87,14 +86,14 @@
         const transactions = response.data;
         let html = '<h4>Transaction History</h4>';
         html += '<div class="table-responsive">';
-        html += '<table class="table table-bordered">';
+        html += '<table class="table table-hover">';
         html += '<thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Balance Before</th><th>Balance After</th><th>Description</th></tr></thead>';
         html += '<tbody>';
         
         if (transactions.length === 0) {
           html += '<tr><td colspan="6" class="text-center">No transactions found.</td></tr>';
         } else {
-          transactions.forEach(function(tx, index) {
+          transactions.forEach(function(tx) {
             const date = new Date(tx.created_at).toLocaleString();
             const typeColors = {
               'purchase': 'label-success',
@@ -106,9 +105,8 @@
             const typeColor = typeColors[tx.type] || 'label-default';
             const amountSign = (tx.type === 'purchase' || tx.type === 'refund') ? '+' : '-';
             const amountColor = (tx.type === 'purchase' || tx.type === 'refund') ? 'text-green' : 'text-red';
-            const rowClass = (index % 2 === 0) ? 'style="background-color: #f4f4f4;"' : 'style="background-color: #f9f9f9;"';
             
-            html += '<tr ' + rowClass + '>';
+            html += '<tr>';
             html += '<td>' + date + '</td>';
             html += '<td><span class="label ' + typeColor + '">' + tx.type.toUpperCase() + '</span></td>';
             html += '<td class="' + amountColor + '">' + amountSign + parseFloat(tx.amount).toFixed(2) + '</td>';

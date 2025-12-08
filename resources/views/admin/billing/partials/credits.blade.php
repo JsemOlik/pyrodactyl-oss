@@ -16,7 +16,7 @@
       </div>
       <div class="box-body">
         <div class="table-responsive">
-          <table class="table table-bordered" id="usersTable">
+          <table class="table table-hover" id="usersTable">
             <thead>
               <tr>
                 <th>ID</th>
