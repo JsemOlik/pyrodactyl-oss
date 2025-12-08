@@ -36,6 +36,10 @@ class BillingController extends Controller
             return $this->view->make('admin.billing.server-creation');
         } elseif (str_contains($routeName, 'credits')) {
             return $this->view->make('admin.billing.credits');
+        } elseif (str_contains($routeName, 'invoices')) {
+            return $this->view->make('admin.billing.invoices');
+        } elseif (str_contains($routeName, 'notifications')) {
+            return $this->view->make('admin.billing.notifications');
         }
         
         // Default to settings

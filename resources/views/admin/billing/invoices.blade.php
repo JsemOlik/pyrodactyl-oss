@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
 @section('title')
-  Credits Management
+  Invoice Settings
 @endsection
 
 @section('content-header')
-  <h1>Credits Management<small>Manage user credits and view transaction history.</small></h1>
+  <h1>Invoice Settings<small>Configure invoice generation and formatting settings.</small></h1>
   <ol class="breadcrumb">
     <li><a href="{{ route('admin.index') }}">Admin</a></li>
     <li class="active">Billing</li>
@@ -13,24 +13,25 @@
 @endsection
 
 @section('content')
-  @include('admin.billing.partials.credits')
-  
+  @include('admin.billing.partials.invoices')
 @endsection
 
 @section('footer-scripts')
   @parent
   <script>
-    function saveCreditsSettings() {
+    function saveInvoiceSettings() {
       return $.ajax({
         method: 'PATCH',
         url: '/admin/billing',
         contentType: 'application/json',
         data: JSON.stringify({
-          'billing:enable_credits': $('input[name="billing:enable_credits"]').is(':checked') ? '1' : '0',
-          'billing:credit_conversion_rate': $('input[name="billing:credit_conversion_rate"]').val(),
-          'billing:min_credit_purchase': $('input[name="billing:min_credit_purchase"]').val(),
-          'billing:max_credit_balance': $('input[name="billing:max_credit_balance"]').val(),
-          'billing:credit_expiration_days': $('input[name="billing:credit_expiration_days"]').val(),
+          'billing:invoice_prefix': $('input[name="billing:invoice_prefix"]').val(),
+          'billing:invoice_starting_number': $('input[name="billing:invoice_starting_number"]').val(),
+          'billing:invoice_terms': $('textarea[name="billing:invoice_terms"]').val(),
+          'billing:invoice_footer': $('textarea[name="billing:invoice_footer"]').val(),
+          'billing:enable_tax': $('input[name="billing:enable_tax"]').is(':checked') ? '1' : '0',
+          'billing:tax_rate': $('input[name="billing:tax_rate"]').val(),
+          'billing:tax_id': $('input[name="billing:tax_id"]').val(),
         }),
         headers: { 'X-CSRF-Token': $('input[name="_token"]').val() }
       }).fail(function (jqXHR) {
@@ -55,7 +56,7 @@
 
       swal({
         title: 'Whoops!',
-        text: 'An error occurred while attempting to ' + verb + ' billing settings: ' + errorText,
+        text: 'An error occurred while attempting to ' + verb + ' invoice settings: ' + errorText,
         type: 'error'
       });
     }
@@ -64,16 +65,15 @@
       $('#billingSettingsForm').on('submit', function (e) {
         e.preventDefault();
       });
-      $('#saveCreditsSettingsButton').on('click', function () {
-        saveCreditsSettings().done(function () {
+      $('#saveButton').on('click', function () {
+        saveInvoiceSettings().done(function () {
           swal({
             title: 'Success',
-            text: 'Credits settings have been updated successfully and the queue worker was restarted to apply these changes.',
+            text: 'Invoice settings have been updated successfully and the queue worker was restarted to apply these changes.',
             type: 'success'
           });
         });
       });
     });
   </script>
-  @include('admin.billing.partials.credits-scripts')
 @endsection

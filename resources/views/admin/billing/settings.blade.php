@@ -26,17 +26,6 @@
         'cashier:webhook:secret': $('input[name="cashier:webhook:secret"]').val(),
         'cashier:currency': $('input[name="cashier:currency"]').val(),
         'cashier:currency_locale': $('input[name="cashier:currency_locale"]').val(),
-        'billing:enable_tax': $('input[name="billing:enable_tax"]').is(':checked') ? '1' : '0',
-        'billing:tax_rate': $('input[name="billing:tax_rate"]').val(),
-        'billing:tax_id': $('input[name="billing:tax_id"]').val(),
-        'billing:invoice_prefix': $('input[name="billing:invoice_prefix"]').val(),
-        'billing:invoice_starting_number': $('input[name="billing:invoice_starting_number"]').val(),
-        'billing:invoice_terms': $('textarea[name="billing:invoice_terms"]').val(),
-        'billing:invoice_footer': $('textarea[name="billing:invoice_footer"]').val(),
-        'billing:credit_conversion_rate': $('input[name="billing:credit_conversion_rate"]').val(),
-        'billing:min_credit_purchase': $('input[name="billing:min_credit_purchase"]').val(),
-        'billing:max_credit_balance': $('input[name="billing:max_credit_balance"]').val(),
-        'billing:credit_expiration_days': $('input[name="billing:credit_expiration_days"]').val(),
         'billing:grace_period_days': $('input[name="billing:grace_period_days"]').val(),
         'billing:default_billing_cycle': $('select[name="billing:default_billing_cycle"]').val(),
         'billing:auto_renewal': $('input[name="billing:auto_renewal"]').is(':checked') ? '1' : '0',
@@ -47,10 +36,6 @@
         'billing:enable_late_fees': $('input[name="billing:enable_late_fees"]').is(':checked') ? '1' : '0',
         'billing:late_fee_amount': $('input[name="billing:late_fee_amount"]').val(),
         'billing:late_fee_days': $('input[name="billing:late_fee_days"]').val(),
-        'billing:email_payment_notifications': $('input[name="billing:email_payment_notifications"]').is(':checked') ? '1' : '0',
-        'billing:email_subscription_notifications': $('input[name="billing:email_subscription_notifications"]').is(':checked') ? '1' : '0',
-        'billing:admin_notifications': $('input[name="billing:admin_notifications"]').is(':checked') ? '1' : '0',
-        'billing:admin_notification_email': $('input[name="billing:admin_notification_email"]').val(),
       };
       
       return $.ajax({

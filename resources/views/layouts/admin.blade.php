@@ -179,6 +179,16 @@
                             <i class="bi bi-cash-coin"></i> <span>Credits</span>
                         </a>
                     </li>
+                    <li class="{{ Route::currentRouteName() === 'admin.billing.invoices' ? 'active' : '' }}">
+                        <a href="{{ route('admin.billing.invoices') }}">
+                            <i class="bi bi-receipt"></i> <span>Invoices</span>
+                        </a>
+                    </li>
+                    <li class="{{ Route::currentRouteName() === 'admin.billing.notifications' ? 'active' : '' }}">
+                        <a href="{{ route('admin.billing.notifications') }}">
+                            <i class="bi bi-bell-fill"></i> <span>Notifications</span>
+                        </a>
+                    </li>
                     <li class="{{ Route::currentRouteName() === 'admin.billing.plans' ? 'active' : '' }}">
                         <a href="{{ route('admin.billing.plans') }}">
                             <i class="bi bi-list-ul"></i> <span>Plans</span>
