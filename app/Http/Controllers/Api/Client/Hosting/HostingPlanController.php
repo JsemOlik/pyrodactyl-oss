@@ -45,6 +45,8 @@ class HostingPlanController extends Controller
                     'name' => $plan->name,
                     'description' => $plan->description,
                     'price' => (float) $plan->price,
+                    'sales_percentage' => $plan->sales_percentage ? (float) $plan->sales_percentage : null,
+                    'first_month_sales_percentage' => $plan->first_month_sales_percentage ? (float) $plan->first_month_sales_percentage : null,
                     'currency' => $plan->currency,
                     'interval' => $plan->interval,
                     'memory' => $plan->memory,

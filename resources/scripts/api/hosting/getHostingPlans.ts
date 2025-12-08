@@ -7,6 +7,8 @@ export interface HostingPlan {
         name: string;
         description: string | null;
         price: number;
+        sales_percentage: number | null;
+        first_month_sales_percentage: number | null;
         currency: string;
         interval: string;
         memory: number | null;

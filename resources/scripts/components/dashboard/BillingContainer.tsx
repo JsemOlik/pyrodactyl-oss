@@ -115,44 +115,47 @@ const BillingContainer = () => {
     };
 
     // Map subscriptions to BillingService format
+    // Filter out subscriptions without server_uuid (server was deleted)
     const services: (BillingService & { subscriptionId: number })[] = useMemo(() => {
         if (!subscriptions) return [];
 
-        return subscriptions.map((sub) => {
-            const attrs = sub.attributes;
-            const priceFormatted = new Intl.NumberFormat(undefined, {
-                style: 'currency',
-                currency: attrs.currency,
-            }).format(attrs.price_amount);
+        return subscriptions
+            .filter((sub) => sub.attributes.server_uuid) // Only include subscriptions with a server
+            .map((sub) => {
+                const attrs = sub.attributes;
+                const priceFormatted = new Intl.NumberFormat(undefined, {
+                    style: 'currency',
+                    currency: attrs.currency,
+                }).format(attrs.price_amount);
 
-            // Map interval to supported format
-            const intervalMap: Record<string, 'month' | 'year'> = {
-                month: 'month',
-                quarter: 'month',
-                'half-year': 'month',
-                year: 'year',
-            };
+                // Map interval to supported format
+                const intervalMap: Record<string, 'month' | 'year'> = {
+                    month: 'month',
+                    quarter: 'month',
+                    'half-year': 'month',
+                    year: 'year',
+                };
 
-            const subscriptionId = attrs.id;
+                const subscriptionId = attrs.id;
 
-            return {
-                id: String(attrs.id),
-                externalId: attrs.stripe_id,
-                name: attrs.server_name || 'Unnamed Server',
-                planName: attrs.plan_name,
-                priceAmount: attrs.price_amount,
-                priceFormatted: priceFormatted,
-                currency: attrs.currency,
-                interval: intervalMap[attrs.interval] || 'month',
-                status: attrs.status,
-                nextRenewalAt: attrs.next_renewal_at || undefined,
-                manageUrl: attrs.server_uuid ? `/server/${attrs.server_uuid}` : undefined,
-                canCancel: attrs.can_cancel,
-                canResume: attrs.can_resume,
-                subscriptionId: subscriptionId,
-                onManage: attrs.server_uuid ? () => handleBillingPortal(subscriptionId) : undefined,
-            };
-        });
+                return {
+                    id: String(attrs.id),
+                    externalId: attrs.stripe_id,
+                    name: attrs.server_name || 'Unnamed Server',
+                    planName: attrs.plan_name,
+                    priceAmount: attrs.price_amount,
+                    priceFormatted: priceFormatted,
+                    currency: attrs.currency,
+                    interval: intervalMap[attrs.interval] || 'month',
+                    status: attrs.status,
+                    nextRenewalAt: attrs.next_renewal_at || undefined,
+                    manageUrl: attrs.server_uuid ? `/server/${attrs.server_uuid}` : undefined,
+                    canCancel: attrs.can_cancel,
+                    canResume: attrs.can_resume,
+                    subscriptionId: subscriptionId,
+                    onManage: attrs.server_uuid ? () => handleBillingPortal(subscriptionId) : undefined,
+                };
+            });
     }, [subscriptions, handleBillingPortal]);
 
     const confirmCancel = async (immediate: boolean) => {

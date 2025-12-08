@@ -44,48 +44,22 @@ class SubscriptionTransformer extends BaseClientTransformer
 
         $billingStatus = $statusMap[$model->stripe_status] ?? 'incomplete';
         
-        // Check if subscription is pending cancellation (active but scheduled to cancel)
+        // Check if subscription is pending cancellation using database fields (much faster)
+        // If ends_at is set and in the future, and status is active/trialing, it's pending cancellation
         $isPendingCancellation = false;
-        if (in_array($model->stripe_status, ['active', 'trialing'])) {
-            try {
-                \Stripe\Stripe::setApiKey(config('cashier.secret'));
-                $stripeSubscription = \Stripe\Subscription::retrieve($model->stripe_id);
-                // Check if subscription is scheduled to cancel at period end
-                if ($stripeSubscription->cancel_at_period_end ?? false) {
-                    $isPendingCancellation = true;
-                    $billingStatus = 'pending_cancellation';
-                }
-            } catch (\Exception $e) {
-                // If we can't check, use ends_at as fallback
-                if ($model->ends_at && $model->ends_at->isFuture() && in_array($model->stripe_status, ['active', 'trialing'])) {
-                    $isPendingCancellation = true;
-                    $billingStatus = 'pending_cancellation';
-                }
-            }
+        if (in_array($model->stripe_status, ['active', 'trialing']) && $model->ends_at && $model->ends_at->isFuture()) {
+            $isPendingCancellation = true;
+            $billingStatus = 'pending_cancellation';
         }
 
-        // Calculate next renewal date
+        // Calculate next renewal date using database fields (much faster than Stripe API calls)
         $nextRenewalAt = null;
         if ($model->stripe_status === 'active' || $model->stripe_status === 'trialing') {
-            try {
-                \Stripe\Stripe::setApiKey(config('cashier.secret'));
-                $stripeSubscription = \Stripe\Subscription::retrieve($model->stripe_id);
-                
-                // If pending cancellation, use current_period_end as the cancellation date
-                if ($isPendingCancellation) {
-                    $nextRenewalAt = $stripeSubscription->current_period_end ? 
-                        \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)->toIso8601String() : 
-                        ($model->ends_at ? $model->ends_at->toIso8601String() : null);
-                } else {
-                    $nextRenewalAt = $stripeSubscription->current_period_end ? 
-                        \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)->toIso8601String() : 
-                        null;
-                }
-            } catch (\Exception $e) {
-                // If we can't get Stripe data, use ends_at or null
-                if ($isPendingCancellation) {
-                    $nextRenewalAt = $model->ends_at ? $model->ends_at->toIso8601String() : null;
-                }
+            // Use next_billing_at if available, otherwise use ends_at for pending cancellations
+            if ($isPendingCancellation && $model->ends_at) {
+                $nextRenewalAt = $model->ends_at->toIso8601String();
+            } elseif ($model->next_billing_at) {
+                $nextRenewalAt = $model->next_billing_at->toIso8601String();
             }
         }
 

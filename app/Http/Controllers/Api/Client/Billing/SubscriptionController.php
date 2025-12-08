@@ -26,7 +26,10 @@ class SubscriptionController extends ClientApiController
     {
         $user = $request->user();
         
+        // Only get subscriptions that have at least one server
+        // This filters out subscriptions where the server was deleted
         $subscriptions = Subscription::where('user_id', $user->id)
+            ->whereHas('servers')
             ->with(['plan', 'servers'])
             ->orderBy('created_at', 'desc')
             ->get();

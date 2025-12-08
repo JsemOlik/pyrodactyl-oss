@@ -80,7 +80,12 @@ const HostingContainer = () => {
         return `${(memory / 1024).toFixed(0)} GB`;
     };
 
-    const getFirstMonthPrice = (price: number): number => {
+    const getFirstMonthPrice = (price: number, plan?: HostingPlan): number => {
+        if (plan?.attributes.first_month_sales_percentage) {
+            const discount = plan.attributes.first_month_sales_percentage / 100;
+            return Math.round(price * (1 - discount) * 100) / 100;
+        }
+        // Default to 50% off if no discount is set
         return Math.round(price * 0.5);
     };
 
@@ -510,7 +515,7 @@ const HostingContainer = () => {
                                     {plans.map((plan, index) => {
                                         const attrs = plan.attributes;
                                         const monthlyPrice = attrs.pricing.monthly;
-                                        const firstMonthPrice = getFirstMonthPrice(monthlyPrice);
+                                        const firstMonthPrice = getFirstMonthPrice(monthlyPrice, plan);
                                         const isMostPopular = index === 2;
                                         const vCores = getVCores(attrs.cpu);
 
@@ -674,7 +679,7 @@ const HostingContainer = () => {
                                                     </span>
                                                     <span className='text-xl font-bold text-white'>
                                                         {formatPrice(
-                                                            getFirstMonthPrice(customPlanCalculation.price),
+                                                            getFirstMonthPrice(customPlanCalculation.price, undefined),
                                                             customPlanCalculation.currency,
                                                         )}
                                                     </span>
