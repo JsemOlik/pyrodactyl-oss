@@ -96,7 +96,7 @@
                 <label class="control-label">Email Template Code</label>
                 <p class="text-muted small">Edit the HTML template below. Use variables like @{{name}}, @{{amount}}, @{{invoice_number}}, etc.</p>
               </div>
-              <textarea id="emailTemplateEditor" class="form-control" rows="20" style="font-family: 'Courier New', monospace; font-size: 13px; resize: vertical; background-color: #f5f5f5; border: 1px solid #ddd;" placeholder="Loading template..."></textarea>
+              <textarea id="emailTemplateEditor" class="form-control" rows="20" style="font-family: 'Courier New', monospace; font-size: 13px; resize: vertical; background-color: #f5f5f5; border: 1px solid #ddd; color: #000000;" placeholder="Loading template..."></textarea>
             </div>
             <!-- Preview (Right) -->
             <div class="col-md-6" style="padding: 15px; background-color: #f9f9f9;">
