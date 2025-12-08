@@ -179,6 +179,11 @@
                             <i class="bi bi-cash-coin"></i> <span>Credits</span>
                         </a>
                     </li>
+                    <li class="{{ Route::currentRouteName() === 'admin.billing.plans' ? 'active' : '' }}">
+                        <a href="{{ route('admin.billing.plans') }}">
+                            <i class="bi bi-list-ul"></i> <span>Plans</span>
+                        </a>
+                    </li>
                     <li class="header">MANAGEMENT</li>
                     <li class="{{ !starts_with(Route::currentRouteName(), 'admin.databases') ?: 'active' }}">
                         <a href="{{ route('admin.databases') }}">

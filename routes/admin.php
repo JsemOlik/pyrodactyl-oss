@@ -131,6 +131,13 @@ Route::group(['prefix' => 'billing'], function () {
         Route::get('/users/{user}/transactions', [Admin\Settings\CreditsController::class, 'getUserTransactions'])->name('admin.billing.credits.user.transactions');
         Route::post('/users/{user}/adjust', [Admin\Settings\CreditsController::class, 'adjustCredits'])->name('admin.billing.credits.user.adjust');
     });
+    
+    // Plans management routes
+    Route::group(['prefix' => 'plans'], function () {
+        Route::get('/', [Admin\Billing\PlansController::class, 'index'])->name('admin.billing.plans');
+        Route::get('/list', [Admin\Billing\PlansController::class, 'getPlans'])->name('admin.billing.plans.list');
+        Route::patch('/{plan}', [Admin\Billing\PlansController::class, 'update'])->name('admin.billing.plans.update');
+    });
 });
 
 /*
