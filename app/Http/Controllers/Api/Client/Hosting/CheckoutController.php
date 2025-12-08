@@ -107,45 +107,66 @@ class CheckoutController extends Controller
                     ], 402);
                 }
 
-                // Create subscription first (outside the transaction to avoid nested transaction issues)
-                $subscription = \Pterodactyl\Models\Subscription::create([
-                    'user_id' => $user->id,
-                    'type' => 'default',
-                    'stripe_id' => 'credits_' . uniqid(),
-                    'stripe_status' => 'active',
-                    'stripe_price' => $plan?->stripe_price_id,
-                    'quantity' => 1,
-                    'trial_ends_at' => null,
-                    'ends_at' => null,
-                ]);
+                // Build metadata for provisioning
+                $metadata = [
+                    'user_id' => (string) $user->id,
+                    'type' => $type,
+                    'server_name' => $request->input('server_name'),
+                    'server_description' => $request->input('server_description', ''),
+                ];
+
+                if ($type === 'vps') {
+                    $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
+                } else {
+                    $metadata['nest_id'] = (string) $request->input('nest_id');
+                    $metadata['egg_id'] = (string) $request->input('egg_id');
+                }
+
+                if ($plan) {
+                    $metadata['plan_id'] = (string) $plan->id;
+                } else {
+                    $metadata['custom'] = 'true';
+                    $metadata['memory'] = (string) $request->input('memory');
+                    $metadata['interval'] = $interval;
+                }
+
+                // Create subscription first (before any operations that might fail)
+                $subscription = null;
+                try {
+                    $subscription = \Pterodactyl\Models\Subscription::create([
+                        'user_id' => $user->id,
+                        'type' => 'default',
+                        'stripe_id' => 'credits_' . uniqid(),
+                        'stripe_status' => 'active',
+                        'stripe_price' => $plan?->stripe_price_id,
+                        'quantity' => 1,
+                        'trial_ends_at' => null,
+                        'ends_at' => null,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to create subscription for credits purchase', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    
+                    return response()->json([
+                        'errors' => [[
+                            'code' => 'SubscriptionCreationFailed',
+                            'status' => '500',
+                            'detail' => 'Failed to create subscription. Please try again later.',
+                        ]],
+                    ], 500);
+                }
 
                 // Deduct credits and provision server
-                return DB::transaction(function () use ($user, $priceAmount, $request, $plan, $interval, $type, $subscription) {
+                // Note: We don't wrap this in a transaction because ServerCreationService
+                // handles its own transaction. We'll handle rollback manually if needed.
+                try {
                     // Deduct credits
                     $user->decrement('credits_balance', $priceAmount);
                     
-                    // Build metadata for provisioning
-                    $metadata = [
-                        'user_id' => (string) $user->id,
-                        'type' => $type,
-                        'server_name' => $request->input('server_name'),
-                        'server_description' => $request->input('server_description', ''),
-                    ];
-
-                    if ($type === 'vps') {
-                        $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
-                    } else {
-                        $metadata['nest_id'] = (string) $request->input('nest_id');
-                        $metadata['egg_id'] = (string) $request->input('egg_id');
-                    }
-
-                    if ($plan) {
-                        $metadata['plan_id'] = (string) $plan->id;
-                    } else {
-                        $metadata['custom'] = 'true';
-                        $metadata['memory'] = (string) $request->input('memory');
-                        $metadata['interval'] = $interval;
-                    }
+                    // Refresh user to ensure we have the latest balance
+                    $user->refresh();
 
                     // Create a mock Stripe session object for provisioning
                     $mockSession = (object) [
@@ -154,55 +175,54 @@ class CheckoutController extends Controller
                         'metadata' => $metadata,
                     ];
 
-                    try {
-                        // Provision server with subscription already created
-                        $server = $this->serverProvisioningService->provisionServer($mockSession);
-                        
-                        Log::info('Server purchased with credits', [
-                            'user_id' => $user->id,
-                            'server_id' => $server->id,
-                            'credits_deducted' => $priceAmount,
-                            'remaining_credits' => $user->fresh()->credits_balance,
-                        ]);
+                    // Provision server (this handles its own transaction and Wings call)
+                    // The server will be fully committed before Wings is called
+                    $server = $this->serverProvisioningService->provisionServer($mockSession);
+                    
+                    Log::info('Server purchased with credits', [
+                        'user_id' => $user->id,
+                        'server_id' => $server->id,
+                        'credits_deducted' => $priceAmount,
+                        'remaining_credits' => $user->fresh()->credits_balance,
+                    ]);
 
-                        return response()->json([
-                            'object' => 'checkout_session',
-                            'data' => [
-                                'checkout_url' => config('app.url') . '/server/' . $server->uuid,
-                                'session_id' => $mockSession->id,
-                                'server_uuid' => $server->uuid,
-                            ],
+                    return response()->json([
+                        'object' => 'checkout_session',
+                        'data' => [
+                            'checkout_url' => config('app.url') . '/server/' . $server->uuid,
+                            'session_id' => $mockSession->id,
+                            'server_uuid' => $server->uuid,
+                        ],
+                    ]);
+                } catch (\Exception $e) {
+                    // Refund credits on error
+                    $user->increment('credits_balance', $priceAmount);
+                    
+                    // Delete the subscription if server creation failed
+                    try {
+                        $subscription->delete();
+                    } catch (\Exception $subException) {
+                        Log::warning('Failed to delete subscription after server creation failure', [
+                            'subscription_id' => $subscription->id,
+                            'error' => $subException->getMessage(),
                         ]);
-                    } catch (\Exception $e) {
-                        // Refund credits on error
-                        $user->increment('credits_balance', $priceAmount);
-                        
-                        // Delete the subscription if server creation failed
-                        try {
-                            $subscription->delete();
-                        } catch (\Exception $subException) {
-                            Log::warning('Failed to delete subscription after server creation failure', [
-                                'subscription_id' => $subscription->id,
-                                'error' => $subException->getMessage(),
-                            ]);
-                        }
-                        
-                        Log::error('Failed to provision server after credit deduction, credits refunded', [
-                            'user_id' => $user->id,
-                            'error' => $e->getMessage(),
-                            'credits_refunded' => $priceAmount,
-                        ]);
-                        
-                        // Return a user-friendly error message
-                        return response()->json([
-                            'errors' => [[
-                                'code' => 'ServerProvisioningFailed',
-                                'status' => '500',
-                                'detail' => 'Failed to provision server. Your credits have been refunded. Please try again later or contact support if the issue persists.',
-                            ]],
-                        ], 500);
                     }
-                });
+                    
+                    Log::error('Failed to provision server after credit deduction, credits refunded', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                        'credits_refunded' => $priceAmount,
+                    ]);
+                    
+                    // Return a user-friendly error message
+                    return response()->json([
+                        'errors' => [[
+                            'code' => 'ServerProvisioningFailed',
+                            'status' => '500',
+                            'detail' => 'Failed to provision server. Your credits have been refunded. Please try again later or contact support if the issue persists.',
+                        ]],
+                    ], 500);
+                }
             }
 
             // Credits disabled - use Stripe checkout flow
