@@ -14,6 +14,7 @@ import { PageListContainer } from '@/components/elements/pages/PageList';
 
 import cancelSubscription from '@/api/billing/cancelSubscription';
 import getBillingPortalUrl from '@/api/billing/getBillingPortalUrl';
+import getCreditTransactions, { CreditTransaction } from '@/api/billing/getCreditTransactions';
 import getCreditsBalance from '@/api/billing/getCreditsBalance';
 import getInvoices from '@/api/billing/getInvoices';
 import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
@@ -48,6 +49,17 @@ const BillingContainer = () => {
     } = useSWR('/api/client/billing/credits/balance', getCreditsBalance, {
         revalidateOnFocus: false,
     });
+
+    // Load credit transactions
+    const { data: creditTransactionsData, error: transactionsError } = useSWR(
+        creditsEnabled ? ['/api/client/billing/credits/transactions', { limit: 50 }] : null,
+        ([url, params]) => getCreditTransactions(params),
+        {
+            revalidateOnFocus: false,
+        },
+    );
+
+    const creditTransactions = creditTransactionsData?.data;
 
     // State for managing dialogs
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -371,6 +383,128 @@ const BillingContainer = () => {
                     )}
                 </PageListContainer>
             </div>
+
+            {creditsEnabled && (
+                <>
+                    <div aria-hidden className='mt-16 mb-16 bg-[#ffffff33] min-h-[1px] w-full'></div>
+
+                    <div className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'>
+                        <MainPageHeader title='Credit Transaction History' />
+                        <PageListContainer className='p-4 flex flex-col gap-3'>
+                            {!creditTransactions && !transactionsError ? (
+                                <div className='p-2 text-sm text-white/70'>Loading transactions…</div>
+                            ) : transactionsError ? (
+                                <div className='p-2 text-sm text-red-400'>
+                                    Failed to load transactions: {httpErrorToHuman(transactionsError)}
+                                </div>
+                            ) : !creditTransactions || creditTransactions.length === 0 ? (
+                                <div className='p-2 text-sm text-white/70'>No transactions yet.</div>
+                            ) : (
+                                <div className='overflow-x-auto'>
+                                    <table className='w-full'>
+                                        <thead>
+                                            <tr className='border-b border-[#ffffff12]'>
+                                                <th className='text-left py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Date
+                                                </th>
+                                                <th className='text-left py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Type
+                                                </th>
+                                                <th className='text-left py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Description
+                                                </th>
+                                                <th className='text-right py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Amount
+                                                </th>
+                                                <th className='text-right py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Balance
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {creditTransactions.map((transaction) => {
+                                                const date = new Date(transaction.created_at).toLocaleDateString(
+                                                    undefined,
+                                                    {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    },
+                                                );
+
+                                                const typeColors: Record<string, string> = {
+                                                    purchase: 'text-green-400',
+                                                    deduction: 'text-red-400',
+                                                    refund: 'text-blue-400',
+                                                    renewal: 'text-yellow-400',
+                                                    adjustment: 'text-purple-400',
+                                                };
+
+                                                const typeLabels: Record<string, string> = {
+                                                    purchase: 'Purchase',
+                                                    deduction: 'Deduction',
+                                                    refund: 'Refund',
+                                                    renewal: 'Renewal',
+                                                    adjustment: 'Adjustment',
+                                                };
+
+                                                const isPositive =
+                                                    transaction.type === 'purchase' || transaction.type === 'refund';
+                                                const amountSign = isPositive ? '+' : '-';
+                                                const amountColor = isPositive ? 'text-green-400' : 'text-red-400';
+
+                                                return (
+                                                    <tr
+                                                        key={transaction.id}
+                                                        className='border-b border-[#ffffff08] hover:bg-[#ffffff05] transition-colors'
+                                                    >
+                                                        <td className='py-3 px-4 text-sm text-white/70'>{date}</td>
+                                                        <td className='py-3 px-4'>
+                                                            <span
+                                                                className={`text-sm font-medium ${typeColors[transaction.type] || 'text-white/70'}`}
+                                                            >
+                                                                {typeLabels[transaction.type] || transaction.type}
+                                                            </span>
+                                                        </td>
+                                                        <td className='py-3 px-4 text-sm text-white/70'>
+                                                            {transaction.description || '—'}
+                                                        </td>
+                                                        <td
+                                                            className={`py-3 px-4 text-sm font-semibold text-right ${amountColor}`}
+                                                        >
+                                                            {amountSign}
+                                                            {new Intl.NumberFormat('en-US', {
+                                                                style: 'currency',
+                                                                currency:
+                                                                    creditsBalance?.data?.currency?.toUpperCase() ||
+                                                                    'USD',
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 2,
+                                                            }).format(transaction.amount)}
+                                                        </td>
+                                                        <td className='py-3 px-4 text-sm text-white/70 text-right'>
+                                                            {new Intl.NumberFormat('en-US', {
+                                                                style: 'currency',
+                                                                currency:
+                                                                    creditsBalance?.data?.currency?.toUpperCase() ||
+                                                                    'USD',
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 2,
+                                                            }).format(transaction.balance_after)}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </PageListContainer>
+                    </div>
+                </>
+            )}
 
             <div aria-hidden className='mt-16 mb-16 bg-[#ffffff33] min-h-[1px] w-full'></div>
 
