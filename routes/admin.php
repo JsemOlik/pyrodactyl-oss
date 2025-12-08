@@ -85,7 +85,6 @@ Route::group(['prefix' => 'settings'], function () {
     Route::get('/advanced', [Admin\Settings\AdvancedController::class, 'index'])->name('admin.settings.advanced');
     Route::get('/captcha', [Admin\Settings\CaptchaController::class, 'index'])->name('admin.settings.captcha');
     Route::get('/proxmox', [Admin\Settings\ProxmoxController::class, 'index'])->name('admin.settings.proxmox');
-    Route::get('/billing', [Admin\Settings\BillingController::class, 'index'])->name('admin.settings.billing');
 
     Route::group(['prefix' => 'domains'], function () {
         Route::get('/', [Admin\Settings\DomainsController::class, 'index'])->name('admin.settings.domains.index');
@@ -101,20 +100,36 @@ Route::group(['prefix' => 'settings'], function () {
     });
 
     Route::post('/mail/test', [Admin\Settings\MailController::class, 'test'])->name('admin.settings.mail.test');
-    
-    // Credits management routes
-    Route::group(['prefix' => 'credits'], function () {
-        Route::get('/users', [Admin\Settings\CreditsController::class, 'getUsers'])->name('admin.settings.credits.users');
-        Route::get('/users/{user}/transactions', [Admin\Settings\CreditsController::class, 'getUserTransactions'])->name('admin.settings.credits.user.transactions');
-        Route::post('/users/{user}/adjust', [Admin\Settings\CreditsController::class, 'adjustCredits'])->name('admin.settings.credits.user.adjust');
-    });
 
     Route::patch('/', [Admin\Settings\IndexController::class, 'update']);
     Route::patch('/mail', [Admin\Settings\MailController::class, 'update']);
     Route::patch('/advanced', [Admin\Settings\AdvancedController::class, 'update']);
     Route::patch('/captcha', [Admin\Settings\CaptchaController::class, 'update']);
     Route::patch('/proxmox', [Admin\Settings\ProxmoxController::class, 'update']);
-    Route::patch('/billing', [Admin\Settings\BillingController::class, 'update']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Billing Controller Routes
+|--------------------------------------------------------------------------
+|
+| Endpoint: /admin/billing
+|
+*/
+Route::group(['prefix' => 'billing'], function () {
+    Route::get('/', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing');
+    Route::get('/settings', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.settings');
+    Route::get('/server-creation', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.server-creation');
+    Route::get('/payment-method', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.payment-method');
+    Route::get('/credits', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.credits');
+    Route::patch('/', [Admin\Settings\BillingController::class, 'update'])->name('admin.billing.update');
+    
+    // Credits management routes
+    Route::group(['prefix' => 'credits'], function () {
+        Route::get('/users', [Admin\Settings\CreditsController::class, 'getUsers'])->name('admin.billing.credits.users');
+        Route::get('/users/{user}/transactions', [Admin\Settings\CreditsController::class, 'getUserTransactions'])->name('admin.billing.credits.user.transactions');
+        Route::post('/users/{user}/adjust', [Admin\Settings\CreditsController::class, 'adjustCredits'])->name('admin.billing.credits.user.adjust');
+    });
 });
 
 /*

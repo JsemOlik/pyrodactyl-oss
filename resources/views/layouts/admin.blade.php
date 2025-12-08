@@ -163,6 +163,27 @@
                             <i class="bi bi-palette-fill"></i> <span>Theme</span>
                         </a>
                     </li>
+                    <li class="header">BILLING</li>
+                    <li class="{{ in_array(Route::currentRouteName(), ['admin.billing', 'admin.billing.settings']) ? 'active' : '' }}">
+                        <a href="{{ route('admin.billing.settings') }}">
+                            <i class="bi bi-credit-card-fill"></i> <span>Settings</span>
+                        </a>
+                    </li>
+                    <li class="{{ Route::currentRouteName() === 'admin.billing.server-creation' ? 'active' : '' }}">
+                        <a href="{{ route('admin.billing.server-creation') }}">
+                            <i class="bi bi-server"></i> <span>Server Creation</span>
+                        </a>
+                    </li>
+                    <li class="{{ Route::currentRouteName() === 'admin.billing.payment-method' ? 'active' : '' }}">
+                        <a href="{{ route('admin.billing.payment-method') }}">
+                            <i class="bi bi-wallet-fill"></i> <span>Payment Method</span>
+                        </a>
+                    </li>
+                    <li class="{{ Route::currentRouteName() === 'admin.billing.credits' ? 'active' : '' }}">
+                        <a href="{{ route('admin.billing.credits') }}">
+                            <i class="bi bi-cash-coin"></i> <span>Credits</span>
+                        </a>
+                    </li>
                     <li class="header">MANAGEMENT</li>
                     <li class="{{ !starts_with(Route::currentRouteName(), 'admin.databases') ?: 'active' }}">
                         <a href="{{ route('admin.databases') }}">

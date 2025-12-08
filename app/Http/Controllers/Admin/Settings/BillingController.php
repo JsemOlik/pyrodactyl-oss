@@ -29,15 +29,19 @@ class BillingController extends Controller
      */
     public function index(): View
     {
-        $tab = request()->get('tab', 'settings');
+        // Determine tab from route name
+        $routeName = request()->route()->getName();
+        $tab = 'settings';
         
-        // Validate tab
-        $validTabs = ['settings', 'server-creation', 'payment-method', 'credits'];
-        if (!in_array($tab, $validTabs)) {
-            $tab = 'settings';
+        if (str_contains($routeName, 'server-creation')) {
+            $tab = 'server-creation';
+        } elseif (str_contains($routeName, 'payment-method')) {
+            $tab = 'payment-method';
+        } elseif (str_contains($routeName, 'credits')) {
+            $tab = 'credits';
         }
         
-        return $this->view->make('admin.settings.billing', [
+        return $this->view->make('admin.billing.index', [
             'activeTab' => $tab,
         ]);
     }

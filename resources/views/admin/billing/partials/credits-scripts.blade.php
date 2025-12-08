@@ -5,7 +5,7 @@
 
   function loadUsers(page = 1, search = '') {
     $.ajax({
-      url: '/admin/settings/credits/users',
+      url: '/admin/billing/credits/users',
       method: 'GET',
       data: {
         page: page,
@@ -80,7 +80,7 @@
 
   function loadUserTransactions(userId) {
     $.ajax({
-      url: '/admin/settings/credits/users/' + userId + '/transactions',
+      url: '/admin/billing/credits/users/' + userId + '/transactions',
       method: 'GET',
       success: function(response) {
         const transactions = response.data;
@@ -206,7 +206,7 @@
       $('#adjustSubmitButton').prop('disabled', true).text('Processing...');
       
       $.ajax({
-        url: '/admin/settings/credits/users/' + userId + '/adjust',
+        url: '/admin/billing/credits/users/' + userId + '/adjust',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({

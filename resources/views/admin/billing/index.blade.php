@@ -1,39 +1,36 @@
 @extends('layouts.admin')
-@include('partials/admin.settings.nav', ['activeTab' => 'billing'])
 
 @section('title')
-  Billing Settings
+  Billing
 @endsection
 
 @section('content-header')
-  <h1>Billing Settings<small>Configure billing, payments, and credits.</small></h1>
+  <h1>Billing<small>Configure billing, payments, and credits.</small></h1>
   <ol class="breadcrumb">
     <li><a href="{{ route('admin.index') }}">Admin</a></li>
-    <li class="active">Settings</li>
+    <li class="active">Billing</li>
   </ol>
 @endsection
 
 @section('content')
-  @yield('settings::nav')
-  
   <div class="row">
     <div class="col-xs-12">
       <div class="nav-tabs-custom nav-tabs-floating">
         <ul class="nav nav-tabs">
-          <li @if($activeTab === 'settings')class="active"@endif><a href="{{ route('admin.settings.billing') }}?tab=settings">Settings</a></li>
-          <li @if($activeTab === 'server-creation')class="active"@endif><a href="{{ route('admin.settings.billing') }}?tab=server-creation">Server Creation</a></li>
-          <li @if($activeTab === 'payment-method')class="active"@endif><a href="{{ route('admin.settings.billing') }}?tab=payment-method">Payment Method</a></li>
-          <li @if($activeTab === 'credits')class="active"@endif><a href="{{ route('admin.settings.billing') }}?tab=credits">Credits</a></li>
+          <li @if($activeTab === 'settings')class="active"@endif><a href="{{ route('admin.billing.settings') }}">Settings</a></li>
+          <li @if($activeTab === 'server-creation')class="active"@endif><a href="{{ route('admin.billing.server-creation') }}">Server Creation</a></li>
+          <li @if($activeTab === 'payment-method')class="active"@endif><a href="{{ route('admin.billing.payment-method') }}">Payment Method</a></li>
+          <li @if($activeTab === 'credits')class="active"@endif><a href="{{ route('admin.billing.credits') }}">Credits</a></li>
         </ul>
         <div class="tab-content">
           @if($activeTab === 'settings')
-            @include('admin.settings.billing.partials.settings')
+            @include('admin.billing.partials.settings')
           @elseif($activeTab === 'server-creation')
-            @include('admin.settings.billing.partials.server-creation')
+            @include('admin.billing.partials.server-creation')
           @elseif($activeTab === 'payment-method')
-            @include('admin.settings.billing.partials.payment-method')
+            @include('admin.billing.partials.payment-method')
           @elseif($activeTab === 'credits')
-            @include('admin.settings.billing.partials.credits')
+            @include('admin.billing.partials.credits')
           @endif
         </div>
       </div>
@@ -48,7 +45,7 @@
       function saveSettings() {
         return $.ajax({
           method: 'PATCH',
-          url: '/admin/settings/billing',
+          url: '/admin/billing',
           contentType: 'application/json',
           data: JSON.stringify({
             'cashier:key': $('input[name="cashier:key"]').val(),
@@ -108,6 +105,6 @@
     </script>
   @endif
   @if($activeTab === 'credits')
-    @include('admin.settings.billing.partials.credits-scripts')
+    @include('admin.billing.partials.credits-scripts')
   @endif
 @endsection
