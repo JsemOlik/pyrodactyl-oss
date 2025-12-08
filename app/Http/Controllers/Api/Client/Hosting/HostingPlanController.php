@@ -55,6 +55,7 @@ class HostingPlanController extends Controller
                     'io' => $plan->io,
                     'swap' => $plan->swap,
                     'is_custom' => $plan->is_custom,
+                    'is_most_popular' => $plan->is_most_popular,
                     'sort_order' => $plan->sort_order,
                     'type' => $plan->type ?? 'game-server',
                     'pricing' => [

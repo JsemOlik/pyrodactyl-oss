@@ -38,6 +38,8 @@ Route::prefix('/hosting')->group(function () {
     Route::post('/checkout', [Client\Hosting\CheckoutController::class, 'store']);
     Route::get('/verify-payment', [Client\Hosting\PaymentVerificationController::class, 'check']);
     Route::get('/vps-distributions', [Client\Hosting\VpsDistributionController::class, 'index']);
+    Route::get('/subdomain/domains', [Client\Hosting\SubdomainController::class, 'getAvailableDomains']);
+    Route::post('/subdomain/check-availability', [Client\Hosting\SubdomainController::class, 'checkAvailability']);
 });
 
 Route::prefix('/billing')->group(function () {

@@ -149,6 +149,13 @@
                 <label for="createPlanIsActive">Active</label>
               </div>
             </div>
+            <div class="form-group">
+              <div class="checkbox checkbox-primary">
+                <input type="checkbox" id="createPlanIsMostPopular" value="1">
+                <label for="createPlanIsMostPopular">Most Popular</label>
+                <p class="help-block">Mark this plan as the "Most Popular" option on the hosting page</p>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -247,6 +254,13 @@
               <div class="checkbox checkbox-primary">
                 <input type="checkbox" id="editPlanIsActive" value="1">
                 <label for="editPlanIsActive">Active</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="checkbox checkbox-primary">
+                <input type="checkbox" id="editPlanIsMostPopular" value="1">
+                <label for="editPlanIsMostPopular">Most Popular</label>
+                <p class="help-block">Mark this plan as the "Most Popular" option on the hosting page</p>
               </div>
             </div>
           </div>
@@ -359,6 +373,7 @@
           swap: $('#createPlanSwap').val() ? parseInt($('#createPlanSwap').val()) : null,
           sort_order: parseInt($('#createPlanSortOrder').val()) || 0,
           is_active: $('#createPlanIsActive').is(':checked'),
+          is_most_popular: $('#createPlanIsMostPopular').is(':checked'),
         };
 
         $('#createPlanSubmitButton').prop('disabled', true).text('Creating...');
@@ -424,6 +439,7 @@
             $('#editPlanSwap').val(plan.swap || '');
             $('#editPlanSortOrder').val(plan.sort_order);
             $('#editPlanIsActive').prop('checked', plan.is_active);
+            $('#editPlanIsMostPopular').prop('checked', plan.is_most_popular);
 
             $('#editPlanModal').modal('show');
           }
@@ -450,6 +466,7 @@
           swap: $('#editPlanSwap').val() ? parseInt($('#editPlanSwap').val()) : null,
           sort_order: parseInt($('#editPlanSortOrder').val()) || 0,
           is_active: $('#editPlanIsActive').is(':checked'),
+          is_most_popular: $('#editPlanIsMostPopular').is(':checked'),
         };
 
         $('#editPlanSubmitButton').prop('disabled', true).text('Saving...');

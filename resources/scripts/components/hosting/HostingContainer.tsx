@@ -524,7 +524,7 @@ const HostingContainer = () => {
                                         const monthlyPrice = attrs.pricing.monthly;
                                         const firstMonthPrice = getFirstMonthPrice(monthlyPrice, plan);
                                         const firstMonthDiscount = getFirstMonthDiscount(plan);
-                                        const isMostPopular = index === 2;
+                                        const isMostPopular = attrs.is_most_popular || false;
                                         const vCores = getVCores(attrs.cpu);
 
                                         return (

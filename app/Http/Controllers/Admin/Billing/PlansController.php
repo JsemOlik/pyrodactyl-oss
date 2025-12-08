@@ -58,6 +58,7 @@ class PlansController extends Controller
                     'swap' => $plan->swap,
                     'is_custom' => $plan->is_custom,
                     'is_active' => $plan->is_active,
+                    'is_most_popular' => $plan->is_most_popular,
                     'sort_order' => $plan->sort_order,
                     'type' => $plan->type ?? 'game-server',
                     'stripe_price_id' => $plan->stripe_price_id,
@@ -114,6 +115,7 @@ class PlansController extends Controller
                 'swap' => $request->input('swap'),
                 'is_custom' => false,
                 'is_active' => $request->input('is_active', true),
+                'is_most_popular' => $request->input('is_most_popular', false),
                 'sort_order' => $request->input('sort_order', 0),
             ]);
 
@@ -189,6 +191,7 @@ class PlansController extends Controller
                 'io',
                 'swap',
                 'is_active',
+                'is_most_popular',
                 'sort_order',
             ]));
             

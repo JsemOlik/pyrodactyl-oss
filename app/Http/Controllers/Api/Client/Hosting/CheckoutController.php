@@ -123,6 +123,12 @@ class CheckoutController extends Controller
                     'server_name' => $request->input('server_name'),
                     'server_description' => $request->input('server_description', ''),
                 ];
+                
+                // Add subdomain info if provided
+                if ($request->has('subdomain') && $request->has('domain_id')) {
+                    $metadata['subdomain'] = $request->input('subdomain');
+                    $metadata['domain_id'] = (string) $request->input('domain_id');
+                }
 
                 if ($type === 'vps') {
                     $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
@@ -151,6 +157,13 @@ class CheckoutController extends Controller
                 // Create subscription first (before any operations that might fail)
                 $subscription = null;
                 try {
+                    // Prepare subscription metadata
+                    $subscriptionMetadata = [];
+                    if ($request->has('subdomain') && $request->has('domain_id')) {
+                        $subscriptionMetadata['subdomain'] = $request->input('subdomain');
+                        $subscriptionMetadata['domain_id'] = (int) $request->input('domain_id');
+                    }
+                    
                     $subscription = \Pterodactyl\Models\Subscription::create([
                         'user_id' => $user->id,
                         'type' => 'default',
@@ -164,6 +177,7 @@ class CheckoutController extends Controller
                         'billing_interval' => $interval,
                         'billing_amount' => $plan ? $plan->price : $priceAmount, // Store full price for recurring billing
                         'is_credits_based' => true,
+                        'metadata' => !empty($subscriptionMetadata) ? $subscriptionMetadata : null,
                     ]);
                 } catch (\Exception $e) {
                     Log::error('Failed to create subscription for credits purchase', [
@@ -317,6 +331,12 @@ class CheckoutController extends Controller
                 'server_name' => $request->input('server_name'),
                 'server_description' => $request->input('server_description', ''),
             ];
+            
+            // Add subdomain info if provided
+            if ($request->has('subdomain') && $request->has('domain_id')) {
+                $metadata['subdomain'] = $request->input('subdomain');
+                $metadata['domain_id'] = (string) $request->input('domain_id');
+            }
 
             // Add type-specific metadata
             if ($type === 'vps') {

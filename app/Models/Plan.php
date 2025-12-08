@@ -57,6 +57,7 @@ class Plan extends Model
         'swap',
         'is_custom',
         'is_active',
+        'is_most_popular',
         'sort_order',
         'type',
     ];
@@ -75,6 +76,7 @@ class Plan extends Model
         'swap' => 'integer',
         'is_custom' => 'boolean',
         'is_active' => 'boolean',
+        'is_most_popular' => 'boolean',
         'sort_order' => 'integer',
     ];
 

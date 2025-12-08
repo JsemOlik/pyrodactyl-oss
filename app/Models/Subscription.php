@@ -36,6 +36,13 @@ class Subscription extends CashierSubscription
     protected $table = 'subscriptions';
 
     /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'metadata' => 'array',
+    ];
+
+    /**
      * Get the user that owns the subscription.
      */
     public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo

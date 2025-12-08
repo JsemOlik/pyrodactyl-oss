@@ -17,6 +17,7 @@ export interface HostingPlan {
         io: number | null;
         swap: number | null;
         is_custom: boolean;
+        is_most_popular: boolean;
         sort_order: number;
         pricing: {
             monthly: number;
