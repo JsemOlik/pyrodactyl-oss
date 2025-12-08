@@ -9,11 +9,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Pterodactyl\Models\User;
 use Pterodactyl\Http\Controllers\Controller;
+use Pterodactyl\Services\Credits\CreditTransactionService;
 
 class CreditsController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        private CreditTransactionService $creditTransactionService
+    ) {
         Stripe::setApiKey(config('cashier.secret'));
     }
 
@@ -169,5 +171,37 @@ class CreditsController extends Controller
         ]);
 
         return $customer;
+    }
+
+    /**
+     * Get the current user's credit transaction history.
+     */
+    public function transactions(): JsonResponse
+    {
+        /** @var User $user */
+        $user = request()->user();
+
+        $limit = (int) request()->input('limit', 50);
+        $type = request()->input('type'); // Optional filter by type
+
+        $transactions = $this->creditTransactionService->getTransactionHistory($user, $limit, $type);
+
+        return response()->json([
+            'object' => 'list',
+            'data' => $transactions->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'type' => $transaction->type,
+                    'amount' => (float) $transaction->amount,
+                    'balance_before' => (float) $transaction->balance_before,
+                    'balance_after' => (float) $transaction->balance_after,
+                    'description' => $transaction->description,
+                    'subscription_id' => $transaction->subscription_id,
+                    'reference_id' => $transaction->reference_id,
+                    'metadata' => $transaction->metadata,
+                    'created_at' => $transaction->created_at->toIso8601String(),
+                ];
+            }),
+        ]);
     }
 }

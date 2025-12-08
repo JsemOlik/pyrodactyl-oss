@@ -11,12 +11,14 @@ use Stripe\Exception\SignatureVerificationException;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Services\Hosting\ServerProvisioningService;
 use Pterodactyl\Services\Hosting\VpsProvisioningService;
+use Pterodactyl\Services\Credits\CreditTransactionService;
 
 class StripeWebhookController extends Controller
 {
     public function __construct(
         private ServerProvisioningService $serverProvisioningService,
-        private VpsProvisioningService $vpsProvisioningService
+        private VpsProvisioningService $vpsProvisioningService,
+        private CreditTransactionService $creditTransactionService
     ) {
         Stripe::setApiKey(config('cashier.secret'));
     }
@@ -444,21 +446,21 @@ class StripeWebhookController extends Controller
         try {
             $user = \Pterodactyl\Models\User::findOrFail($userId);
             
-            // Get current balance before increment
-            $oldBalance = $user->credits_balance;
-            
-            // Add credits to user account
-            $user->increment('credits_balance', $amount);
-            
-            // Refresh to get updated balance
-            $user->refresh();
+            // Add credits using transaction service
+            $this->creditTransactionService->recordPurchase(
+                $user,
+                $amount,
+                $session->id,
+                [
+                    'stripe_session_id' => $session->id,
+                    'payment_intent_id' => $session->payment_intent ?? null,
+                ]
+            );
             
             Log::info('Credits added to user account', [
                 'session_id' => $session->id,
                 'user_id' => $userId,
                 'amount' => $amount,
-                'old_balance' => $oldBalance,
-                'new_balance' => $user->credits_balance,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to add credits to user account', [
@@ -504,21 +506,21 @@ class StripeWebhookController extends Controller
                 try {
                     $user = \Pterodactyl\Models\User::findOrFail($userId);
                     
-                    // Get current balance before increment
-                    $oldBalance = $user->credits_balance;
-                    
-                    // Add credits to user account
-                    $user->increment('credits_balance', $amount);
-                    
-                    // Refresh to get updated balance
-                    $user->refresh();
+                    // Add credits using transaction service
+                    $this->creditTransactionService->recordPurchase(
+                        $user,
+                        $amount,
+                        $paymentIntent->id,
+                        [
+                            'payment_intent_id' => $paymentIntent->id,
+                            'stripe_customer_id' => $paymentIntent->customer ?? null,
+                        ]
+                    );
                     
                     Log::info('Credits added to user account from payment_intent', [
                         'payment_intent_id' => $paymentIntent->id,
                         'user_id' => $userId,
                         'amount' => $amount,
-                        'old_balance' => $oldBalance,
-                        'new_balance' => $user->credits_balance,
                     ]);
                     return;
                 } catch (\Exception $e) {

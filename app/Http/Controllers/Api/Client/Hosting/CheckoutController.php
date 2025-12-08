@@ -15,13 +15,15 @@ use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Http\Requests\Api\Client\Hosting\CheckoutRequest;
 use Pterodactyl\Services\Hosting\StripePriceService;
 use Pterodactyl\Services\Hosting\ServerProvisioningService;
+use Pterodactyl\Services\Credits\CreditTransactionService;
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
     public function __construct(
         private StripePriceService $stripePriceService,
-        private ServerProvisioningService $serverProvisioningService
+        private ServerProvisioningService $serverProvisioningService,
+        private CreditTransactionService $creditTransactionService
     ) {
         Stripe::setApiKey(config('cashier.secret'));
     }
@@ -130,6 +132,15 @@ class CheckoutController extends Controller
                     $metadata['interval'] = $interval;
                 }
 
+                // Calculate next billing date based on interval
+                $nextBillingAt = match($interval) {
+                    'month' => now()->addMonth(),
+                    'quarter' => now()->addMonths(3),
+                    'half-year' => now()->addMonths(6),
+                    'year' => now()->addYear(),
+                    default => now()->addMonth(),
+                };
+
                 // Create subscription first (before any operations that might fail)
                 $subscription = null;
                 try {
@@ -142,6 +153,10 @@ class CheckoutController extends Controller
                         'quantity' => 1,
                         'trial_ends_at' => null,
                         'ends_at' => null,
+                        'next_billing_at' => $nextBillingAt,
+                        'billing_interval' => $interval,
+                        'billing_amount' => $priceAmount,
+                        'is_credits_based' => true,
                     ]);
                 } catch (\Exception $e) {
                     Log::error('Failed to create subscription for credits purchase', [
@@ -162,8 +177,18 @@ class CheckoutController extends Controller
                 // Note: We don't wrap this in a transaction because ServerCreationService
                 // handles its own transaction. We'll handle rollback manually if needed.
                 try {
-                    // Deduct credits
-                    $user->decrement('credits_balance', $priceAmount);
+                    // Deduct credits using transaction service
+                    $this->creditTransactionService->recordDeduction(
+                        $user,
+                        $priceAmount,
+                        "Server purchase - {$request->input('server_name')}",
+                        $subscription->id,
+                        [
+                            'plan_id' => $plan?->id,
+                            'server_type' => $type,
+                            'interval' => $interval,
+                        ]
+                    );
                     
                     // Refresh user to ensure we have the latest balance
                     $user->refresh();
@@ -195,8 +220,14 @@ class CheckoutController extends Controller
                         ],
                     ]);
                 } catch (\Exception $e) {
-                    // Refund credits on error
-                    $user->increment('credits_balance', $priceAmount);
+                    // Refund credits on error using transaction service
+                    $this->creditTransactionService->recordRefund(
+                        $user,
+                        $priceAmount,
+                        "Refund for failed server creation - {$request->input('server_name')}",
+                        $subscription->id,
+                        ['error' => $e->getMessage()]
+                    );
                     
                     // Delete the subscription if server creation failed
                     try {

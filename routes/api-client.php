@@ -49,6 +49,7 @@ Route::prefix('/billing')->group(function () {
     Route::get('/invoices', [Client\Billing\InvoiceController::class, 'index']);
     Route::get('/credits/balance', [Client\Billing\CreditsController::class, 'balance']);
     Route::post('/credits/purchase', [Client\Billing\CreditsController::class, 'purchase']);
+    Route::get('/credits/transactions', [Client\Billing\CreditsController::class, 'transactions']);
 });
 
 Route::prefix('/vps-servers')->group(function () {

@@ -40,5 +40,8 @@ class Kernel extends ConsoleKernel
         if (config('activity.prune_days')) {
             $schedule->command(PruneCommand::class, ['--model' => [ActivityLog::class]])->daily();
         }
+
+        // Process credits-based recurring billing daily
+        $schedule->command('billing:process-credits-recurring')->daily();
     }
 }
