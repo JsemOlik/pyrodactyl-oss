@@ -181,7 +181,10 @@ class StripeWebhookController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
             
-            // Re-throw to trigger webhook retry from Stripe
+            // Refund the payment since server creation failed
+            $this->refundFailedProvisioning($session, $e);
+            
+            // Re-throw to trigger webhook retry from Stripe (but refund is already processed)
             throw $e;
         }
     }
@@ -301,6 +304,9 @@ class StripeWebhookController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
             
+            // Refund the payment since server creation failed
+            $this->refundFailedProvisioningFromSubscription($subscription, $e);
+            
             // Re-throw to trigger webhook retry
             throw $e;
         }
@@ -363,9 +369,29 @@ class StripeWebhookController extends Controller
         $subscriptionModel = \Pterodactyl\Models\Subscription::where('stripe_id', $subscription->id)->first();
         
         if ($subscriptionModel) {
-            $subscriptionModel->update([
+            $updateData = [
                 'stripe_status' => $subscription->status,
-                'ends_at' => $subscription->cancel_at ? \Carbon\Carbon::createFromTimestamp($subscription->cancel_at) : null,
+            ];
+            
+            // Update ends_at if subscription is being canceled
+            if ($subscription->cancel_at) {
+                $updateData['ends_at'] = \Carbon\Carbon::createFromTimestamp($subscription->cancel_at);
+            } elseif ($subscription->cancel_at_period_end && $subscription->current_period_end) {
+                // If cancel_at_period_end is true, use current_period_end as ends_at
+                $updateData['ends_at'] = \Carbon\Carbon::createFromTimestamp($subscription->current_period_end);
+            }
+            
+            // Update next_billing_at if available
+            if ($subscription->current_period_end && $subscription->status === 'active') {
+                $updateData['next_billing_at'] = \Carbon\Carbon::createFromTimestamp($subscription->current_period_end);
+            }
+            
+            $subscriptionModel->update($updateData);
+            
+            Log::info('Subscription status synced from Stripe webhook', [
+                'subscription_id' => $subscriptionModel->id,
+                'stripe_status' => $subscription->status,
+                'ends_at' => $updateData['ends_at'] ?? null,
             ]);
         }
     }
@@ -570,6 +596,218 @@ class StripeWebhookController extends Controller
             ]);
             
             // Don't re-throw if we couldn't find session - credits might have been added via metadata
+        }
+    }
+
+    /**
+     * Refund payment when server provisioning fails (from checkout session).
+     */
+    private function refundFailedProvisioning($session, \Exception $error): void
+    {
+        try {
+            $metadata = $this->convertMetadataToArray($session->metadata ?? []);
+            
+            // Check if this is a credits-based purchase (no Stripe payment to refund)
+            // Credits-based purchases use mock session IDs starting with 'credits_'
+            if (str_starts_with($session->id ?? '', 'credits_')) {
+                // Credits-based purchase - refund credits
+                if (!empty($metadata['user_id'])) {
+                    $user = \Pterodactyl\Models\User::find((int) $metadata['user_id']);
+                    if ($user) {
+                        // Find the subscription to get the amount
+                        $subscription = \Pterodactyl\Models\Subscription::where('stripe_id', $session->subscription ?? null)
+                            ->orWhere('stripe_id', 'like', 'credits_%')
+                            ->where('user_id', $user->id)
+                            ->latest()
+                            ->first();
+                        
+                        if ($subscription && $subscription->billing_amount) {
+                            $this->creditTransactionService->recordRefund(
+                                $user,
+                                (float) $subscription->billing_amount,
+                                "Refund for failed server creation from webhook",
+                                $subscription->id,
+                                ['error' => $error->getMessage(), 'session_id' => $session->id]
+                            );
+                            
+                            Log::info('Credits refunded for failed server provisioning', [
+                                'user_id' => $user->id,
+                                'amount' => $subscription->billing_amount,
+                                'session_id' => $session->id,
+                            ]);
+                        }
+                    }
+                }
+                return;
+            }
+            
+            // Also check if subscription is credits-based by looking up the subscription
+            if (!empty($session->subscription)) {
+                $subscriptionModel = \Pterodactyl\Models\Subscription::where('stripe_id', $session->subscription)->first();
+                if ($subscriptionModel && $subscriptionModel->is_credits_based) {
+                    // Credits-based subscription - refund credits
+                    if (!empty($metadata['user_id'])) {
+                        $user = \Pterodactyl\Models\User::find((int) $metadata['user_id']);
+                        if ($user && $subscriptionModel->billing_amount) {
+                            $this->creditTransactionService->recordRefund(
+                                $user,
+                                (float) $subscriptionModel->billing_amount,
+                                "Refund for failed server creation from webhook",
+                                $subscriptionModel->id,
+                                ['error' => $error->getMessage(), 'session_id' => $session->id]
+                            );
+                            
+                            Log::info('Credits refunded for failed server provisioning (credits-based subscription)', [
+                                'user_id' => $user->id,
+                                'amount' => $subscriptionModel->billing_amount,
+                                'session_id' => $session->id,
+                            ]);
+                        }
+                    }
+                    return;
+                }
+            }
+            
+            // Stripe payment - refund via Stripe API
+            \Stripe\Stripe::setApiKey(config('cashier.secret'));
+            
+            // Get payment intent from checkout session
+            $checkoutSession = \Stripe\Checkout\Session::retrieve($session->id, [
+                'expand' => ['payment_intent'],
+            ]);
+            
+            if ($checkoutSession->payment_intent) {
+                $paymentIntent = $checkoutSession->payment_intent;
+                
+                // Create refund
+                $refund = \Stripe\Refund::create([
+                    'payment_intent' => is_string($paymentIntent) ? $paymentIntent : $paymentIntent->id,
+                    'reason' => 'requested_by_customer',
+                    'metadata' => [
+                        'reason' => 'server_provisioning_failed',
+                        'session_id' => $session->id,
+                        'error' => $error->getMessage(),
+                    ],
+                ]);
+                
+                Log::info('Stripe payment refunded for failed server provisioning', [
+                    'session_id' => $session->id,
+                    'payment_intent_id' => is_string($paymentIntent) ? $paymentIntent : $paymentIntent->id,
+                    'refund_id' => $refund->id,
+                    'amount' => $refund->amount / 100,
+                ]);
+            } else {
+                // Try to get payment intent from subscription's latest invoice
+                if ($checkoutSession->subscription) {
+                    try {
+                        $subscription = \Stripe\Subscription::retrieve($checkoutSession->subscription);
+                        $invoices = \Stripe\Invoice::all([
+                            'subscription' => $subscription->id,
+                            'limit' => 1,
+                        ]);
+                        
+                        if (!empty($invoices->data)) {
+                            $invoice = $invoices->data[0];
+                            if ($invoice->payment_intent) {
+                                $refund = \Stripe\Refund::create([
+                                    'payment_intent' => is_string($invoice->payment_intent) ? $invoice->payment_intent : $invoice->payment_intent->id,
+                                    'reason' => 'requested_by_customer',
+                                    'metadata' => [
+                                        'reason' => 'server_provisioning_failed',
+                                        'session_id' => $session->id,
+                                        'error' => $error->getMessage(),
+                                    ],
+                                ]);
+                                
+                                Log::info('Stripe payment refunded via invoice for failed server provisioning', [
+                                    'session_id' => $session->id,
+                                    'refund_id' => $refund->id,
+                                ]);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Failed to refund via subscription invoice', [
+                            'session_id' => $session->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to refund payment for failed server provisioning', [
+                'session_id' => $session->id ?? null,
+                'error' => $e->getMessage(),
+                'original_error' => $error->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Refund payment when server provisioning fails (from subscription).
+     */
+    private function refundFailedProvisioningFromSubscription($subscription, \Exception $error): void
+    {
+        try {
+            // Check if this is a credits-based subscription
+            $subscriptionModel = \Pterodactyl\Models\Subscription::where('stripe_id', $subscription->id)->first();
+            
+            if ($subscriptionModel && $subscriptionModel->is_credits_based) {
+                // Credits-based subscription - refund credits
+                $user = $subscriptionModel->user;
+                if ($user && $subscriptionModel->billing_amount) {
+                    $this->creditTransactionService->recordRefund(
+                        $user,
+                        (float) $subscriptionModel->billing_amount,
+                        "Refund for failed server creation from webhook",
+                        $subscriptionModel->id,
+                        ['error' => $error->getMessage(), 'subscription_id' => $subscription->id]
+                    );
+                    
+                    Log::info('Credits refunded for failed server provisioning (credits-based subscription)', [
+                        'user_id' => $user->id,
+                        'amount' => $subscriptionModel->billing_amount,
+                        'subscription_id' => $subscription->id,
+                    ]);
+                }
+                return;
+            }
+            
+            // Stripe payment - refund via Stripe API
+            \Stripe\Stripe::setApiKey(config('cashier.secret'));
+            
+            // Get the latest invoice for this subscription
+            $invoices = \Stripe\Invoice::all([
+                'subscription' => $subscription->id,
+                'limit' => 1,
+            ]);
+            
+            if (!empty($invoices->data)) {
+                $invoice = $invoices->data[0];
+                
+                if ($invoice->payment_intent && $invoice->status === 'paid') {
+                    $refund = \Stripe\Refund::create([
+                        'payment_intent' => is_string($invoice->payment_intent) ? $invoice->payment_intent : $invoice->payment_intent->id,
+                        'reason' => 'requested_by_customer',
+                        'metadata' => [
+                            'reason' => 'server_provisioning_failed',
+                            'subscription_id' => $subscription->id,
+                            'error' => $error->getMessage(),
+                        ],
+                    ]);
+                    
+                    Log::info('Stripe payment refunded for failed server provisioning from subscription', [
+                        'subscription_id' => $subscription->id,
+                        'refund_id' => $refund->id,
+                        'amount' => $refund->amount / 100,
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to refund payment for failed server provisioning from subscription', [
+                'subscription_id' => $subscription->id ?? null,
+                'error' => $e->getMessage(),
+                'original_error' => $error->getMessage(),
+            ]);
         }
     }
 
