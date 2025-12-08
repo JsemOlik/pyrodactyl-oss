@@ -14,9 +14,9 @@ import { PageListContainer } from '@/components/elements/pages/PageList';
 
 import cancelSubscription from '@/api/billing/cancelSubscription';
 import getBillingPortalUrl from '@/api/billing/getBillingPortalUrl';
+import getCreditTransactions, { CreditTransaction } from '@/api/billing/getCreditTransactions';
 import getCreditsBalance from '@/api/billing/getCreditsBalance';
 import getCreditsEnabled from '@/api/billing/getCreditsEnabled';
-import getCreditTransactions, { CreditTransaction } from '@/api/billing/getCreditTransactions';
 import getInvoices from '@/api/billing/getInvoices';
 import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
 import purchaseCredits from '@/api/billing/purchaseCredits';
@@ -43,12 +43,13 @@ const BillingContainer = () => {
     );
 
     // Check if credits are enabled
-    const {
-        data: creditsEnabledData,
-        error: creditsEnabledError,
-    } = useSWR('/api/client/billing/credits/enabled', getCreditsEnabled, {
-        revalidateOnFocus: false,
-    });
+    const { data: creditsEnabledData, error: creditsEnabledError } = useSWR(
+        '/api/client/billing/credits/enabled',
+        getCreditsEnabled,
+        {
+            revalidateOnFocus: false,
+        },
+    );
 
     const creditsEnabled = creditsEnabledData?.data?.enabled ?? false;
 
@@ -57,13 +58,9 @@ const BillingContainer = () => {
         data: creditsBalance,
         error: creditsError,
         mutate: mutateCredits,
-    } = useSWR(
-        creditsEnabled ? '/api/client/billing/credits/balance' : null,
-        getCreditsBalance,
-        {
-            revalidateOnFocus: false,
-        },
-    );
+    } = useSWR(creditsEnabled ? '/api/client/billing/credits/balance' : null, getCreditsBalance, {
+        revalidateOnFocus: false,
+    });
 
     // Load credit transactions (only if enabled)
     const { data: creditTransactionsData, error: transactionsError } = useSWR(

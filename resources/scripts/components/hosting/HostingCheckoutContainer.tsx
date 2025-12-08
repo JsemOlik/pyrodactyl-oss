@@ -6,6 +6,7 @@ import useSWR from 'swr';
 import ActionButton from '@/components/elements/ActionButton';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 
+import getCreditsEnabled from '@/api/billing/getCreditsEnabled';
 import createCheckoutSession, { CheckoutSessionData } from '@/api/hosting/createCheckoutSession';
 import getHostingPlans, {
     CustomPlanCalculation,
@@ -15,7 +16,6 @@ import getHostingPlans, {
 import getVpsDistributions, { VpsDistribution } from '@/api/hosting/getVpsDistributions';
 import { httpErrorToHuman } from '@/api/http';
 import getNests from '@/api/nests/getNests';
-import getCreditsEnabled from '@/api/billing/getCreditsEnabled';
 
 type HostingType = 'game-server' | 'vps';
 
