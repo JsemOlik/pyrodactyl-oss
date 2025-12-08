@@ -14,6 +14,27 @@
 
 @section('content')
   @include('admin.billing.partials.credits')
+  
+  <style>
+    #usersTable tbody tr:nth-child(odd) {
+      background-color: #f4f4f4;
+    }
+    #usersTable tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    #usersTable tbody tr:hover {
+      background-color: #e8e8e8;
+    }
+    #userDetailsContent table tbody tr:nth-child(odd) {
+      background-color: #f4f4f4;
+    }
+    #userDetailsContent table tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    #userDetailsContent table tbody tr:hover {
+      background-color: #e8e8e8;
+    }
+  </style>
 @endsection
 
 @section('footer-scripts')

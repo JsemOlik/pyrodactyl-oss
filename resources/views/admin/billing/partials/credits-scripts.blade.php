@@ -86,7 +86,7 @@
         const transactions = response.data;
         let html = '<h4>Transaction History</h4>';
         html += '<div class="table-responsive">';
-        html += '<table class="table table-striped table-bordered">';
+        html += '<table class="table table-bordered">';
         html += '<thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Balance Before</th><th>Balance After</th><th>Description</th></tr></thead>';
         html += '<tbody>';
         
