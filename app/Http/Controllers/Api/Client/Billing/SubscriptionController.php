@@ -316,12 +316,24 @@ class SubscriptionController extends ClientApiController
             ->firstOrFail();
 
         try {
+            // Credits-based subscriptions don't use Stripe billing portal
+            if ($subscriptionModel->is_credits_based) {
+                return response()->json([
+                    'errors' => [[
+                        'code' => 'CreditsBasedSubscription',
+                        'status' => '400',
+                        'detail' => 'This subscription is credits-based and does not use Stripe billing portal. Please manage it from your billing dashboard.',
+                    ]],
+                ], 400);
+            }
+
             // Get Stripe customer ID - prefer user's stripe_id, but get from subscription if needed
             $stripeCustomerId = $user->stripe_id;
             
-            if (!$stripeCustomerId) {
+            if (!$stripeCustomerId && $subscriptionModel->stripe_id && !str_starts_with($subscriptionModel->stripe_id, 'credits_')) {
                 // Try to get customer ID from the subscription
                 try {
+                    \Stripe\Stripe::setApiKey(config('cashier.secret'));
                     $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionModel->stripe_id);
                     $stripeCustomerId = $stripeSubscription->customer;
                     

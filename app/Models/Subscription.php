@@ -40,6 +40,9 @@ class Subscription extends CashierSubscription
      */
     protected $casts = [
         'metadata' => 'array',
+        'ends_at' => 'datetime',
+        'next_billing_at' => 'datetime',
+        'trial_ends_at' => 'datetime',
     ];
 
     /**

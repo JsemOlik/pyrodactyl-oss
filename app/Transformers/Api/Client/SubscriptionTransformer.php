@@ -47,7 +47,8 @@ class SubscriptionTransformer extends BaseClientTransformer
         // Check if subscription is pending cancellation using database fields (much faster)
         // If ends_at is set and in the future, and status is active/trialing, it's pending cancellation
         $isPendingCancellation = false;
-        if (in_array($model->stripe_status, ['active', 'trialing']) && $model->ends_at && $model->ends_at->isFuture()) {
+        $endsAt = $model->ends_at instanceof \Carbon\Carbon ? $model->ends_at : ($model->ends_at ? \Carbon\Carbon::parse($model->ends_at) : null);
+        if (in_array($model->stripe_status, ['active', 'trialing']) && $endsAt && $endsAt->isFuture()) {
             $isPendingCancellation = true;
             $billingStatus = 'pending_cancellation';
         }
@@ -56,10 +57,11 @@ class SubscriptionTransformer extends BaseClientTransformer
         $nextRenewalAt = null;
         if ($model->stripe_status === 'active' || $model->stripe_status === 'trialing') {
             // Use next_billing_at if available, otherwise use ends_at for pending cancellations
-            if ($isPendingCancellation && $model->ends_at) {
-                $nextRenewalAt = $model->ends_at->toIso8601String();
-            } elseif ($model->next_billing_at) {
-                $nextRenewalAt = $model->next_billing_at->toIso8601String();
+            $nextBillingAt = $model->next_billing_at instanceof \Carbon\Carbon ? $model->next_billing_at : ($model->next_billing_at ? \Carbon\Carbon::parse($model->next_billing_at) : null);
+            if ($isPendingCancellation && $endsAt) {
+                $nextRenewalAt = $endsAt->toIso8601String();
+            } elseif ($nextBillingAt) {
+                $nextRenewalAt = $nextBillingAt->toIso8601String();
             }
         }
 
@@ -111,10 +113,10 @@ class SubscriptionTransformer extends BaseClientTransformer
             'server_name' => $server ? $server->name : null,
             'server_uuid' => $server ? $server->uuid : null,
             'next_renewal_at' => $nextRenewalAt,
-            'ends_at' => $model->ends_at ? $model->ends_at->toIso8601String() : null,
-            'trial_ends_at' => $model->trial_ends_at ? $model->trial_ends_at->toIso8601String() : null,
+            'ends_at' => $endsAt ? $endsAt->toIso8601String() : null,
+            'trial_ends_at' => $model->trial_ends_at instanceof \Carbon\Carbon ? $model->trial_ends_at->toIso8601String() : ($model->trial_ends_at ? \Carbon\Carbon::parse($model->trial_ends_at)->toIso8601String() : null),
             'can_cancel' => in_array($model->stripe_status, ['active', 'trialing']) && !$isPendingCancellation,
-            'can_resume' => $isPendingCancellation || ($model->stripe_status === 'canceled' && $model->ends_at && $model->ends_at->isFuture()),
+            'can_resume' => $isPendingCancellation || ($model->stripe_status === 'canceled' && $endsAt && $endsAt->isFuture()),
             'created_at' => $this->formatTimestamp($model->created_at),
             'updated_at' => $this->formatTimestamp($model->updated_at),
         ];
