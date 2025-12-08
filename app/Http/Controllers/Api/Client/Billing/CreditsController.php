@@ -82,6 +82,13 @@ class CreditsController extends Controller
                     'type' => 'credits_purchase',
                     'amount' => (string) $amount,
                 ],
+                'payment_intent_data' => [
+                    'metadata' => [
+                        'user_id' => (string) $user->id,
+                        'type' => 'credits_purchase',
+                        'amount' => (string) $amount,
+                    ],
+                ],
                 'allow_promotion_codes' => true,
             ]);
 

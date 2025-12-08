@@ -88,6 +88,13 @@ class StripeWebhookController extends Controller
                 ]);
                 break;
 
+            case 'payment_intent.succeeded':
+                Log::info('Received payment_intent.succeeded event', [
+                    'payment_intent_id' => $event->data->object->id ?? null,
+                ]);
+                $this->handlePaymentIntentSucceeded($event->data->object);
+                break;
+
                 default:
                     Log::info('Unhandled Stripe webhook event', [
                         'type' => $event->type,
@@ -464,6 +471,103 @@ class StripeWebhookController extends Controller
             
             // Re-throw to trigger webhook retry
             throw $e;
+        }
+    }
+
+    /**
+     * Handle payment intent succeeded event (for credits purchases).
+     */
+    private function handlePaymentIntentSucceeded($paymentIntent): void
+    {
+        Log::info('Processing payment_intent.succeeded', [
+            'payment_intent_id' => $paymentIntent->id,
+            'customer_id' => $paymentIntent->customer ?? null,
+            'amount' => $paymentIntent->amount ?? null,
+            'metadata' => $paymentIntent->metadata ?? [],
+        ]);
+
+        // Convert payment intent metadata to array
+        $rawMetadata = $paymentIntent->metadata ?? [];
+        $metadata = $this->convertMetadataToArray($rawMetadata);
+
+        // Check if this payment intent has credits purchase metadata
+        if (($metadata['type'] ?? null) === 'credits_purchase') {
+            Log::info('Payment intent is a credits purchase, processing directly', [
+                'payment_intent_id' => $paymentIntent->id,
+                'metadata' => $metadata,
+            ]);
+
+            if (!empty($metadata['user_id']) && !empty($metadata['amount'])) {
+                $userId = (int) $metadata['user_id'];
+                $amount = (float) $metadata['amount'];
+
+                try {
+                    $user = \Pterodactyl\Models\User::findOrFail($userId);
+                    
+                    // Get current balance before increment
+                    $oldBalance = $user->credits_balance;
+                    
+                    // Add credits to user account
+                    $user->increment('credits_balance', $amount);
+                    
+                    // Refresh to get updated balance
+                    $user->refresh();
+                    
+                    Log::info('Credits added to user account from payment_intent', [
+                        'payment_intent_id' => $paymentIntent->id,
+                        'user_id' => $userId,
+                        'amount' => $amount,
+                        'old_balance' => $oldBalance,
+                        'new_balance' => $user->credits_balance,
+                    ]);
+                    return;
+                } catch (\Exception $e) {
+                    Log::error('Failed to add credits from payment_intent', [
+                        'payment_intent_id' => $paymentIntent->id,
+                        'user_id' => $userId ?? null,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    throw $e;
+                }
+            }
+        }
+
+        // Try to find the checkout session associated with this payment intent as fallback
+        try {
+            \Stripe\Stripe::setApiKey(config('cashier.secret'));
+            
+            // Search for checkout sessions with this payment intent
+            $sessions = \Stripe\Checkout\Session::all([
+                'payment_intent' => $paymentIntent->id,
+                'limit' => 1,
+            ]);
+
+            if (!empty($sessions->data)) {
+                $session = $sessions->data[0];
+                Log::info('Found checkout session for payment intent', [
+                    'payment_intent_id' => $paymentIntent->id,
+                    'session_id' => $session->id,
+                    'session_mode' => $session->mode ?? null,
+                ]);
+
+                // If it's a payment mode session, process it as credits purchase
+                if (($session->mode ?? null) === 'payment') {
+                    $this->handleCheckoutSessionCompleted($session);
+                }
+            } else {
+                Log::warning('No checkout session found for payment intent and no metadata', [
+                    'payment_intent_id' => $paymentIntent->id,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to process payment_intent.succeeded', [
+                'payment_intent_id' => $paymentIntent->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            // Don't re-throw if we couldn't find session - credits might have been added via metadata
         }
     }
 
