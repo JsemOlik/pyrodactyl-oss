@@ -168,7 +168,15 @@ class CheckoutController extends Controller
                             'error' => $e->getMessage(),
                             'credits_refunded' => $priceAmount,
                         ]);
-                        throw $e;
+                        
+                        // Return a user-friendly error message
+                        return response()->json([
+                            'errors' => [[
+                                'code' => 'ServerProvisioningFailed',
+                                'status' => '500',
+                                'detail' => 'Failed to provision server. Your credits have been refunded. Please try again later or contact support if the issue persists.',
+                            ]],
+                        ], 500);
                     }
                 });
             }
