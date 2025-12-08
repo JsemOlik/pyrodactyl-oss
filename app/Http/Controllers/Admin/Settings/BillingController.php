@@ -149,7 +149,7 @@ class BillingController extends Controller
                     <li>Transaction ID: {{transaction_id}}</li>
                 </ul>
             </div>
-            <p>If you have any questions or concerns, please don\'t hesitate to contact our support team.</p>
+            <p>If you have any questions or concerns, please do not hesitate to contact our support team.</p>
             <p>Best regards,<br>{{company_name}}</p>
         </div>
         <div class="footer">
