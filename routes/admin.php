@@ -101,6 +101,13 @@ Route::group(['prefix' => 'settings'], function () {
     });
 
     Route::post('/mail/test', [Admin\Settings\MailController::class, 'test'])->name('admin.settings.mail.test');
+    
+    // Credits management routes
+    Route::group(['prefix' => 'credits'], function () {
+        Route::get('/users', [Admin\Settings\CreditsController::class, 'getUsers'])->name('admin.settings.credits.users');
+        Route::get('/users/{user}/transactions', [Admin\Settings\CreditsController::class, 'getUserTransactions'])->name('admin.settings.credits.user.transactions');
+        Route::post('/users/{user}/adjust', [Admin\Settings\CreditsController::class, 'adjustCredits'])->name('admin.settings.credits.user.adjust');
+    });
 
     Route::patch('/', [Admin\Settings\IndexController::class, 'update']);
     Route::patch('/mail', [Admin\Settings\MailController::class, 'update']);

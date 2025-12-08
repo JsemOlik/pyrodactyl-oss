@@ -29,7 +29,17 @@ class BillingController extends Controller
      */
     public function index(): View
     {
-        return $this->view->make('admin.settings.billing');
+        $tab = request()->get('tab', 'settings');
+        
+        // Validate tab
+        $validTabs = ['settings', 'server-creation', 'payment-method', 'credits'];
+        if (!in_array($tab, $validTabs)) {
+            $tab = 'settings';
+        }
+        
+        return $this->view->make('admin.settings.billing', [
+            'activeTab' => $tab,
+        ]);
     }
 
     /**
