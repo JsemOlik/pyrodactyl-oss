@@ -50,6 +50,9 @@ const BillingContainer = () => {
         revalidateOnFocus: false,
     });
 
+    // Check if credits are enabled by checking if balance endpoint exists
+    const creditsEnabled = creditsBalance !== undefined || creditsError === undefined;
+
     // Load credit transactions
     const { data: creditTransactionsData, error: transactionsError } = useSWR(
         creditsEnabled ? ['/api/client/billing/credits/transactions', { limit: 50 }] : null,
@@ -230,9 +233,6 @@ const BillingContainer = () => {
             setIsPurchasingCredits(false);
         }
     };
-
-    // Check if credits are enabled by checking if balance endpoint exists
-    const creditsEnabled = creditsBalance !== undefined || creditsError === undefined;
 
     return (
         <PageContentBlock title={'Billing'} showFlashKey={'billing'}>
