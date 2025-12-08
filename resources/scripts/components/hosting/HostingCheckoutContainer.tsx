@@ -124,12 +124,19 @@ const HostingCheckoutContainer = () => {
     };
 
     const getFirstMonthPrice = (price: number, plan?: HostingPlan): number => {
-        if (plan?.attributes.first_month_sales_percentage) {
+        if (plan?.attributes.first_month_sales_percentage && plan.attributes.first_month_sales_percentage > 0) {
             const discount = plan.attributes.first_month_sales_percentage / 100;
             return Math.round(price * (1 - discount) * 100) / 100;
         }
-        // Default to 50% off if no discount is set
-        return Math.round(price * 0.5 * 100) / 100;
+        // No discount - return full price
+        return price;
+    };
+
+    const getFirstMonthDiscount = (plan?: HostingPlan): number | null => {
+        if (plan?.attributes.first_month_sales_percentage && plan.attributes.first_month_sales_percentage > 0) {
+            return plan.attributes.first_month_sales_percentage;
+        }
+        return null;
     };
 
     const getMonthlyPrice = (): number => {
@@ -151,6 +158,7 @@ const HostingCheckoutContainer = () => {
 
     const monthlyPrice = getMonthlyPrice();
     const firstMonthPrice = getFirstMonthPrice(monthlyPrice, selectedPlan || undefined);
+    const firstMonthDiscount = getFirstMonthDiscount(selectedPlan || undefined);
 
     const handleCheckout = async () => {
         if (!serverName.trim()) {
@@ -390,21 +398,33 @@ const HostingCheckoutContainer = () => {
                                 {/* Pricing Details */}
                                 {isReady ? (
                                     <div className='pt-4 border-t border-[#ffffff12] space-y-3'>
-                                        <div className='flex justify-between text-white/70'>
-                                            <span>First Month (50% off)</span>
-                                            <span className='line-through text-white/50'>
-                                                {formatPrice(monthlyPrice)}
-                                            </span>
-                                        </div>
-                                        <div className='flex justify-between text-lg font-semibold text-white'>
-                                            <span>First Month Price</span>
-                                            <span>{formatPrice(firstMonthPrice)}</span>
-                                        </div>
-                                        <div className='pt-3 border-t border-[#ffffff12] flex justify-between text-white/70'>
-                                            <span>
-                                                Then {formatPrice(monthlyPrice)} per {getInterval()}
-                                            </span>
-                                        </div>
+                                        {firstMonthDiscount ? (
+                                            <>
+                                                <div className='flex justify-between text-white/70'>
+                                                    <span>First Month ({firstMonthDiscount.toFixed(0)}% off)</span>
+                                                    <span className='line-through text-white/50'>
+                                                        {formatPrice(monthlyPrice)}
+                                                    </span>
+                                                </div>
+                                                <div className='flex justify-between text-lg font-semibold text-white'>
+                                                    <span>First Month Price</span>
+                                                    <span>{formatPrice(firstMonthPrice)}</span>
+                                                </div>
+                                                <div className='pt-3 border-t border-[#ffffff12] flex justify-between text-white/70'>
+                                                    <span>
+                                                        Then {formatPrice(monthlyPrice)} per {getInterval()}
+                                                    </span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className='flex justify-between text-lg font-semibold text-white'>
+                                                    <span>Price</span>
+                                                    <span>{formatPrice(monthlyPrice)}</span>
+                                                </div>
+                                                <div className='text-sm text-white/70'>Billed per {getInterval()}</div>
+                                            </>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className='pt-4 border-t border-[#ffffff12] text-white/50 text-sm'>

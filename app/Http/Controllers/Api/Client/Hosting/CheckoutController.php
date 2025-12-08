@@ -4,6 +4,7 @@ namespace Pterodactyl\Http\Controllers\Api\Client\Hosting;
 
 use Stripe\Stripe;
 use Stripe\Price;
+use Stripe\Coupon;
 use Stripe\Checkout\Session;
 use Stripe\Exception\ApiErrorException;
 use Illuminate\Http\JsonResponse;
@@ -63,6 +64,12 @@ class CheckoutController extends Controller
                 $plan = Plan::findOrFail($request->input('plan_id'));
                 $interval = $plan->interval;
                 $priceAmount = $plan->price;
+                
+                // Apply first month discount if available
+                if ($plan->first_month_sales_percentage && $plan->first_month_sales_percentage > 0) {
+                    $discount = $plan->first_month_sales_percentage / 100;
+                    $priceAmount = round($priceAmount * (1 - $discount), 2);
+                }
             } else {
                 // Custom plan - calculate price
                 $memory = $request->input('memory');
@@ -155,7 +162,7 @@ class CheckoutController extends Controller
                         'ends_at' => null,
                         'next_billing_at' => $nextBillingAt,
                         'billing_interval' => $interval,
-                        'billing_amount' => $priceAmount,
+                        'billing_amount' => $plan ? $plan->price : $priceAmount, // Store full price for recurring billing
                         'is_credits_based' => true,
                     ]);
                 } catch (\Exception $e) {
@@ -260,17 +267,47 @@ class CheckoutController extends Controller
             // Get or create Stripe customer
             $stripeCustomer = $this->getOrCreateStripeCustomer($user);
 
+            // Calculate actual price to charge (with first month discount if applicable)
+            $actualPriceAmount = $priceAmount;
+            if ($plan && $plan->first_month_sales_percentage && $plan->first_month_sales_percentage > 0) {
+                $discount = $plan->first_month_sales_percentage / 100;
+                $actualPriceAmount = round($plan->price * (1 - $discount), 2);
+            }
+
             $stripePriceId = null;
             if ($plan) {
-                // Get or create Stripe Price for this plan
+                // Get or create Stripe Price for this plan (use full price for recurring)
                 $stripePriceId = $this->stripePriceService->getOrCreatePriceForPlan($plan);
             } else {
                 // Create Stripe Price for custom plan
                 $stripePriceId = $this->stripePriceService->createPriceForCustomPlan(
-                    $priceAmount,
+                    $priceAmount, // Use full price for recurring
                     $interval,
                     $request->input('memory')
                 );
+            }
+            
+            // Create coupon for first month discount if applicable
+            $couponId = null;
+            if ($plan && $plan->first_month_sales_percentage && $plan->first_month_sales_percentage > 0) {
+                try {
+                    $coupon = Coupon::create([
+                        'percent_off' => $plan->first_month_sales_percentage,
+                        'duration' => 'once', // Only applies to first invoice
+                        'name' => 'First Month Discount',
+                        'metadata' => [
+                            'plan_id' => (string) $plan->id,
+                            'type' => 'first_month_discount',
+                        ],
+                    ]);
+                    $couponId = $coupon->id;
+                } catch (ApiErrorException $e) {
+                    Log::warning('Failed to create Stripe coupon for first month discount', [
+                        'plan_id' => $plan->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Continue without coupon - user will be charged full price
+                }
             }
             
             // Build metadata for webhook handler
@@ -300,8 +337,8 @@ class CheckoutController extends Controller
             // Get success and cancel URLs
             $cancelUrl = config('app.url') . '/hosting/checkout?' . http_build_query($request->only(['plan_id', 'custom', 'memory', 'interval', 'nest_id', 'egg_id']));
 
-            // Create Stripe Checkout Session
-            $checkoutSession = Session::create([
+            // Build checkout session parameters
+            $sessionParams = [
                 'customer' => $stripeCustomer->id,
                 'payment_method_types' => ['card'],
                 'line_items' => [[
@@ -316,7 +353,17 @@ class CheckoutController extends Controller
                     'metadata' => $metadata,
                 ],
                 'allow_promotion_codes' => true,
-            ]);
+            ];
+            
+            // Add coupon if we have a first month discount
+            if ($couponId) {
+                $sessionParams['discounts'] = [[
+                    'coupon' => $couponId,
+                ]];
+            }
+
+            // Create Stripe Checkout Session
+            $checkoutSession = Session::create($sessionParams);
 
             Log::info('Checkout session created', [
                 'session_id' => $checkoutSession->id,
