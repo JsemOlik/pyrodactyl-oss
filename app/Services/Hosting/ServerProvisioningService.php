@@ -8,7 +8,6 @@ use Pterodactyl\Models\User;
 use Pterodactyl\Models\Plan;
 use Pterodactyl\Models\Egg;
 use Pterodactyl\Models\Subscription;
-use Pterodactyl\Models\Subscription;
 use Pterodactyl\Models\Objects\DeploymentObject;
 use Pterodactyl\Services\Servers\ServerCreationService;
 
