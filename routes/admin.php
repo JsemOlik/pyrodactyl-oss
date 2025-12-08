@@ -122,7 +122,6 @@ Route::group(['prefix' => 'billing'], function () {
     })->name('admin.billing');
     Route::get('/settings', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.settings');
     Route::get('/server-creation', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.server-creation');
-    Route::get('/payment-method', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.payment-method');
     Route::get('/credits', [Admin\Settings\BillingController::class, 'index'])->name('admin.billing.credits');
     Route::patch('/', [Admin\Settings\BillingController::class, 'update'])->name('admin.billing.update');
     

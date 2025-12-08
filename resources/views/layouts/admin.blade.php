@@ -174,11 +174,6 @@
                             <i class="bi bi-server"></i> <span>Server Creation</span>
                         </a>
                     </li>
-                    <li class="{{ Route::currentRouteName() === 'admin.billing.payment-method' ? 'active' : '' }}">
-                        <a href="{{ route('admin.billing.payment-method') }}">
-                            <i class="bi bi-wallet-fill"></i> <span>Payment Method</span>
-                        </a>
-                    </li>
                     <li class="{{ Route::currentRouteName() === 'admin.billing.credits' ? 'active' : '' }}">
                         <a href="{{ route('admin.billing.credits') }}">
                             <i class="bi bi-cash-coin"></i> <span>Credits</span>

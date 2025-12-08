@@ -34,8 +34,6 @@ class BillingController extends Controller
         
         if (str_contains($routeName, 'server-creation')) {
             return $this->view->make('admin.billing.server-creation');
-        } elseif (str_contains($routeName, 'payment-method')) {
-            return $this->view->make('admin.billing.payment-method');
         } elseif (str_contains($routeName, 'credits')) {
             return $this->view->make('admin.billing.credits');
         }
