@@ -134,7 +134,7 @@ const HostingCheckoutContainer = () => {
         if (distributionId) {
             setSelectedDistributionId(distributionId);
         }
-        
+
         // If we already have selections from URL, skip to customization step
         if ((hostingType === 'game-server' && nestId && eggId) || (hostingType === 'vps' && distributionId)) {
             setCurrentStep('customization');
@@ -159,7 +159,8 @@ const HostingCheckoutContainer = () => {
         hostingType === 'game-server' && selectedNest && selectedEggId
             ? selectedNest.attributes.relationships?.eggs?.data.find((e) => e.attributes.id === selectedEggId)
             : null;
-    const selectedDistribution = hostingType === 'vps' ? distributions?.find((d) => d.id === selectedDistributionId) : null;
+    const selectedDistribution =
+        hostingType === 'vps' ? distributions?.find((d) => d.id === selectedDistributionId) : null;
     const availableEggs = selectedNest?.attributes.relationships?.eggs?.data || [];
 
     const formatPrice = (price: number): string => {
@@ -553,7 +554,9 @@ const HostingCheckoutContainer = () => {
                                                                 {nests.map((nest) => (
                                                                     <button
                                                                         key={nest.attributes.id}
-                                                                        onClick={() => handleNestSelection(nest.attributes.id)}
+                                                                        onClick={() =>
+                                                                            handleNestSelection(nest.attributes.id)
+                                                                        }
                                                                         className={`p-4 rounded-lg border transition-all text-left ${
                                                                             selectedNestId === nest.attributes.id
                                                                                 ? 'border-brand bg-brand/10'
@@ -601,7 +604,9 @@ const HostingCheckoutContainer = () => {
                                                                 {availableEggs.map((egg) => (
                                                                     <button
                                                                         key={egg.attributes.id}
-                                                                        onClick={() => handleEggSelection(egg.attributes.id)}
+                                                                        onClick={() =>
+                                                                            handleEggSelection(egg.attributes.id)
+                                                                        }
                                                                         className={`p-4 rounded-lg border transition-all text-left ${
                                                                             selectedEggId === egg.attributes.id
                                                                                 ? 'border-brand bg-brand/10'
@@ -651,9 +656,13 @@ const HostingCheckoutContainer = () => {
                                                                         : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
                                                                 }`}
                                                             >
-                                                                <div className='font-semibold text-white mb-1'>{dist.name}</div>
+                                                                <div className='font-semibold text-white mb-1'>
+                                                                    {dist.name}
+                                                                </div>
                                                                 {dist.description && (
-                                                                    <div className='text-sm text-white/60'>{dist.description}</div>
+                                                                    <div className='text-sm text-white/60'>
+                                                                        {dist.description}
+                                                                    </div>
                                                                 )}
                                                                 {dist.version && (
                                                                     <div className='text-xs text-white/40 mt-1'>
@@ -744,130 +753,6 @@ const HostingCheckoutContainer = () => {
                                         }}
                                     >
                                         <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
-                                            <h3 className='text-lg font-semibold text-white mb-2 flex items-center gap-2'>
-                                                <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
-                                                    3
-                                                </span>
-                                                Subdomain (Optional)
-                                            </h3>
-                                            <p className='text-sm text-white/60 mb-6 ml-10'>
-                                                Choose a custom subdomain for your server. This will make it easier for
-                                                players to connect.
-                                            </p>
-
-                                            <div className='space-y-4'>
-                                                <div>
-                                                    <label
-                                                        htmlFor='subdomain'
-                                                        className='block text-sm font-medium text-white/70 mb-2'
-                                                    >
-                                                        Subdomain
-                                                    </label>
-                                                    <div className='flex items-center border border-[#ffffff12] rounded-lg overflow-hidden hover:border-[#ffffff25] focus-within:border-brand transition-colors'>
-                                                        <input
-                                                            id='subdomain'
-                                                            type='text'
-                                                            value={subdomain}
-                                                            onChange={(e) => {
-                                                                const value = e.target.value
-                                                                    .toLowerCase()
-                                                                    .replace(/[^a-z0-9-]/g, '');
-                                                                setSubdomain(value);
-                                                                if (selectedDomainId && value.trim()) {
-                                                                    debouncedCheckSubdomain(value, selectedDomainId);
-                                                                } else {
-                                                                    setAvailabilityStatus(null);
-                                                                    if (debounceTimeoutRef.current) {
-                                                                        clearTimeout(debounceTimeoutRef.current);
-                                                                    }
-                                                                }
-                                                            }}
-                                                            placeholder='myserver'
-                                                            className='flex-1 px-4 py-3 bg-transparent text-white placeholder-white/30 focus:outline-none'
-                                                            maxLength={63}
-                                                        />
-                                                        <div className='border-l border-[#ffffff12]'>
-                                                            <select
-                                                                value={selectedDomainId || ''}
-                                                                onChange={(e) => {
-                                                                    const domainId = parseInt(e.target.value);
-                                                                    setSelectedDomainId(domainId);
-                                                                    if (subdomain.trim()) {
-                                                                        debouncedCheckSubdomain(subdomain, domainId);
-                                                                    }
-                                                                }}
-                                                                className='min-w-[140px] px-4 py-3 bg-[#ffffff08] border-0 text-white focus:outline-none cursor-pointer'
-                                                            >
-                                                                {availableDomains.map((domain) => (
-                                                                    <option key={domain.id} value={domain.id}>
-                                                                        .{domain.name}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <p className='mt-1 text-xs text-white/50'>
-                                                        Only lowercase letters, numbers, and hyphens. Must start and end
-                                                        with a letter or number.
-                                                    </p>
-                                                </div>
-
-                                                {(checkingAvailability || availabilityStatus) && (
-                                                    <div
-                                                        className={`rounded-lg p-4 border transition-all ${
-                                                            checkingAvailability
-                                                                ? 'bg-blue-500/10 border-blue-500/20'
-                                                                : availabilityStatus?.available
-                                                                  ? 'bg-green-500/10 border-green-500/20'
-                                                                  : 'bg-red-500/10 border-red-500/20'
-                                                        }`}
-                                                    >
-                                                        {checkingAvailability ? (
-                                                            <div className='flex items-center text-sm text-blue-300'>
-                                                                <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400 mr-3'></div>
-                                                                Checking availability...
-                                                            </div>
-                                                        ) : (
-                                                            availabilityStatus && (
-                                                                <div
-                                                                    className={`text-sm flex items-center font-medium ${
-                                                                        availabilityStatus.available
-                                                                            ? 'text-green-300'
-                                                                            : 'text-red-300'
-                                                                    }`}
-                                                                >
-                                                                    <div
-                                                                        className={`w-3 h-3 rounded-full mr-3 ${
-                                                                            availabilityStatus.available
-                                                                                ? 'bg-green-400'
-                                                                                : 'bg-red-400'
-                                                                        }`}
-                                                                    ></div>
-                                                                    {availabilityStatus.message}
-                                                                </div>
-                                                            )
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                <div className='bg-[#ffffff05] border border-[#ffffff08] rounded-lg p-4'>
-                                                    <p className='text-sm text-white/60'>
-                                                        <span className='font-medium text-white/80'>Note:</span> You can
-                                                        skip this step if you don't want a custom subdomain. A subdomain
-                                                        can be added later from your server's network settings.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                    <div
-                                        className='space-y-6'
-                                        style={{
-                                            animation: 'fadeIn 0.5s ease-out, slideUp 0.6s ease-out',
-                                        }}
-                                    >
-                                        <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
                                             <h3 className='text-lg font-semibold text-white mb-6 flex items-center gap-2'>
                                                 <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
                                                     3
@@ -897,18 +782,20 @@ const HostingCheckoutContainer = () => {
                                                                 </span>
                                                             </div>
                                                         )}
-                                                        {hostingType === 'game-server' && selectedNest && selectedEgg && (
-                                                            <>
-                                                                <div className='flex justify-between'>
-                                                                    <span>Game Type:</span>
-                                                                    <span>{selectedNest.attributes.name}</span>
-                                                                </div>
-                                                                <div className='flex justify-between'>
-                                                                    <span>Game:</span>
-                                                                    <span>{selectedEgg.attributes.name}</span>
-                                                                </div>
-                                                            </>
-                                                        )}
+                                                        {hostingType === 'game-server' &&
+                                                            selectedNest &&
+                                                            selectedEgg && (
+                                                                <>
+                                                                    <div className='flex justify-between'>
+                                                                        <span>Game Type:</span>
+                                                                        <span>{selectedNest.attributes.name}</span>
+                                                                    </div>
+                                                                    <div className='flex justify-between'>
+                                                                        <span>Game:</span>
+                                                                        <span>{selectedEgg.attributes.name}</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
                                                         {hostingType === 'vps' && selectedDistribution && (
                                                             <div className='flex justify-between'>
                                                                 <span>Distribution:</span>
