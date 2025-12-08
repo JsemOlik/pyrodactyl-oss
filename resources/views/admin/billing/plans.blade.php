@@ -19,10 +19,13 @@
         <div class="box-header with-border">
           <h3 class="box-title">Subscription Plans</h3>
           <div class="box-tools pull-right">
-            <div class="btn-group">
+            <div class="btn-group" style="margin-right: 10px;">
               <button type="button" class="btn btn-sm btn-default" id="gameServerType" data-type="game-server">Game Servers</button>
               <button type="button" class="btn btn-sm btn-default" id="vpsType" data-type="vps">VPS</button>
             </div>
+            <button type="button" class="btn btn-sm btn-success" id="createPlanButton">
+              <i class="fa fa-plus"></i> Create Plan
+            </button>
           </div>
         </div>
         <div class="box-body">
@@ -50,6 +53,108 @@
             </table>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Plan Modal -->
+  <div class="modal fade" id="createPlanModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title">Create New Plan</h4>
+        </div>
+        <form id="createPlanForm">
+          <div class="modal-body">
+            <div class="form-group">
+              <label>Name <span class="text-red">*</span></label>
+              <input type="text" id="createPlanName" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea id="createPlanDescription" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="row">
+              <div class="form-group col-md-4">
+                <label>Price <span class="text-red">*</span></label>
+                <input type="number" step="0.01" id="createPlanPrice" class="form-control" required>
+              </div>
+              <div class="form-group col-md-4">
+                <label>Sales Percentage</label>
+                <input type="number" step="0.01" min="0" max="100" id="createPlanSalesPercentage" class="form-control" placeholder="e.g., 20 for 20% off">
+                <p class="help-block">Percentage discount for sales (0-100)</p>
+              </div>
+              <div class="form-group col-md-4">
+                <label>First Month Sales %</label>
+                <input type="number" step="0.01" min="0" max="100" id="createPlanFirstMonthSalesPercentage" class="form-control" placeholder="e.g., 50 for 50% off">
+                <p class="help-block">Percentage discount for first month (0-100)</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-md-4">
+                <label>Currency <span class="text-red">*</span></label>
+                <input type="text" id="createPlanCurrency" class="form-control" maxlength="3" value="USD" required>
+              </div>
+              <div class="form-group col-md-4">
+                <label>Interval <span class="text-red">*</span></label>
+                <select id="createPlanInterval" class="form-control" required>
+                  <option value="month">Month</option>
+                  <option value="quarter">Quarter</option>
+                  <option value="half-year">Half Year</option>
+                  <option value="year">Year</option>
+                </select>
+              </div>
+              <div class="form-group col-md-4">
+                <label>Type <span class="text-red">*</span></label>
+                <select id="createPlanType" class="form-control" required>
+                  <option value="game-server">Game Server</option>
+                  <option value="vps">VPS</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-md-3">
+                <label>Memory (MB)</label>
+                <input type="number" id="createPlanMemory" class="form-control" min="0">
+              </div>
+              <div class="form-group col-md-3">
+                <label>Disk (MB)</label>
+                <input type="number" id="createPlanDisk" class="form-control" min="0">
+              </div>
+              <div class="form-group col-md-3">
+                <label>CPU (%)</label>
+                <input type="number" id="createPlanCpu" class="form-control" min="0">
+              </div>
+              <div class="form-group col-md-3">
+                <label>IO</label>
+                <input type="number" id="createPlanIo" class="form-control" min="10" max="1000">
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label>Swap (MB)</label>
+                <input type="number" id="createPlanSwap" class="form-control" min="-1">
+              </div>
+              <div class="form-group col-md-6">
+                <label>Sort Order</label>
+                <input type="number" id="createPlanSortOrder" class="form-control" min="0" value="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="checkbox checkbox-primary">
+                <input type="checkbox" id="createPlanIsActive" value="1" checked>
+                <label for="createPlanIsActive">Active</label>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success" id="createPlanSubmitButton">Create Plan</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -128,6 +233,16 @@
                 <input type="number" id="editPlanIo" class="form-control" min="10" max="1000">
               </div>
             </div>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label>Swap (MB)</label>
+                <input type="number" id="editPlanSwap" class="form-control" min="-1">
+              </div>
+              <div class="form-group col-md-6">
+                <label>Sort Order</label>
+                <input type="number" id="editPlanSortOrder" class="form-control" min="0">
+              </div>
+            </div>
             <div class="form-group">
               <div class="checkbox checkbox-primary">
                 <input type="checkbox" id="editPlanIsActive" value="1">
@@ -179,8 +294,12 @@
               html += '<td>' + activeBadge + '</td>';
               html += '<td>' + plan.sort_order + '</td>';
               html += '<td>';
-              html += '<button class="btn btn-xs btn-primary editPlan" data-plan-id="' + plan.id + '">';
+              const escapedPlanName = plan.name.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+              html += '<button class="btn btn-xs btn-primary editPlan" data-plan-id="' + plan.id + '" style="margin-right: 5px;">';
               html += '<i class="fa fa-edit"></i> Edit';
+              html += '</button>';
+              html += '<button class="btn btn-xs btn-danger deletePlan" data-plan-id="' + plan.id + '" data-plan-name="' + escapedPlanName + '">';
+              html += '<i class="fa fa-trash"></i> Delete';
               html += '</button>';
               html += '</td>';
               html += '</tr>';
@@ -207,6 +326,73 @@
         loadPlans(currentType);
       });
       $('#gameServerType').addClass('btn-primary').removeClass('btn-default');
+
+      // Open create plan modal
+      $('#createPlanButton').on('click', function() {
+        // Reset form
+        $('#createPlanForm')[0].reset();
+        $('#createPlanCurrency').val('USD');
+        $('#createPlanInterval').val('month');
+        $('#createPlanType').val(currentType);
+        $('#createPlanSortOrder').val('0');
+        $('#createPlanIsActive').prop('checked', true);
+        $('#createPlanModal').modal('show');
+      });
+
+      // Submit create form
+      $('#createPlanForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const data = {
+          name: $('#createPlanName').val(),
+          description: $('#createPlanDescription').val(),
+          price: parseFloat($('#createPlanPrice').val()),
+          sales_percentage: $('#createPlanSalesPercentage').val() ? parseFloat($('#createPlanSalesPercentage').val()) : null,
+          first_month_sales_percentage: $('#createPlanFirstMonthSalesPercentage').val() ? parseFloat($('#createPlanFirstMonthSalesPercentage').val()) : null,
+          currency: $('#createPlanCurrency').val(),
+          interval: $('#createPlanInterval').val(),
+          type: $('#createPlanType').val(),
+          memory: $('#createPlanMemory').val() ? parseInt($('#createPlanMemory').val()) : null,
+          disk: $('#createPlanDisk').val() ? parseInt($('#createPlanDisk').val()) : null,
+          cpu: $('#createPlanCpu').val() ? parseInt($('#createPlanCpu').val()) : null,
+          io: $('#createPlanIo').val() ? parseInt($('#createPlanIo').val()) : null,
+          swap: $('#createPlanSwap').val() ? parseInt($('#createPlanSwap').val()) : null,
+          sort_order: parseInt($('#createPlanSortOrder').val()) || 0,
+          is_active: $('#createPlanIsActive').is(':checked'),
+        };
+
+        $('#createPlanSubmitButton').prop('disabled', true).text('Creating...');
+
+        $.ajax({
+          url: '/admin/billing/plans',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(data),
+          headers: {
+            'X-CSRF-Token': $('meta[name="_token"]').attr('content')
+          },
+          success: function(response) {
+            swal({
+              title: 'Success',
+              text: 'Plan created successfully.',
+              type: 'success'
+            }, function() {
+              $('#createPlanModal').modal('hide');
+              loadPlans(currentType);
+            });
+          },
+          error: function(xhr) {
+            let errorMsg = 'Failed to create plan.';
+            if (xhr.responseJSON && xhr.responseJSON.errors) {
+              errorMsg = xhr.responseJSON.errors.join(' ');
+            }
+            swal('Error', errorMsg, 'error');
+          },
+          complete: function() {
+            $('#createPlanSubmitButton').prop('disabled', false).text('Create Plan');
+          }
+        });
+      });
 
       // Edit plan
       $(document).on('click', '.editPlan', function() {
@@ -235,6 +421,7 @@
             $('#editPlanDisk').val(plan.disk || '');
             $('#editPlanCpu').val(plan.cpu || '');
             $('#editPlanIo').val(plan.io || '');
+            $('#editPlanSwap').val(plan.swap || '');
             $('#editPlanSortOrder').val(plan.sort_order);
             $('#editPlanIsActive').prop('checked', plan.is_active);
 
@@ -260,6 +447,7 @@
           disk: $('#editPlanDisk').val() ? parseInt($('#editPlanDisk').val()) : null,
           cpu: $('#editPlanCpu').val() ? parseInt($('#editPlanCpu').val()) : null,
           io: $('#editPlanIo').val() ? parseInt($('#editPlanIo').val()) : null,
+          swap: $('#editPlanSwap').val() ? parseInt($('#editPlanSwap').val()) : null,
           sort_order: parseInt($('#editPlanSortOrder').val()) || 0,
           is_active: $('#editPlanIsActive').is(':checked'),
         };
@@ -293,6 +481,51 @@
           },
           complete: function() {
             $('#editPlanSubmitButton').prop('disabled', false).text('Save Changes');
+          }
+        });
+      });
+
+      // Delete plan
+      $(document).on('click', '.deletePlan', function() {
+        const planId = $(this).data('plan-id');
+        const planName = $(this).data('plan-name');
+        
+        swal({
+          title: 'Are you sure?',
+          text: 'You are about to delete the plan "' + planName + '". This action cannot be undone!',
+          type: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, delete it!',
+          cancelButtonText: 'Cancel',
+          closeOnConfirm: false,
+          showLoaderOnConfirm: true
+        }, function(isConfirm) {
+          if (isConfirm) {
+            $.ajax({
+              url: '/admin/billing/plans/' + planId,
+              method: 'DELETE',
+              headers: {
+                'X-CSRF-Token': $('meta[name="_token"]').attr('content')
+              },
+              success: function(response) {
+                swal({
+                  title: 'Deleted!',
+                  text: 'The plan has been deleted successfully.',
+                  type: 'success'
+                }, function() {
+                  loadPlans(currentType);
+                });
+              },
+              error: function(xhr) {
+                let errorMsg = 'Failed to delete plan.';
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                  errorMsg = xhr.responseJSON.errors.join(' ');
+                }
+                swal('Error', errorMsg, 'error');
+              }
+            });
           }
         });
       });

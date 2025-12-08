@@ -69,6 +69,82 @@ class PlansController extends Controller
     }
 
     /**
+     * Create a new plan.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:191',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'sales_percentage' => 'nullable|numeric|min:0|max:100',
+            'first_month_sales_percentage' => 'nullable|numeric|min:0|max:100',
+            'currency' => 'required|string|size:3',
+            'interval' => 'required|string|in:month,quarter,half-year,year',
+            'type' => 'required|string|in:game-server,vps',
+            'memory' => 'nullable|integer|min:0',
+            'disk' => 'nullable|integer|min:0',
+            'cpu' => 'nullable|integer|min:0',
+            'io' => 'nullable|integer|min:10|max:1000',
+            'swap' => 'nullable|integer|min:-1',
+            'is_active' => 'sometimes|boolean',
+            'sort_order' => 'sometimes|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()->all(),
+            ], 422);
+        }
+
+        try {
+            $plan = Plan::create([
+                'name' => $request->input('name'),
+                'description' => $request->input('description'),
+                'price' => $request->input('price'),
+                'sales_percentage' => $request->input('sales_percentage'),
+                'first_month_sales_percentage' => $request->input('first_month_sales_percentage'),
+                'currency' => $request->input('currency'),
+                'interval' => $request->input('interval'),
+                'type' => $request->input('type'),
+                'memory' => $request->input('memory'),
+                'disk' => $request->input('disk'),
+                'cpu' => $request->input('cpu'),
+                'io' => $request->input('io'),
+                'swap' => $request->input('swap'),
+                'is_custom' => false,
+                'is_active' => $request->input('is_active', true),
+                'sort_order' => $request->input('sort_order', 0),
+            ]);
+
+            Log::info('Admin created new plan', [
+                'admin_id' => auth()->id(),
+                'plan_id' => $plan->id,
+                'plan_name' => $plan->name,
+            ]);
+
+            return response()->json([
+                'object' => 'plan',
+                'data' => [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'price' => (float) $plan->price,
+                    'sales_percentage' => $plan->sales_percentage ? (float) $plan->sales_percentage : null,
+                    'first_month_sales_percentage' => $plan->first_month_sales_percentage ? (float) $plan->first_month_sales_percentage : null,
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create plan', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'errors' => ['Failed to create plan: ' . $e->getMessage()],
+            ], 500);
+        }
+    }
+
+    /**
      * Update a plan.
      */
     public function update(Request $request, int $id): JsonResponse
@@ -142,6 +218,53 @@ class PlansController extends Controller
 
             return response()->json([
                 'errors' => ['Failed to update plan: ' . $e->getMessage()],
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a plan.
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $plan = Plan::findOrFail($id);
+
+        try {
+            // Check if plan has active subscriptions
+            $activeSubscriptions = $plan->subscriptions()
+                ->where('stripe_status', 'active')
+                ->count();
+
+            if ($activeSubscriptions > 0) {
+                return response()->json([
+                    'errors' => ['Cannot delete plan with active subscriptions. Please cancel or transfer all subscriptions first.'],
+                ], 422);
+            }
+
+            $planName = $plan->name;
+            $plan->delete();
+
+            Log::info('Admin deleted plan', [
+                'admin_id' => auth()->id(),
+                'plan_id' => $id,
+                'plan_name' => $planName,
+            ]);
+
+            return response()->json([
+                'object' => 'plan',
+                'data' => [
+                    'id' => $id,
+                    'message' => 'Plan deleted successfully.',
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete plan', [
+                'plan_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'errors' => ['Failed to delete plan: ' . $e->getMessage()],
             ], 500);
         }
     }

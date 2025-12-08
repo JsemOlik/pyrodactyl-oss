@@ -136,7 +136,9 @@ Route::group(['prefix' => 'billing'], function () {
     Route::group(['prefix' => 'plans'], function () {
         Route::get('/', [Admin\Billing\PlansController::class, 'index'])->name('admin.billing.plans');
         Route::get('/list', [Admin\Billing\PlansController::class, 'getPlans'])->name('admin.billing.plans.list');
+        Route::post('/', [Admin\Billing\PlansController::class, 'store'])->name('admin.billing.plans.store');
         Route::patch('/{plan}', [Admin\Billing\PlansController::class, 'update'])->name('admin.billing.plans.update');
+        Route::delete('/{plan}', [Admin\Billing\PlansController::class, 'destroy'])->name('admin.billing.plans.destroy');
     });
 });
 
