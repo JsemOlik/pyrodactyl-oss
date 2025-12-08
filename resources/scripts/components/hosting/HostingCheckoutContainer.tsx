@@ -19,7 +19,7 @@ import { httpErrorToHuman } from '@/api/http';
 import getNests from '@/api/nests/getNests';
 
 type HostingType = 'game-server' | 'vps';
-type CheckoutStep = 'configuration' | 'subdomain' | 'payment';
+type CheckoutStep = 'game-selection' | 'customization' | 'subdomain' | 'payment';
 
 const HostingCheckoutContainer = () => {
     const navigate = useNavigate();
@@ -36,9 +36,15 @@ const HostingCheckoutContainer = () => {
     const distributionId = searchParams.get('distribution');
 
     // Step management
-    const [currentStep, setCurrentStep] = useState<CheckoutStep>('configuration');
+    const [currentStep, setCurrentStep] = useState<CheckoutStep>('game-selection');
     const [stepDirection, setStepDirection] = useState<'forward' | 'backward'>('forward');
     const [isTransitioning, setIsTransitioning] = useState(false);
+
+    // Game/Distribution selection state (for game-selection step)
+    const [selectedNestId, setSelectedNestId] = useState<number | null>(null);
+    const [selectedEggId, setSelectedEggId] = useState<number | null>(null);
+    const [selectedDistributionId, setSelectedDistributionId] = useState<string | null>(null);
+    const [gameSelectionStep, setGameSelectionStep] = useState<'nest' | 'egg'>('nest');
 
     // State
     const [serverName, setServerName] = useState('');
@@ -60,13 +66,18 @@ const HostingCheckoutContainer = () => {
     );
 
     // Load nests/eggs to display selected configuration (game-server only)
-    const { data: nests } = useSWR(hostingType === 'game-server' ? '/api/client/nests' : null, getNests);
+    const {
+        data: nests,
+        error: nestsError,
+        isLoading: nestsLoading,
+    } = useSWR(hostingType === 'game-server' ? '/api/client/nests' : null, getNests);
 
     // Load distributions to display selected configuration (vps only)
-    const { data: distributions } = useSWR(
-        hostingType === 'vps' ? '/api/client/hosting/vps-distributions' : null,
-        getVpsDistributions,
-    );
+    const {
+        data: distributions,
+        error: distributionsError,
+        isLoading: distributionsLoading,
+    } = useSWR(hostingType === 'vps' ? '/api/client/hosting/vps-distributions' : null, getVpsDistributions);
 
     // Load available domains for subdomain selection
     const { data: availableDomains } = useSWR('/api/client/hosting/subdomain/domains', getAvailableDomains, {
@@ -89,17 +100,7 @@ const HostingCheckoutContainer = () => {
     useEffect(() => {
         document.title = 'Checkout | Pyrodactyl';
 
-        // Validate required params
-        if (hostingType === 'game-server' && (!nestId || !eggId)) {
-            toast.error('Invalid checkout configuration. Please start over.');
-            navigate('/hosting');
-            return;
-        }
-        if (hostingType === 'vps' && !distributionId) {
-            toast.error('Invalid checkout configuration. Please start over.');
-            navigate('/hosting');
-            return;
-        }
+        // Validate plan selection
         if (!planId && !isCustom) {
             toast.error('Invalid checkout configuration. Please start over.');
             navigate('/hosting');
@@ -121,11 +122,25 @@ const HostingCheckoutContainer = () => {
             const defaultDomain = availableDomains.find((d) => d.is_default) || availableDomains[0];
             setSelectedDomainId(defaultDomain.id);
         }
+
+        // Initialize selections from URL params if available (for backward compatibility)
+        if (nestId) {
+            setSelectedNestId(parseInt(nestId));
+            setGameSelectionStep('egg');
+        }
+        if (eggId) {
+            setSelectedEggId(parseInt(eggId));
+        }
+        if (distributionId) {
+            setSelectedDistributionId(distributionId);
+        }
+        
+        // If we already have selections from URL, skip to customization step
+        if ((hostingType === 'game-server' && nestId && eggId) || (hostingType === 'vps' && distributionId)) {
+            setCurrentStep('customization');
+        }
     }, [
         hostingType,
-        nestId,
-        eggId,
-        distributionId,
         planId,
         isCustom,
         memory,
@@ -133,16 +148,19 @@ const HostingCheckoutContainer = () => {
         navigate,
         availableDomains,
         selectedDomainId,
+        nestId,
+        eggId,
+        distributionId,
     ]);
 
     const selectedPlan = planId ? plans?.find((p) => p.attributes.id === parseInt(planId)) : null;
-    const selectedNest =
-        hostingType === 'game-server' ? nests?.find((n) => n.attributes.id === parseInt(nestId || '0')) : null;
+    const selectedNest = hostingType === 'game-server' ? nests?.find((n) => n.attributes.id === selectedNestId) : null;
     const selectedEgg =
-        hostingType === 'game-server' && selectedNest
-            ? selectedNest.attributes.relationships?.eggs?.data.find((e) => e.attributes.id === parseInt(eggId || '0'))
+        hostingType === 'game-server' && selectedNest && selectedEggId
+            ? selectedNest.attributes.relationships?.eggs?.data.find((e) => e.attributes.id === selectedEggId)
             : null;
-    const selectedDistribution = hostingType === 'vps' ? distributions?.find((d) => d.id === distributionId) : null;
+    const selectedDistribution = hostingType === 'vps' ? distributions?.find((d) => d.id === selectedDistributionId) : null;
+    const availableEggs = selectedNest?.attributes.relationships?.eggs?.data || [];
 
     const formatPrice = (price: number): string => {
         if (creditsEnabled) {
@@ -255,14 +273,48 @@ const HostingCheckoutContainer = () => {
         }, 300);
     };
 
+    const handleNestSelection = (nestId: number) => {
+        setSelectedNestId(nestId);
+        setSelectedEggId(null);
+        setGameSelectionStep('egg');
+    };
+
+    const handleEggSelection = (eggId: number) => {
+        setSelectedEggId(eggId);
+    };
+
+    const handleDistributionSelection = (distributionId: string) => {
+        setSelectedDistributionId(distributionId);
+    };
+
     const handleNextStep = () => {
-        if (currentStep === 'configuration') {
+        if (currentStep === 'game-selection') {
+            if (hostingType === 'game-server') {
+                if (!selectedNestId) {
+                    toast.error('Please select a game type.');
+                    return;
+                }
+                if (gameSelectionStep === 'nest') {
+                    setGameSelectionStep('egg');
+                    return;
+                }
+                if (!selectedEggId) {
+                    toast.error('Please select a game.');
+                    return;
+                }
+            } else {
+                if (!selectedDistributionId) {
+                    toast.error('Please select a distribution.');
+                    return;
+                }
+            }
+            goToStep('customization', 'forward');
+        } else if (currentStep === 'customization') {
             if (!serverName.trim()) {
                 toast.error('Please enter a server name.');
                 return;
             }
-            // Check if subdomain step should be shown (only for game servers that support subdomains)
-            // For now, always show subdomain step if domains are available
+            // Check if subdomain step should be shown
             if (availableDomains && availableDomains.length > 0) {
                 goToStep('subdomain', 'forward');
             } else {
@@ -293,22 +345,27 @@ const HostingCheckoutContainer = () => {
             if (availableDomains && availableDomains.length > 0) {
                 goToStep('subdomain', 'backward');
             } else {
-                goToStep('configuration', 'backward');
+                goToStep('customization', 'backward');
             }
         } else if (currentStep === 'subdomain') {
-            goToStep('configuration', 'backward');
+            goToStep('customization', 'backward');
+        } else if (currentStep === 'customization') {
+            goToStep('game-selection', 'backward');
+            if (hostingType === 'game-server' && selectedNestId) {
+                setGameSelectionStep('egg');
+            }
+        } else if (currentStep === 'game-selection' && hostingType === 'game-server' && gameSelectionStep === 'egg') {
+            setGameSelectionStep('nest');
         }
     };
 
     const handleCheckout = async () => {
-        if (hostingType === 'game-server' && (!selectedNest || !selectedEgg)) {
-            toast.error('Invalid configuration. Please start over.');
-            navigate('/hosting');
+        if (hostingType === 'game-server' && (!selectedNestId || !selectedEggId)) {
+            toast.error('Please complete game selection.');
             return;
         }
-        if (hostingType === 'vps' && !selectedDistribution) {
-            toast.error('Invalid configuration. Please start over.');
-            navigate('/hosting');
+        if (hostingType === 'vps' && !selectedDistributionId) {
+            toast.error('Please complete distribution selection.');
             return;
         }
 
@@ -322,10 +379,10 @@ const HostingCheckoutContainer = () => {
             };
 
             if (hostingType === 'game-server') {
-                checkoutData.nest_id = parseInt(nestId!);
-                checkoutData.egg_id = parseInt(eggId!);
+                checkoutData.nest_id = selectedNestId!;
+                checkoutData.egg_id = selectedEggId!;
             } else {
-                checkoutData.distribution = selectedDistribution!.id;
+                checkoutData.distribution = selectedDistributionId!;
             }
 
             if (selectedPlan) {
@@ -354,46 +411,12 @@ const HostingCheckoutContainer = () => {
     };
 
     const handleBack = () => {
-        const params = new URLSearchParams();
-        params.set('type', hostingType);
-        if (planId) {
-            params.set('plan', planId);
-        } else if (isCustom && memory) {
-            params.set('custom', 'true');
-            params.set('memory', memory);
-            if (interval) params.set('interval', interval);
-        }
-        navigate(`/hosting/configure?${params.toString()}`);
+        navigate('/hosting');
     };
 
     // Validation checks
-    if (hostingType === 'game-server' && (!nestId || !eggId)) {
-        return null;
-    }
-    if (hostingType === 'vps' && !distributionId) {
-        return null;
-    }
     if (!planId && !isCustom) {
         return null;
-    }
-
-    if (hostingType === 'game-server' && (!selectedNest || !selectedEgg)) {
-        return (
-            <div className='h-full min-h-screen bg-[#0a0a0a] overflow-y-auto -mx-2 -my-2 w-[calc(100%+1rem)]'>
-                <div className='flex items-center justify-center min-h-[400px]'>
-                    <div className='text-white/70'>Loading configuration...</div>
-                </div>
-            </div>
-        );
-    }
-    if (hostingType === 'vps' && !selectedDistribution) {
-        return (
-            <div className='h-full min-h-screen bg-[#0a0a0a] overflow-y-auto -mx-2 -my-2 w-[calc(100%+1rem)]'>
-                <div className='flex items-center justify-center min-h-[400px]'>
-                    <div className='text-white/70'>Loading configuration...</div>
-                </div>
-            </div>
-        );
     }
 
     const isReady = selectedPlan || (isCustom && customPlanCalculation);
@@ -401,17 +424,27 @@ const HostingCheckoutContainer = () => {
     // Step indicator component
     const StepIndicator = () => {
         const steps = [
-            { id: 'configuration', label: 'Configuration', number: 1 },
+            {
+                id: 'game-selection',
+                label: hostingType === 'game-server' ? 'Game Selection' : 'Distribution',
+                number: 1,
+            },
+            { id: 'customization', label: 'Customization', number: 2 },
             ...(availableDomains && availableDomains.length > 0
-                ? [{ id: 'subdomain', label: 'Subdomain', number: 2 }]
+                ? [{ id: 'subdomain', label: 'Subdomain', number: 3 }]
                 : []),
-            { id: 'payment', label: 'Payment', number: availableDomains && availableDomains.length > 0 ? 3 : 2 },
+            {
+                id: 'payment',
+                label: 'Payment',
+                number: availableDomains && availableDomains.length > 0 ? 4 : 3,
+            },
         ];
 
         const getStepNumber = (stepId: CheckoutStep): number => {
-            if (stepId === 'configuration') return 1;
-            if (stepId === 'subdomain') return 2;
-            return availableDomains && availableDomains.length > 0 ? 3 : 2;
+            if (stepId === 'game-selection') return 1;
+            if (stepId === 'customization') return 2;
+            if (stepId === 'subdomain') return 3;
+            return availableDomains && availableDomains.length > 0 ? 4 : 3;
         };
 
         const currentStepNumber = getStepNumber(currentStep);
@@ -520,8 +553,160 @@ const HostingCheckoutContainer = () => {
                                     transitionTimingFunction: 'cubic-bezier(0.42, 0, 0.58, 1)',
                                 }}
                             >
-                                {/* Step 1: Configuration */}
-                                {currentStep === 'configuration' && (
+                                {/* Step 1: Game/Distribution Selection */}
+                                {currentStep === 'game-selection' && (
+                                    <div
+                                        className='space-y-6'
+                                        style={{
+                                            animation: 'fadeIn 0.5s ease-out, slideUp 0.6s ease-out',
+                                        }}
+                                    >
+                                        {hostingType === 'game-server' ? (
+                                            <>
+                                                {/* Nest Selection */}
+                                                {gameSelectionStep === 'nest' && (
+                                                    <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
+                                                        <h3 className='text-lg font-semibold text-white mb-2 flex items-center gap-2'>
+                                                            <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
+                                                                1
+                                                            </span>
+                                                            Select Game Type
+                                                        </h3>
+                                                        <p className='text-sm text-white/60 mb-6 ml-10'>
+                                                            Choose the type of game or software you want to run
+                                                        </p>
+
+                                                        {nestsLoading ? (
+                                                            <div className='flex items-center justify-center py-12'>
+                                                                <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-brand'></div>
+                                                            </div>
+                                                        ) : nests && nests.length > 0 ? (
+                                                            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                                                {nests.map((nest) => (
+                                                                    <button
+                                                                        key={nest.attributes.id}
+                                                                        onClick={() => handleNestSelection(nest.attributes.id)}
+                                                                        className={`p-4 rounded-lg border transition-all text-left ${
+                                                                            selectedNestId === nest.attributes.id
+                                                                                ? 'border-brand bg-brand/10'
+                                                                                : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
+                                                                        }`}
+                                                                    >
+                                                                        <div className='font-semibold text-white mb-1'>
+                                                                            {nest.attributes.name}
+                                                                        </div>
+                                                                        {nest.attributes.description && (
+                                                                            <div className='text-sm text-white/60'>
+                                                                                {nest.attributes.description}
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className='text-white/50 text-sm py-4'>
+                                                                No game types available. Please contact support.
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Egg Selection */}
+                                                {gameSelectionStep === 'egg' && selectedNestId && (
+                                                    <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
+                                                        <h3 className='text-lg font-semibold text-white mb-2 flex items-center gap-2'>
+                                                            <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
+                                                                1
+                                                            </span>
+                                                            Select Game - {selectedNest?.attributes.name}
+                                                        </h3>
+                                                        <p className='text-sm text-white/60 mb-6 ml-10'>
+                                                            Choose the specific software version for your server
+                                                        </p>
+
+                                                        {availableEggs.length === 0 ? (
+                                                            <div className='text-white/50 text-sm py-4'>
+                                                                No games available for this game type.
+                                                            </div>
+                                                        ) : (
+                                                            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                                                {availableEggs.map((egg) => (
+                                                                    <button
+                                                                        key={egg.attributes.id}
+                                                                        onClick={() => handleEggSelection(egg.attributes.id)}
+                                                                        className={`p-4 rounded-lg border transition-all text-left ${
+                                                                            selectedEggId === egg.attributes.id
+                                                                                ? 'border-brand bg-brand/10'
+                                                                                : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
+                                                                        }`}
+                                                                    >
+                                                                        <div className='font-semibold text-white mb-1'>
+                                                                            {egg.attributes.name}
+                                                                        </div>
+                                                                        {egg.attributes.description && (
+                                                                            <div className='text-sm text-white/60'>
+                                                                                {egg.attributes.description}
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
+                                                <h3 className='text-lg font-semibold text-white mb-2 flex items-center gap-2'>
+                                                    <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
+                                                        1
+                                                    </span>
+                                                    Select Distribution
+                                                </h3>
+                                                <p className='text-sm text-white/60 mb-6 ml-10'>
+                                                    Choose the operating system distribution for your VPS
+                                                </p>
+
+                                                {distributionsLoading ? (
+                                                    <div className='flex items-center justify-center py-12'>
+                                                        <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-brand'></div>
+                                                    </div>
+                                                ) : distributions && distributions.length > 0 ? (
+                                                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                                                        {distributions.map((dist) => (
+                                                            <button
+                                                                key={dist.id}
+                                                                onClick={() => handleDistributionSelection(dist.id)}
+                                                                className={`p-4 rounded-lg border transition-all text-left ${
+                                                                    selectedDistributionId === dist.id
+                                                                        ? 'border-brand bg-brand/10'
+                                                                        : 'border-[#ffffff12] bg-[#ffffff05] hover:border-[#ffffff20]'
+                                                                }`}
+                                                            >
+                                                                <div className='font-semibold text-white mb-1'>{dist.name}</div>
+                                                                {dist.description && (
+                                                                    <div className='text-sm text-white/60'>{dist.description}</div>
+                                                                )}
+                                                                {dist.version && (
+                                                                    <div className='text-xs text-white/40 mt-1'>
+                                                                        Version: {dist.version}
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className='text-white/50 text-sm py-4'>
+                                                        No distributions available. Please contact support.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Step 2: Customization */}
+                                {currentStep === 'customization' && (
                                     <div
                                         className='space-y-6'
                                         style={{
@@ -531,9 +716,9 @@ const HostingCheckoutContainer = () => {
                                         <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
                                             <h3 className='text-lg font-semibold text-white mb-6 flex items-center gap-2'>
                                                 <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
-                                                    1
+                                                    2
                                                 </span>
-                                                Server Configuration
+                                                Customization
                                             </h3>
 
                                             <div className='space-y-4'>
@@ -582,7 +767,7 @@ const HostingCheckoutContainer = () => {
                                     </div>
                                 )}
 
-                                {/* Step 2: Subdomain Selection */}
+                                {/* Step 3: Subdomain Selection */}
                                 {currentStep === 'subdomain' && availableDomains && availableDomains.length > 0 && (
                                     <div
                                         className='space-y-6'
@@ -593,7 +778,7 @@ const HostingCheckoutContainer = () => {
                                         <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
                                             <h3 className='text-lg font-semibold text-white mb-2 flex items-center gap-2'>
                                                 <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
-                                                    2
+                                                    3
                                                 </span>
                                                 Subdomain (Optional)
                                             </h3>
@@ -709,7 +894,7 @@ const HostingCheckoutContainer = () => {
                                     </div>
                                 )}
 
-                                {/* Step 3: Payment */}
+                                {/* Step 4: Payment */}
                                 {currentStep === 'payment' && (
                                     <div
                                         className='space-y-6'
@@ -720,7 +905,7 @@ const HostingCheckoutContainer = () => {
                                         <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
                                             <h3 className='text-lg font-semibold text-white mb-6 flex items-center gap-2'>
                                                 <span className='w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold'>
-                                                    {availableDomains && availableDomains.length > 0 ? '3' : '2'}
+                                                    {availableDomains && availableDomains.length > 0 ? '4' : '3'}
                                                 </span>
                                                 Review & Payment
                                             </h3>
@@ -747,13 +932,23 @@ const HostingCheckoutContainer = () => {
                                                                 </span>
                                                             </div>
                                                         )}
-                                                        {hostingType === 'game-server' && (
+                                                        {hostingType === 'game-server' && selectedNest && selectedEgg && (
                                                             <>
                                                                 <div className='flex justify-between'>
+                                                                    <span>Game Type:</span>
+                                                                    <span>{selectedNest.attributes.name}</span>
+                                                                </div>
+                                                                <div className='flex justify-between'>
                                                                     <span>Game:</span>
-                                                                    <span>{selectedEgg?.attributes.name}</span>
+                                                                    <span>{selectedEgg.attributes.name}</span>
                                                                 </div>
                                                             </>
+                                                        )}
+                                                        {hostingType === 'vps' && selectedDistribution && (
+                                                            <div className='flex justify-between'>
+                                                                <span>Distribution:</span>
+                                                                <span>{selectedDistribution.name}</span>
+                                                            </div>
                                                         )}
                                                         {subdomain.trim() && selectedDomainId && (
                                                             <div className='flex justify-between'>
@@ -802,7 +997,7 @@ const HostingCheckoutContainer = () => {
 
                             {/* Navigation Buttons */}
                             <div className='flex gap-4 mt-6'>
-                                {currentStep !== 'configuration' && (
+                                {currentStep !== 'game-selection' && (
                                     <ActionButton
                                         variant='secondary'
                                         size='lg'
@@ -812,7 +1007,7 @@ const HostingCheckoutContainer = () => {
                                         Previous
                                     </ActionButton>
                                 )}
-                                {currentStep === 'configuration' && (
+                                {currentStep === 'game-selection' && (
                                     <ActionButton
                                         variant='secondary'
                                         size='lg'
@@ -822,15 +1017,40 @@ const HostingCheckoutContainer = () => {
                                         Back to Plans
                                     </ActionButton>
                                 )}
-                                {currentStep !== 'payment' ? (
+                                {currentStep === 'game-selection' && (
                                     <ActionButton
                                         variant='primary'
                                         size='lg'
                                         onClick={handleNextStep}
                                         disabled={
-                                            (currentStep === 'configuration' && !serverName.trim()) ||
-                                            (currentStep === 'subdomain' &&
-                                                subdomain.trim() &&
+                                            (hostingType === 'game-server' &&
+                                                (gameSelectionStep === 'nest' || !selectedNestId || !selectedEggId)) ||
+                                            (hostingType === 'vps' && !selectedDistributionId) ||
+                                            isTransitioning
+                                        }
+                                        className='flex-1'
+                                    >
+                                        Continue
+                                    </ActionButton>
+                                )}
+                                {currentStep === 'customization' && (
+                                    <ActionButton
+                                        variant='primary'
+                                        size='lg'
+                                        onClick={handleNextStep}
+                                        disabled={!serverName.trim() || isTransitioning}
+                                        className='flex-1'
+                                    >
+                                        Continue
+                                    </ActionButton>
+                                )}
+                                {currentStep === 'subdomain' && (
+                                    <ActionButton
+                                        variant='primary'
+                                        size='lg'
+                                        onClick={handleNextStep}
+                                        disabled={
+                                            (subdomain.trim() &&
                                                 (!selectedDomainId ||
                                                     (availabilityStatus && !availabilityStatus.available) ||
                                                     checkingAvailability)) ||
@@ -840,7 +1060,8 @@ const HostingCheckoutContainer = () => {
                                     >
                                         Continue
                                     </ActionButton>
-                                ) : (
+                                )}
+                                {currentStep === 'payment' && (
                                     <ActionButton
                                         variant='primary'
                                         size='lg'
@@ -893,22 +1114,23 @@ const HostingCheckoutContainer = () => {
                                         </div>
                                     )}
 
-                                    {hostingType === 'game-server' ? (
+                                    {hostingType === 'game-server' && selectedNest && selectedEgg && (
                                         <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm'>
                                             <div className='text-white/70'>
                                                 <span className='font-medium text-white'>Game Type:</span>{' '}
-                                                {selectedNest?.attributes.name}
+                                                {selectedNest.attributes.name}
                                             </div>
                                             <div className='text-white/70'>
                                                 <span className='font-medium text-white'>Game:</span>{' '}
-                                                {selectedEgg?.attributes.name}
+                                                {selectedEgg.attributes.name}
                                             </div>
                                         </div>
-                                    ) : (
+                                    )}
+                                    {hostingType === 'vps' && selectedDistribution && (
                                         <div className='pt-4 border-t border-[#ffffff12] space-y-2 text-sm'>
                                             <div className='text-white/70'>
                                                 <span className='font-medium text-white'>Distribution:</span>{' '}
-                                                {selectedDistribution?.name}
+                                                {selectedDistribution.name}
                                             </div>
                                         </div>
                                     )}

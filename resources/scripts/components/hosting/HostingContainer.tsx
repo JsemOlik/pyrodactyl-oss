@@ -111,13 +111,13 @@ const HostingContainer = () => {
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
-                    from: `/hosting/configure?plan=${plan.attributes.id}&type=${hostingType}`,
+                    from: `/hosting/checkout?plan=${plan.attributes.id}&type=${hostingType}`,
                 },
                 replace: false,
             });
             return;
         }
-        navigate(`/hosting/configure?plan=${plan.attributes.id}&type=${hostingType}`);
+        navigate(`/hosting/checkout?plan=${plan.attributes.id}&type=${hostingType}`);
     };
 
     const handleCustomPlanSelect = () => {
@@ -134,14 +134,14 @@ const HostingContainer = () => {
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
-                    from: `/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
+                    from: `/hosting/checkout?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
                 },
                 replace: false,
             });
             return;
         }
         navigate(
-            `/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
+            `/hosting/checkout?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
         );
     };
 
