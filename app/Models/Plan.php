@@ -8,6 +8,8 @@ namespace Pterodactyl\Models;
  * @property string|null $description
  * @property string|null $stripe_price_id
  * @property float $price
+ * @property float|null $sales_percentage
+ * @property float|null $first_month_sales_percentage
  * @property string $currency
  * @property string $interval
  * @property int|null $memory
@@ -18,6 +20,7 @@ namespace Pterodactyl\Models;
  * @property bool $is_custom
  * @property bool $is_active
  * @property int $sort_order
+ * @property string|null $type
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Subscription[] $subscriptions
@@ -43,6 +46,8 @@ class Plan extends Model
         'description',
         'stripe_price_id',
         'price',
+        'sales_percentage',
+        'first_month_sales_percentage',
         'currency',
         'interval',
         'memory',
@@ -52,6 +57,7 @@ class Plan extends Model
         'swap',
         'is_custom',
         'is_active',
+        'is_most_popular',
         'sort_order',
         'type',
     ];
@@ -61,6 +67,8 @@ class Plan extends Model
      */
     protected $casts = [
         'price' => 'decimal:2',
+        'sales_percentage' => 'decimal:2',
+        'first_month_sales_percentage' => 'decimal:2',
         'memory' => 'integer',
         'disk' => 'integer',
         'cpu' => 'integer',
@@ -68,6 +76,7 @@ class Plan extends Model
         'swap' => 'integer',
         'is_custom' => 'boolean',
         'is_active' => 'boolean',
+        'is_most_popular' => 'boolean',
         'sort_order' => 'integer',
     ];
 

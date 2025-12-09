@@ -29,26 +29,63 @@ class ServerObserver
             return;
         }
 
-        // Get default domain
-        $domain = Domain::getDefault();
+        // Check if subdomain info was provided in subscription metadata
+        $subscription = $server->subscription;
+        $userProvidedSubdomain = null;
+        $userProvidedDomainId = null;
+        
+        if ($subscription && $subscription->metadata) {
+            $metadata = is_string($subscription->metadata) ? json_decode($subscription->metadata, true) : $subscription->metadata;
+            if (is_array($metadata)) {
+                $userProvidedSubdomain = $metadata['subdomain'] ?? null;
+                $userProvidedDomainId = $metadata['domain_id'] ?? null;
+            }
+        }
+
+        // Get domain - use user-provided domain if available, otherwise use default
+        $domain = null;
+        if ($userProvidedDomainId) {
+            $domain = Domain::where('id', $userProvidedDomainId)
+                ->where('is_active', true)
+                ->first();
+        }
+        
+        if (!$domain) {
+            $domain = Domain::getDefault();
+        }
+        
         if (!$domain) {
             Log::warning("No default domain available for subdomain creation. Please set a default domain in the admin panel.");
             return;
         }
 
         if (!$domain->is_active) {
-            Log::warning("Default domain {$domain->name} is not active");
+            Log::warning("Domain {$domain->name} is not active");
             return;
         }
 
-        // Get existing subdomains for uniqueness check
-        $existingSubdomains = ServerSubdomain::where('domain_id', $domain->id)
-            ->where('is_active', true)
-            ->pluck('subdomain')
-            ->toArray();
+        // Use user-provided subdomain if available, otherwise generate one
+        $subdomain = null;
+        if ($userProvidedSubdomain) {
+            $subdomain = strtolower(trim($userProvidedSubdomain));
+            // Validate the user-provided subdomain
+            $availabilityResult = $this->subdomainService->checkSubdomainAvailability($subdomain, $domain);
+            if (!$availabilityResult['available']) {
+                Log::warning("User-provided subdomain '{$subdomain}' is not available: {$availabilityResult['message']}. Generating new one.");
+                $subdomain = null; // Fall back to auto-generation
+            }
+        }
+        
+        if (!$subdomain) {
+            // Get existing subdomains for uniqueness check
+            $existingSubdomains = ServerSubdomain::where('domain_id', $domain->id)
+                ->where('is_active', true)
+                ->pluck('subdomain')
+                ->toArray();
 
-        // Generate unique subdomain
-        $subdomain = $this->subdomainGenerator->generateUnique($existingSubdomains);
+            // Generate unique subdomain
+            $subdomain = $this->subdomainGenerator->generateUnique($existingSubdomains);
+        }
 
         try {
             $this->subdomainService->createSubdomain($server, $domain, $subdomain);

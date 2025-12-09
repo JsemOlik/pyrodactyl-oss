@@ -14,6 +14,10 @@ use Laravel\Cashier\Subscription as CashierSubscription;
  * @property int|null $quantity
  * @property \Illuminate\Support\Carbon|null $trial_ends_at
  * @property \Illuminate\Support\Carbon|null $ends_at
+ * @property \Illuminate\Support\Carbon|null $next_billing_at
+ * @property string|null $billing_interval
+ * @property float|null $billing_amount
+ * @property bool $is_credits_based
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  * @property \Pterodactyl\Models\User $user
@@ -22,6 +26,7 @@ use Laravel\Cashier\Subscription as CashierSubscription;
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Vps[] $vpsServers
  * @property int|null $vps_servers_count
  * @property \Pterodactyl\Models\Plan|null $plan
+ * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\CreditTransaction[] $creditTransactions
  */
 class Subscription extends CashierSubscription
 {
@@ -29,6 +34,16 @@ class Subscription extends CashierSubscription
      * The table associated with the model.
      */
     protected $table = 'subscriptions';
+
+    /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'metadata' => 'array',
+        'ends_at' => 'datetime',
+        'next_billing_at' => 'datetime',
+        'trial_ends_at' => 'datetime',
+    ];
 
     /**
      * Get the user that owns the subscription.
@@ -60,6 +75,47 @@ class Subscription extends CashierSubscription
     public function plan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Plan::class, 'stripe_price', 'stripe_price_id');
+    }
+
+    /**
+     * Get all credit transactions for this subscription.
+     */
+    public function creditTransactions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CreditTransaction::class);
+    }
+
+    /**
+     * Check if this subscription is due for billing.
+     */
+    public function isDueForBilling(): bool
+    {
+        if (!$this->is_credits_based || !$this->next_billing_at) {
+            return false;
+        }
+
+        return $this->next_billing_at->isPast() && $this->stripe_status === 'active';
+    }
+
+    /**
+     * Calculate the next billing date based on the billing interval.
+     */
+    public function calculateNextBillingDate(): ?\Carbon\Carbon
+    {
+        if (!$this->billing_interval) {
+            return null;
+        }
+
+        $now = now();
+        $months = match($this->billing_interval) {
+            'month' => 1,
+            'quarter' => 3,
+            'half-year' => 6,
+            'year' => 12,
+            default => 1,
+        };
+
+        return $now->copy()->addMonths($months);
     }
 
     /**

@@ -27,10 +27,15 @@ class InvoiceController extends ClientApiController
         $stripeCustomerId = $user->stripe_id;
         
         if (!$stripeCustomerId) {
-            // Try to get customer ID from subscriptions
-            $subscription = $user->subscriptions()->first();
-            if ($subscription) {
+            // Try to get customer ID from subscriptions (skip credits-based subscriptions)
+            $subscription = $user->subscriptions()
+                ->where('is_credits_based', false)
+                ->whereNotNull('stripe_id')
+                ->where('stripe_id', 'not like', 'credits_%')
+                ->first();
+            if ($subscription && $subscription->stripe_id) {
                 try {
+                    \Stripe\Stripe::setApiKey(config('cashier.secret'));
                     $stripeSubscription = \Stripe\Subscription::retrieve($subscription->stripe_id);
                     $stripeCustomerId = $stripeSubscription->customer;
                     

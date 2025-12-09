@@ -38,6 +38,7 @@
                             <th>Email</th>
                             <th>Username</th>
                             <th class="text-center">2FA</th>
+                            <th class="text-center">Credits</th>
                             <th class="text-center"><span data-toggle="tooltip" data-placement="top" title="Servers that this user is marked as the owner of.">Servers Owned</span></th>
                             <th class="text-center"><span data-toggle="tooltip" data-placement="top" title="Servers that this user can access because they are marked as a subuser.">Can Access</span></th>
                             <th></th>
@@ -55,6 +56,9 @@
                                     @else
                                         <i class="fa fa-unlock text-red"></i>
                                     @endif
+                                </td>
+                                <td class="text-center">
+                                    <code>{{ number_format($user->credits_balance ?? 0, 2) }}</code>
                                 </td>
                                 <td class="text-center">
                                     <a href="{{ route('admin.servers', ['filter[owner_id]' => $user->id]) }}">{{ $user->servers_count }}</a>

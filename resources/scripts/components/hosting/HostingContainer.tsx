@@ -80,8 +80,20 @@ const HostingContainer = () => {
         return `${(memory / 1024).toFixed(0)} GB`;
     };
 
-    const getFirstMonthPrice = (price: number): number => {
-        return Math.round(price * 0.5);
+    const getFirstMonthPrice = (price: number, plan?: HostingPlan): number => {
+        if (plan?.attributes.first_month_sales_percentage && plan.attributes.first_month_sales_percentage > 0) {
+            const discount = plan.attributes.first_month_sales_percentage / 100;
+            return Math.round(price * (1 - discount) * 100) / 100;
+        }
+        // No discount - return full price
+        return price;
+    };
+
+    const getFirstMonthDiscount = (plan?: HostingPlan): number | null => {
+        if (plan?.attributes.first_month_sales_percentage && plan.attributes.first_month_sales_percentage > 0) {
+            return plan.attributes.first_month_sales_percentage;
+        }
+        return null;
     };
 
     const getVCores = (cpu: number | null): number => {
@@ -99,13 +111,13 @@ const HostingContainer = () => {
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
-                    from: `/hosting/configure?plan=${plan.attributes.id}&type=${hostingType}`,
+                    from: `/hosting/checkout?plan=${plan.attributes.id}&type=${hostingType}`,
                 },
                 replace: false,
             });
             return;
         }
-        navigate(`/hosting/configure?plan=${plan.attributes.id}&type=${hostingType}`);
+        navigate(`/hosting/checkout?plan=${plan.attributes.id}&type=${hostingType}`);
     };
 
     const handleCustomPlanSelect = () => {
@@ -122,14 +134,14 @@ const HostingContainer = () => {
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
-                    from: `/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
+                    from: `/hosting/checkout?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
                 },
                 replace: false,
             });
             return;
         }
         navigate(
-            `/hosting/configure?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
+            `/hosting/checkout?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
         );
     };
 
@@ -510,8 +522,9 @@ const HostingContainer = () => {
                                     {plans.map((plan, index) => {
                                         const attrs = plan.attributes;
                                         const monthlyPrice = attrs.pricing.monthly;
-                                        const firstMonthPrice = getFirstMonthPrice(monthlyPrice);
-                                        const isMostPopular = index === 2;
+                                        const firstMonthPrice = getFirstMonthPrice(monthlyPrice, plan);
+                                        const firstMonthDiscount = getFirstMonthDiscount(plan);
+                                        const isMostPopular = attrs.is_most_popular || false;
                                         const vCores = getVCores(attrs.cpu);
 
                                         return (
@@ -536,19 +549,33 @@ const HostingContainer = () => {
                                                 <h3 className='text-2xl font-bold text-white mb-4'>{attrs.name}</h3>
 
                                                 <div className='mb-6'>
-                                                    <div className='flex items-baseline gap-2 mb-1'>
-                                                        <span className='text-sm text-white/70 line-through'>
-                                                            {formatPrice(monthlyPrice)}
-                                                        </span>
-                                                        <span className='text-xl font-bold text-white'>
-                                                            {formatPrice(firstMonthPrice)}
-                                                        </span>
-                                                    </div>
-                                                    <div className='text-xs text-white/50 mb-1'>FIRST MONTH</div>
-                                                    <div className='text-sm text-white/70'>
-                                                        Then {formatPrice(monthlyPrice)}
-                                                        /month
-                                                    </div>
+                                                    {firstMonthDiscount ? (
+                                                        <>
+                                                            <div className='flex items-baseline gap-2 mb-1'>
+                                                                <span className='text-sm text-white/70 line-through'>
+                                                                    {formatPrice(monthlyPrice)}
+                                                                </span>
+                                                                <span className='text-xl font-bold text-white'>
+                                                                    {formatPrice(firstMonthPrice)}
+                                                                </span>
+                                                            </div>
+                                                            <div className='text-xs text-white/50 mb-1'>
+                                                                FIRST MONTH ({firstMonthDiscount.toFixed(0)}% off)
+                                                            </div>
+                                                            <div className='text-sm text-white/70'>
+                                                                Then {formatPrice(monthlyPrice)}/month
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className='flex items-baseline gap-2 mb-1'>
+                                                                <span className='text-xl font-bold text-white'>
+                                                                    {formatPrice(monthlyPrice)}
+                                                                </span>
+                                                            </div>
+                                                            <div className='text-xs text-white/50 mb-1'>PER MONTH</div>
+                                                        </>
+                                                    )}
                                                 </div>
 
                                                 <div className='space-y-2 mb-6 flex-1'>
@@ -666,28 +693,14 @@ const HostingContainer = () => {
                                         {customPlanCalculation && (
                                             <div className='mb-6'>
                                                 <div className='flex items-baseline gap-2 mb-1'>
-                                                    <span className='text-sm text-white/70 line-through'>
+                                                    <span className='text-xl font-bold text-white'>
                                                         {formatPrice(
                                                             customPlanCalculation.price,
                                                             customPlanCalculation.currency,
                                                         )}
                                                     </span>
-                                                    <span className='text-xl font-bold text-white'>
-                                                        {formatPrice(
-                                                            getFirstMonthPrice(customPlanCalculation.price),
-                                                            customPlanCalculation.currency,
-                                                        )}
-                                                    </span>
                                                 </div>
-                                                <div className='text-xs text-white/50 mb-1'>FIRST MONTH</div>
-                                                <div className='text-sm text-white/70'>
-                                                    Then{' '}
-                                                    {formatPrice(
-                                                        customPlanCalculation.price,
-                                                        customPlanCalculation.currency,
-                                                    )}
-                                                    /month
-                                                </div>
+                                                <div className='text-xs text-white/50 mb-1'>PER MONTH</div>
                                             </div>
                                         )}
 

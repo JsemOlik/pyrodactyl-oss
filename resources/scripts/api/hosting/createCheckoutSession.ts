@@ -11,6 +11,8 @@ export interface CheckoutSessionData {
     distribution?: string;
     server_name: string;
     server_description?: string;
+    subdomain?: string;
+    domain_id?: number;
 }
 
 export interface CheckoutSessionResponse {

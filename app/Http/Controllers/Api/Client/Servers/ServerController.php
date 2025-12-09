@@ -76,9 +76,10 @@ class ServerController extends ClientApiController
             // Get Stripe customer ID - prefer user's stripe_id, but get from subscription if needed
             $stripeCustomerId = $user->stripe_id;
             
-            if (!$stripeCustomerId) {
-                // Try to get customer ID from the subscription
+            if (!$stripeCustomerId && $subscription->stripe_id && !$subscription->is_credits_based && !str_starts_with($subscription->stripe_id, 'credits_')) {
+                // Try to get customer ID from the subscription (skip credits-based subscriptions)
                 try {
+                    \Stripe\Stripe::setApiKey(config('cashier.secret'));
                     $stripeSubscription = \Stripe\Subscription::retrieve($subscription->stripe_id);
                     $stripeCustomerId = $stripeSubscription->customer;
                     

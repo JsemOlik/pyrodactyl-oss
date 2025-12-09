@@ -26,7 +26,10 @@ class SubscriptionController extends ClientApiController
     {
         $user = $request->user();
         
+        // Only get subscriptions that have at least one server
+        // This filters out subscriptions where the server was deleted
         $subscriptions = Subscription::where('user_id', $user->id)
+            ->whereHas('servers')
             ->with(['plan', 'servers'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -82,12 +85,22 @@ class SubscriptionController extends ClientApiController
 
         $immediate = $request->input('immediate', false);
 
+        $stripeApiAvailable = true;
+        $stripeError = null;
+
+        // Try to cancel via Stripe API
         try {
             $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionModel->stripe_id);
             
             if ($immediate) {
                 // Cancel immediately
                 $stripeSubscription->cancel();
+                
+                // Update local subscription immediately
+                $subscriptionModel->update([
+                    'stripe_status' => 'canceled',
+                    'ends_at' => now(),
+                ]);
                 
                 // Delete the associated server(s)
                 $servers = $subscriptionModel->servers;
@@ -109,9 +122,6 @@ class SubscriptionController extends ClientApiController
                         // Continue with cancellation even if server deletion fails
                     }
                 }
-                
-                // Update local subscription
-                $subscriptionModel->refresh();
 
                 Log::info('Subscription canceled immediately', [
                     'subscription_id' => $subscriptionModel->id,
@@ -127,32 +137,93 @@ class SubscriptionController extends ClientApiController
                 $stripeSubscription->cancel_at_period_end = true;
                 $stripeSubscription->save();
 
-                // Update local subscription
-                $subscriptionModel->refresh();
+                // Update local subscription with expected end date
+                $endsAt = $stripeSubscription->current_period_end ? 
+                    \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
+                    null;
+                
+                $subscriptionModel->update([
+                    'ends_at' => $endsAt,
+                ]);
 
                 Log::info('Subscription canceled at period end', [
                     'subscription_id' => $subscriptionModel->id,
                     'stripe_id' => $subscriptionModel->stripe_id,
                     'user_id' => $user->id,
+                    'ends_at' => $endsAt,
                 ]);
 
                 return response()->json([
                     'message' => 'Subscription will be canceled at the end of the billing period.',
-                    'ends_at' => $subscriptionModel->ends_at ? $subscriptionModel->ends_at->toIso8601String() : null,
+                    'ends_at' => $endsAt ? $endsAt->toIso8601String() : null,
                 ]);
             }
         } catch (ApiErrorException $e) {
-            Log::error('Failed to cancel subscription', [
+            $stripeApiAvailable = false;
+            $stripeError = $e->getMessage();
+            
+            Log::warning('Stripe API unavailable during cancellation, updating database only', [
+                'subscription_id' => $subscriptionModel->id,
+                'immediate' => $immediate,
+                'error' => $stripeError,
+            ]);
+            
+            // If Stripe is down, still update our database to reflect the cancellation request
+            // The webhook will sync the actual status when Stripe comes back online
+            if ($immediate) {
+                // Mark as canceled in database, but note that Stripe sync is pending
+                $subscriptionModel->update([
+                    'stripe_status' => 'canceled',
+                    'ends_at' => now(),
+                ]);
+                
+                // Delete servers locally
+                $servers = $subscriptionModel->servers;
+                foreach ($servers as $server) {
+                    try {
+                        $deletionService = app(\Pterodactyl\Services\Servers\ServerDeletionService::class);
+                        $deletionService->handle($server);
+                        Log::info('Server deleted during cancellation (Stripe unavailable)', [
+                            'server_id' => $server->id,
+                            'subscription_id' => $subscriptionModel->id,
+                        ]);
+                    } catch (\Exception $serverError) {
+                        Log::error('Failed to delete server during cancellation', [
+                            'server_id' => $server->id,
+                            'error' => $serverError->getMessage(),
+                        ]);
+                    }
+                }
+                
+                return response()->json([
+                    'message' => 'Subscription cancellation has been processed. The Stripe API is currently unavailable, but your subscription has been canceled in our system. The cancellation will be synced with Stripe when their service is restored.',
+                ]);
+            } else {
+                // For period-end cancellation, calculate next billing date
+                $endsAt = $subscriptionModel->next_billing_at ?? now()->addMonth();
+                
+                $subscriptionModel->update([
+                    'ends_at' => $endsAt,
+                ]);
+                
+                return response()->json([
+                    'message' => 'Subscription cancellation has been scheduled. The Stripe API is currently unavailable, but your cancellation request has been recorded. It will be synced with Stripe when their service is restored.',
+                    'ends_at' => $endsAt->toIso8601String(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Unexpected error during subscription cancellation', [
                 'subscription_id' => $subscriptionModel->id,
                 'immediate' => $immediate,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'errors' => [[
-                    'code' => 'StripeApiError',
+                    'code' => 'CancellationError',
                     'status' => '500',
-                    'detail' => 'Failed to cancel subscription. Please try again or contact support.',
+                    'detail' => 'An unexpected error occurred while canceling the subscription. Please try again or contact support.',
                 ]],
             ], 500);
         }
@@ -181,13 +252,16 @@ class SubscriptionController extends ClientApiController
         }
 
         try {
-            // Resume the subscription
+            // Resume the subscription via Stripe API
             $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionModel->stripe_id);
             $stripeSubscription->cancel_at_period_end = false;
             $stripeSubscription->save();
 
             // Update local subscription
-            $subscriptionModel->refresh();
+            $subscriptionModel->update([
+                'ends_at' => null,
+                'stripe_status' => 'active',
+            ]);
 
             Log::info('Subscription resumed', [
                 'subscription_id' => $subscriptionModel->id,
@@ -199,16 +273,32 @@ class SubscriptionController extends ClientApiController
                 'message' => 'Subscription has been resumed.',
             ]);
         } catch (ApiErrorException $e) {
-            Log::error('Failed to resume subscription', [
+            Log::warning('Stripe API unavailable during resume, updating database only', [
+                'subscription_id' => $subscriptionModel->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            // If Stripe is down, still update our database
+            // The webhook will sync the actual status when Stripe comes back online
+            $subscriptionModel->update([
+                'ends_at' => null,
+                'stripe_status' => 'active',
+            ]);
+            
+            return response()->json([
+                'message' => 'Subscription resumption has been processed. The Stripe API is currently unavailable, but your subscription has been resumed in our system. The resumption will be synced with Stripe when their service is restored.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Unexpected error during subscription resume', [
                 'subscription_id' => $subscriptionModel->id,
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'errors' => [[
-                    'code' => 'StripeApiError',
+                    'code' => 'ResumeError',
                     'status' => '500',
-                    'detail' => 'Failed to resume subscription. Please try again or contact support.',
+                    'detail' => 'An unexpected error occurred while resuming the subscription. Please try again or contact support.',
                 ]],
             ], 500);
         }
@@ -226,12 +316,24 @@ class SubscriptionController extends ClientApiController
             ->firstOrFail();
 
         try {
+            // Credits-based subscriptions don't use Stripe billing portal
+            if ($subscriptionModel->is_credits_based) {
+                return response()->json([
+                    'errors' => [[
+                        'code' => 'CreditsBasedSubscription',
+                        'status' => '400',
+                        'detail' => 'This subscription is credits-based and does not use Stripe billing portal. Please manage it from your billing dashboard.',
+                    ]],
+                ], 400);
+            }
+
             // Get Stripe customer ID - prefer user's stripe_id, but get from subscription if needed
             $stripeCustomerId = $user->stripe_id;
             
-            if (!$stripeCustomerId) {
+            if (!$stripeCustomerId && $subscriptionModel->stripe_id && !str_starts_with($subscriptionModel->stripe_id, 'credits_')) {
                 // Try to get customer ID from the subscription
                 try {
+                    \Stripe\Stripe::setApiKey(config('cashier.secret'));
                     $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionModel->stripe_id);
                     $stripeCustomerId = $stripeSubscription->customer;
                     

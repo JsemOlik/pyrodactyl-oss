@@ -7,6 +7,8 @@ export interface HostingPlan {
         name: string;
         description: string | null;
         price: number;
+        sales_percentage: number | null;
+        first_month_sales_percentage: number | null;
         currency: string;
         interval: string;
         memory: number | null;
@@ -15,6 +17,7 @@ export interface HostingPlan {
         io: number | null;
         swap: number | null;
         is_custom: boolean;
+        is_most_popular: boolean;
         sort_order: number;
         pricing: {
             monthly: number;

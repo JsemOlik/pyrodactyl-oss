@@ -4,20 +4,27 @@ namespace Pterodactyl\Http\Controllers\Api\Client\Hosting;
 
 use Stripe\Stripe;
 use Stripe\Price;
+use Stripe\Coupon;
 use Stripe\Checkout\Session;
 use Stripe\Exception\ApiErrorException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Pterodactyl\Models\Plan;
 use Pterodactyl\Models\User;
+use Pterodactyl\Models\Subscription;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Http\Requests\Api\Client\Hosting\CheckoutRequest;
 use Pterodactyl\Services\Hosting\StripePriceService;
+use Pterodactyl\Services\Hosting\ServerProvisioningService;
+use Pterodactyl\Services\Credits\CreditTransactionService;
+use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
     public function __construct(
-        private StripePriceService $stripePriceService
+        private StripePriceService $stripePriceService,
+        private ServerProvisioningService $serverProvisioningService,
+        private CreditTransactionService $creditTransactionService
     ) {
         Stripe::setApiKey(config('cashier.secret'));
     }
@@ -44,25 +51,27 @@ class CheckoutController extends Controller
             ], 403);
         }
 
-        try {
-            // Get or create Stripe customer
-            $stripeCustomer = $this->getOrCreateStripeCustomer($user);
+        // Check if credits are enabled
+        $creditsEnabled = config('billing.enable_credits', false);
 
+        try {
             // Determine plan and pricing
             $plan = null;
-            $stripePriceId = null;
             $interval = 'month';
             $priceAmount = 0;
 
             if ($request->has('plan_id')) {
                 $plan = Plan::findOrFail($request->input('plan_id'));
                 $interval = $plan->interval;
-                
-                // Get or create Stripe Price for this plan
-                $stripePriceId = $this->stripePriceService->getOrCreatePriceForPlan($plan);
                 $priceAmount = $plan->price;
+                
+                // Apply first month discount if available
+                if ($plan->first_month_sales_percentage && $plan->first_month_sales_percentage > 0) {
+                    $discount = $plan->first_month_sales_percentage / 100;
+                    $priceAmount = round($priceAmount * (1 - $discount), 2);
+                }
             } else {
-                // Custom plan - calculate price and create Stripe Price on-the-fly
+                // Custom plan - calculate price
                 $memory = $request->input('memory');
                 $interval = $request->input('interval', 'month');
                 
@@ -86,48 +95,270 @@ class CheckoutController extends Controller
                 };
                 
                 $priceAmount = round($pricePerMonth * ($intervalMonths - $discountMonths), 2);
-                
-                // Create Stripe Price for custom plan
-                $stripePriceId = $this->stripePriceService->createPriceForCustomPlan(
-                    $priceAmount,
-                    $interval,
-                    $memory
-                );
             }
 
             // Determine type from request or plan
             $type = $request->input('type', $plan?->type ?? 'game-server');
+
+            // If credits are enabled, process with credits instead of Stripe
+            if ($creditsEnabled) {
+                // Refresh user to get latest credits balance
+                $user->refresh();
+                
+                // Check if user has enough credits
+                if ($user->credits_balance < $priceAmount) {
+                    return response()->json([
+                        'errors' => [[
+                            'code' => 'InsufficientCredits',
+                            'status' => '402',
+                            'detail' => 'You do not have enough credits to purchase this server. Please purchase more credits first.',
+                        ]],
+                    ], 402);
+                }
+
+                // Build metadata for provisioning
+                $metadata = [
+                    'user_id' => (string) $user->id,
+                    'type' => $type,
+                    'server_name' => $request->input('server_name'),
+                    'server_description' => $request->input('server_description', ''),
+                ];
+                
+                // Add subdomain info if provided
+                if ($request->has('subdomain') && $request->has('domain_id')) {
+                    $metadata['subdomain'] = $request->input('subdomain');
+                    $metadata['domain_id'] = (string) $request->input('domain_id');
+                }
+
+                if ($type === 'vps') {
+                    $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
+                } else {
+                    $metadata['nest_id'] = (string) $request->input('nest_id');
+                    $metadata['egg_id'] = (string) $request->input('egg_id');
+                }
+
+                if ($plan) {
+                    $metadata['plan_id'] = (string) $plan->id;
+                } else {
+                    $metadata['custom'] = 'true';
+                    $metadata['memory'] = (string) $request->input('memory');
+                    $metadata['interval'] = $interval;
+                }
+
+                // Calculate next billing date based on interval
+                $nextBillingAt = match($interval) {
+                    'month' => now()->addMonth(),
+                    'quarter' => now()->addMonths(3),
+                    'half-year' => now()->addMonths(6),
+                    'year' => now()->addYear(),
+                    default => now()->addMonth(),
+                };
+
+                // Create subscription first (before any operations that might fail)
+                $subscription = null;
+                try {
+                    // Prepare subscription metadata
+                    $subscriptionMetadata = [];
+                    if ($request->has('subdomain') && $request->has('domain_id')) {
+                        $subscriptionMetadata['subdomain'] = $request->input('subdomain');
+                        $subscriptionMetadata['domain_id'] = (int) $request->input('domain_id');
+                    }
+                    
+                    $subscription = \Pterodactyl\Models\Subscription::create([
+                        'user_id' => $user->id,
+                        'type' => 'default',
+                        'stripe_id' => 'credits_' . uniqid(),
+                        'stripe_status' => 'active',
+                        'stripe_price' => $plan?->stripe_price_id,
+                        'quantity' => 1,
+                        'trial_ends_at' => null,
+                        'ends_at' => null,
+                        'next_billing_at' => $nextBillingAt,
+                        'billing_interval' => $interval,
+                        'billing_amount' => $plan ? $plan->price : $priceAmount, // Store full price for recurring billing
+                        'is_credits_based' => true,
+                        'metadata' => !empty($subscriptionMetadata) ? $subscriptionMetadata : null,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to create subscription for credits purchase', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    
+                    return response()->json([
+                        'errors' => [[
+                            'code' => 'SubscriptionCreationFailed',
+                            'status' => '500',
+                            'detail' => 'Failed to create subscription. Please try again later.',
+                        ]],
+                    ], 500);
+                }
+
+                // Deduct credits and provision server
+                // Note: We don't wrap this in a transaction because ServerCreationService
+                // handles its own transaction. We'll handle rollback manually if needed.
+                try {
+                    // Deduct credits using transaction service
+                    $this->creditTransactionService->recordDeduction(
+                        $user,
+                        $priceAmount,
+                        "Server purchase - {$request->input('server_name')}",
+                        $subscription->id,
+                        [
+                            'plan_id' => $plan?->id,
+                            'server_type' => $type,
+                            'interval' => $interval,
+                        ]
+                    );
+                    
+                    // Refresh user to ensure we have the latest balance
+                    $user->refresh();
+
+                    // Create a mock Stripe session object for provisioning
+                    $mockSession = (object) [
+                        'id' => 'credits_' . uniqid(),
+                        'subscription' => $subscription->stripe_id,
+                        'metadata' => $metadata,
+                    ];
+
+                    // Provision server (this handles its own transaction and Wings call)
+                    // The server will be fully committed before Wings is called
+                    $server = $this->serverProvisioningService->provisionServer($mockSession);
+                    
+                    Log::info('Server purchased with credits', [
+                        'user_id' => $user->id,
+                        'server_id' => $server->id,
+                        'credits_deducted' => $priceAmount,
+                        'remaining_credits' => $user->fresh()->credits_balance,
+                    ]);
+
+                    return response()->json([
+                        'object' => 'checkout_session',
+                        'data' => [
+                            'checkout_url' => config('app.url') . '/server/' . $server->uuid,
+                            'session_id' => $mockSession->id,
+                            'server_uuid' => $server->uuid,
+                        ],
+                    ]);
+                } catch (\Exception $e) {
+                    // Refund credits on error using transaction service
+                    $this->creditTransactionService->recordRefund(
+                        $user,
+                        $priceAmount,
+                        "Refund for failed server creation - {$request->input('server_name')}",
+                        $subscription->id,
+                        ['error' => $e->getMessage()]
+                    );
+                    
+                    // Delete the subscription if server creation failed
+                    try {
+                        $subscription->delete();
+                    } catch (\Exception $subException) {
+                        Log::warning('Failed to delete subscription after server creation failure', [
+                            'subscription_id' => $subscription->id,
+                            'error' => $subException->getMessage(),
+                        ]);
+                    }
+                    
+                    Log::error('Failed to provision server after credit deduction, credits refunded', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                        'credits_refunded' => $priceAmount,
+                    ]);
+                    
+                    // Return a user-friendly error message
+                    return response()->json([
+                        'errors' => [[
+                            'code' => 'ServerProvisioningFailed',
+                            'status' => '500',
+                            'detail' => 'Failed to provision server. Your credits have been refunded. Please try again later or contact support if the issue persists.',
+                        ]],
+                    ], 500);
+                }
+            }
+
+            // Credits disabled - use Stripe checkout flow
+            // Get or create Stripe customer
+            $stripeCustomer = $this->getOrCreateStripeCustomer($user);
+
+            // Calculate actual price to charge (with first month discount if applicable)
+            $actualPriceAmount = $priceAmount;
+            if ($plan && $plan->first_month_sales_percentage && $plan->first_month_sales_percentage > 0) {
+                $discount = $plan->first_month_sales_percentage / 100;
+                $actualPriceAmount = round($plan->price * (1 - $discount), 2);
+            }
+
+            $stripePriceId = null;
+            if ($plan) {
+                // Get or create Stripe Price for this plan (use full price for recurring)
+                $stripePriceId = $this->stripePriceService->getOrCreatePriceForPlan($plan);
+            } else {
+                // Create Stripe Price for custom plan
+                $stripePriceId = $this->stripePriceService->createPriceForCustomPlan(
+                    $priceAmount, // Use full price for recurring
+                    $interval,
+                    $request->input('memory')
+                );
+            }
+            
+            // Create coupon for first month discount if applicable
+            $couponId = null;
+            if ($plan && $plan->first_month_sales_percentage && $plan->first_month_sales_percentage > 0) {
+                try {
+                    $coupon = Coupon::create([
+                        'percent_off' => $plan->first_month_sales_percentage,
+                        'duration' => 'once', // Only applies to first invoice
+                        'name' => 'First Month Discount',
+                        'metadata' => [
+                            'plan_id' => (string) $plan->id,
+                            'type' => 'first_month_discount',
+                        ],
+                    ]);
+                    $couponId = $coupon->id;
+                } catch (ApiErrorException $e) {
+                    Log::warning('Failed to create Stripe coupon for first month discount', [
+                        'plan_id' => $plan->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Continue without coupon - user will be charged full price
+                }
+            }
             
             // Build metadata for webhook handler
             $metadata = [
-                'user_id' => $user->id,
+                'user_id' => (string) $user->id,
                 'type' => $type,
                 'server_name' => $request->input('server_name'),
                 'server_description' => $request->input('server_description', ''),
             ];
+            
+            // Add subdomain info if provided
+            if ($request->has('subdomain') && $request->has('domain_id')) {
+                $metadata['subdomain'] = $request->input('subdomain');
+                $metadata['domain_id'] = (string) $request->input('domain_id');
+            }
 
             // Add type-specific metadata
             if ($type === 'vps') {
                 $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
             } else {
-                $metadata['nest_id'] = $request->input('nest_id');
-                $metadata['egg_id'] = $request->input('egg_id');
+                $metadata['nest_id'] = (string) $request->input('nest_id');
+                $metadata['egg_id'] = (string) $request->input('egg_id');
             }
 
             if ($plan) {
-                $metadata['plan_id'] = $plan->id;
+                $metadata['plan_id'] = (string) $plan->id;
             } else {
                 $metadata['custom'] = 'true';
-                $metadata['memory'] = $request->input('memory');
+                $metadata['memory'] = (string) $request->input('memory');
                 $metadata['interval'] = $interval;
             }
 
             // Get success and cancel URLs
             $cancelUrl = config('app.url') . '/hosting/checkout?' . http_build_query($request->only(['plan_id', 'custom', 'memory', 'interval', 'nest_id', 'egg_id']));
 
-            // Create Stripe Checkout Session
-            // Stripe will replace {CHECKOUT_SESSION_ID} with the actual session ID in the success_url
-            $checkoutSession = Session::create([
+            // Build checkout session parameters
+            $sessionParams = [
                 'customer' => $stripeCustomer->id,
                 'payment_method_types' => ['card'],
                 'line_items' => [[
@@ -142,7 +373,17 @@ class CheckoutController extends Controller
                     'metadata' => $metadata,
                 ],
                 'allow_promotion_codes' => true,
-            ]);
+            ];
+            
+            // Add coupon if we have a first month discount
+            if ($couponId) {
+                $sessionParams['discounts'] = [[
+                    'coupon' => $couponId,
+                ]];
+            }
+
+            // Create Stripe Checkout Session
+            $checkoutSession = Session::create($sessionParams);
 
             Log::info('Checkout session created', [
                 'session_id' => $checkoutSession->id,

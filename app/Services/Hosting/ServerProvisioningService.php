@@ -147,8 +147,50 @@ class ServerProvisioningService
     {
         $subscriptionId = $stripeSession->subscription;
         
-        if (!$subscriptionId) {
-            throw new \Exception('Checkout session does not have a subscription ID');
+        // Handle credits-based purchases (no Stripe subscription)
+        if (!$subscriptionId || str_starts_with($stripeSession->id ?? '', 'credits_') || str_starts_with($subscriptionId ?? '', 'credits_')) {
+            // Check if subscription already exists (created before calling provisionServer)
+            if ($subscriptionId && str_starts_with($subscriptionId, 'credits_')) {
+                $subscription = Subscription::where('stripe_id', $subscriptionId)->first();
+                if ($subscription) {
+                    return $subscription;
+                }
+            }
+            
+            $metadata = $this->convertMetadataToArray($stripeSession->metadata ?? []);
+            $plan = null;
+            
+            if (!empty($metadata['plan_id'])) {
+                $plan = Plan::find($metadata['plan_id']);
+            }
+
+            // Create a local-only subscription for credits-based purchases
+            $creditsSubscriptionId = $subscriptionId && str_starts_with($subscriptionId, 'credits_') 
+                ? $subscriptionId 
+                : 'credits_' . uniqid();
+            
+            // Extract subdomain info from metadata if available
+            $subscriptionMetadata = null;
+            if (!empty($metadata['subdomain']) && !empty($metadata['domain_id'])) {
+                $subscriptionMetadata = [
+                    'subdomain' => $metadata['subdomain'],
+                    'domain_id' => (int) $metadata['domain_id'],
+                ];
+            }
+            
+            $subscription = Subscription::create([
+                'user_id' => $user->id,
+                'type' => 'default',
+                'stripe_id' => $creditsSubscriptionId,
+                'stripe_status' => 'active', // Credits-based subscriptions are always active
+                'stripe_price' => $plan?->stripe_price_id,
+                'quantity' => 1,
+                'trial_ends_at' => null,
+                'ends_at' => null,
+                'metadata' => $subscriptionMetadata,
+            ]);
+
+            return $subscription;
         }
 
         // Check if subscription already exists
@@ -183,6 +225,16 @@ class ServerProvisioningService
             $plan = Plan::where('stripe_price_id', $stripeSubscription->items->data[0]->price->id)->first();
         }
 
+        // Extract subdomain info from metadata if available
+        $subscriptionMetadata = null;
+        $sessionMetadata = $this->convertMetadataToArray($metadata);
+        if (!empty($sessionMetadata['subdomain']) && !empty($sessionMetadata['domain_id'])) {
+            $subscriptionMetadata = [
+                'subdomain' => $sessionMetadata['subdomain'],
+                'domain_id' => (int) $sessionMetadata['domain_id'],
+            ];
+        }
+        
         // Create subscription record
         $subscription = Subscription::create([
             'user_id' => $user->id,
@@ -191,6 +243,7 @@ class ServerProvisioningService
             'stripe_status' => $stripeSubscription->status,
             'stripe_price' => $stripeSubscription->items->data[0]->price->id ?? null,
             'quantity' => $stripeSubscription->items->data[0]->quantity ?? 1,
+            'metadata' => $subscriptionMetadata,
             'trial_ends_at' => $stripeSubscription->trial_end ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end) : null,
             'ends_at' => $stripeSubscription->cancel_at ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->cancel_at) : null,
         ]);

@@ -50,6 +50,7 @@ public function index(Request $request): View
             'users.id',
             'users.username',
             'users.email',
+            'users.credits_balance',
             'users.created_at',
             'users.updated_at',
         ])
@@ -61,6 +62,7 @@ public function index(Request $request): View
                 'users.id',
                 'users.username',
                 'users.email',
+                'users.credits_balance',
                 'users.created_at',
                 'users.updated_at',
             ])

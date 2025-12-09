@@ -14,8 +14,12 @@ import { PageListContainer } from '@/components/elements/pages/PageList';
 
 import cancelSubscription from '@/api/billing/cancelSubscription';
 import getBillingPortalUrl from '@/api/billing/getBillingPortalUrl';
+import getCreditTransactions, { CreditTransaction } from '@/api/billing/getCreditTransactions';
+import getCreditsBalance from '@/api/billing/getCreditsBalance';
+import getCreditsEnabled from '@/api/billing/getCreditsEnabled';
 import getInvoices from '@/api/billing/getInvoices';
 import getSubscriptions, { Subscription } from '@/api/billing/getSubscriptions';
+import purchaseCredits from '@/api/billing/purchaseCredits';
 import resumeSubscription from '@/api/billing/resumeSubscription';
 import { httpErrorToHuman } from '@/api/http';
 
@@ -38,6 +42,37 @@ const BillingContainer = () => {
         },
     );
 
+    // Check if credits are enabled
+    const { data: creditsEnabledData, error: creditsEnabledError } = useSWR(
+        '/api/client/billing/credits/enabled',
+        getCreditsEnabled,
+        {
+            revalidateOnFocus: false,
+        },
+    );
+
+    const creditsEnabled = creditsEnabledData?.data?.enabled ?? false;
+
+    // Load credits balance (only if enabled)
+    const {
+        data: creditsBalance,
+        error: creditsError,
+        mutate: mutateCredits,
+    } = useSWR(creditsEnabled ? '/api/client/billing/credits/balance' : null, getCreditsBalance, {
+        revalidateOnFocus: false,
+    });
+
+    // Load credit transactions (only if enabled)
+    const { data: creditTransactionsData, error: transactionsError } = useSWR(
+        creditsEnabled ? ['/api/client/billing/credits/transactions', { limit: 50 }] : null,
+        ([url, params]) => getCreditTransactions(params),
+        {
+            revalidateOnFocus: false,
+        },
+    );
+
+    const creditTransactions = creditTransactionsData?.data;
+
     // State for managing dialogs
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [cancelConfirmDialogOpen, setCancelConfirmDialogOpen] = useState(false);
@@ -47,6 +82,9 @@ const BillingContainer = () => {
     const [cancelImmediate, setCancelImmediate] = useState<boolean | null>(null);
     const [billingPortalLoading, setBillingPortalLoading] = useState<number | null>(null);
     const [countdown, setCountdown] = useState<number>(0);
+    const [buyCreditsDialogOpen, setBuyCreditsDialogOpen] = useState(false);
+    const [creditsAmount, setCreditsAmount] = useState<string>('10');
+    const [isPurchasingCredits, setIsPurchasingCredits] = useState(false);
 
     // Handler functions
     const handleBillingPortal = useCallback(async (subscriptionId: number) => {
@@ -77,44 +115,47 @@ const BillingContainer = () => {
     };
 
     // Map subscriptions to BillingService format
+    // Filter out subscriptions without server_uuid (server was deleted)
     const services: (BillingService & { subscriptionId: number })[] = useMemo(() => {
         if (!subscriptions) return [];
 
-        return subscriptions.map((sub) => {
-            const attrs = sub.attributes;
-            const priceFormatted = new Intl.NumberFormat(undefined, {
-                style: 'currency',
-                currency: attrs.currency,
-            }).format(attrs.price_amount);
+        return subscriptions
+            .filter((sub) => sub.attributes.server_uuid) // Only include subscriptions with a server
+            .map((sub) => {
+                const attrs = sub.attributes;
+                const priceFormatted = new Intl.NumberFormat(undefined, {
+                    style: 'currency',
+                    currency: attrs.currency,
+                }).format(attrs.price_amount);
 
-            // Map interval to supported format
-            const intervalMap: Record<string, 'month' | 'year'> = {
-                month: 'month',
-                quarter: 'month',
-                'half-year': 'month',
-                year: 'year',
-            };
+                // Map interval to supported format
+                const intervalMap: Record<string, 'month' | 'year'> = {
+                    month: 'month',
+                    quarter: 'month',
+                    'half-year': 'month',
+                    year: 'year',
+                };
 
-            const subscriptionId = attrs.id;
+                const subscriptionId = attrs.id;
 
-            return {
-                id: String(attrs.id),
-                externalId: attrs.stripe_id,
-                name: attrs.server_name || 'Unnamed Server',
-                planName: attrs.plan_name,
-                priceAmount: attrs.price_amount,
-                priceFormatted: priceFormatted,
-                currency: attrs.currency,
-                interval: intervalMap[attrs.interval] || 'month',
-                status: attrs.status,
-                nextRenewalAt: attrs.next_renewal_at || undefined,
-                manageUrl: attrs.server_uuid ? `/server/${attrs.server_uuid}` : undefined,
-                canCancel: attrs.can_cancel,
-                canResume: attrs.can_resume,
-                subscriptionId: subscriptionId,
-                onManage: attrs.server_uuid ? () => handleBillingPortal(subscriptionId) : undefined,
-            };
-        });
+                return {
+                    id: String(attrs.id),
+                    externalId: attrs.stripe_id,
+                    name: attrs.server_name || 'Unnamed Server',
+                    planName: attrs.plan_name,
+                    priceAmount: attrs.price_amount,
+                    priceFormatted: priceFormatted,
+                    currency: attrs.currency,
+                    interval: intervalMap[attrs.interval] || 'month',
+                    status: attrs.status,
+                    nextRenewalAt: attrs.next_renewal_at || undefined,
+                    manageUrl: attrs.server_uuid ? `/server/${attrs.server_uuid}` : undefined,
+                    canCancel: attrs.can_cancel,
+                    canResume: attrs.can_resume,
+                    subscriptionId: subscriptionId,
+                    onManage: attrs.server_uuid ? () => handleBillingPortal(subscriptionId) : undefined,
+                };
+            });
     }, [subscriptions, handleBillingPortal]);
 
     const confirmCancel = async (immediate: boolean) => {
@@ -188,9 +229,68 @@ const BillingContainer = () => {
     const hidden = services.slice(visibleCount);
     const hasHidden = hidden.length > 0;
 
+    const handleBuyCredits = async () => {
+        const amount = parseFloat(creditsAmount);
+        if (!amount || amount < 1) {
+            toast.error('Please enter a valid amount (minimum $1).');
+            return;
+        }
+
+        setIsPurchasingCredits(true);
+        try {
+            const response = await purchaseCredits({ amount });
+            window.location.href = response.data.checkout_url;
+        } catch (error: any) {
+            toast.error(httpErrorToHuman(error) || 'Failed to create credits purchase session.');
+            setIsPurchasingCredits(false);
+        }
+    };
+
     return (
         <PageContentBlock title={'Billing'} showFlashKey={'billing'}>
-            <div className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'>
+            {creditsEnabled && (
+                <div
+                    className='transform-gpu skeleton-anim-2 mb-6'
+                    style={{
+                        animationDelay: '0ms',
+                        animationTimingFunction:
+                            'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                    }}
+                >
+                    <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-6'>
+                        <div className='flex items-center justify-between flex-wrap gap-4'>
+                            <div>
+                                <h3 className='text-lg font-semibold text-white mb-1'>Account Credits</h3>
+                                <div className='text-2xl font-bold text-brand'>
+                                    {creditsBalance?.data ? (
+                                        <>
+                                            {new Intl.NumberFormat('en-US', {
+                                                style: 'currency',
+                                                currency: creditsBalance.data.currency.toUpperCase(),
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            }).format(creditsBalance.data.balance)}
+                                        </>
+                                    ) : (
+                                        'Loading...'
+                                    )}
+                                </div>
+                            </div>
+                            <ActionButton variant='primary' onClick={() => setBuyCreditsDialogOpen(true)}>
+                                Buy Credits
+                            </ActionButton>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <div
+                className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'
+                style={{
+                    animationDelay: '0ms',
+                    animationTimingFunction:
+                        'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                }}
+            >
                 <MainPageHeader title='Active Services' />
                 <PageListContainer className='p-4 flex flex-col gap-3'>
                     {!subscriptions && !error ? (
@@ -208,7 +308,7 @@ const BillingContainer = () => {
                                     key={service.id}
                                     className='transform-gpu skeleton-anim-2'
                                     style={{
-                                        animationDelay: `${index * 50 + 50}ms`,
+                                        animationDelay: '0ms',
                                         animationTimingFunction:
                                             'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
                                     }}
@@ -255,7 +355,7 @@ const BillingContainer = () => {
                                                         key={service.id}
                                                         className='transform-gpu skeleton-anim-2'
                                                         style={{
-                                                            animationDelay: `${index * 50 + 50}ms`,
+                                                            animationDelay: '0ms',
                                                             animationTimingFunction:
                                                                 'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
                                                         }}
@@ -310,9 +410,145 @@ const BillingContainer = () => {
                 </PageListContainer>
             </div>
 
+            {creditsEnabled && (
+                <>
+                    <div aria-hidden className='mt-16 mb-16 bg-[#ffffff33] min-h-[1px] w-full'></div>
+
+                    <div
+                        className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'
+                        style={{
+                            animationDelay: '0ms',
+                            animationTimingFunction:
+                                'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                        }}
+                    >
+                        <MainPageHeader title='Credit Transaction History' />
+                        <PageListContainer className='p-4 flex flex-col gap-3'>
+                            {!creditTransactions && !transactionsError ? (
+                                <div className='p-2 text-sm text-white/70'>Loading transactions…</div>
+                            ) : transactionsError ? (
+                                <div className='p-2 text-sm text-red-400'>
+                                    Failed to load transactions: {httpErrorToHuman(transactionsError)}
+                                </div>
+                            ) : !creditTransactions || creditTransactions.length === 0 ? (
+                                <div className='p-2 text-sm text-white/70'>No transactions yet.</div>
+                            ) : (
+                                <div className='overflow-x-auto'>
+                                    <table className='w-full'>
+                                        <thead>
+                                            <tr className='border-b border-[#ffffff12]'>
+                                                <th className='text-left py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Date
+                                                </th>
+                                                <th className='text-left py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Type
+                                                </th>
+                                                <th className='text-left py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Description
+                                                </th>
+                                                <th className='text-right py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Amount
+                                                </th>
+                                                <th className='text-right py-3 px-4 text-sm font-semibold text-white/70'>
+                                                    Balance
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {creditTransactions.map((transaction) => {
+                                                const date = new Date(transaction.created_at).toLocaleDateString(
+                                                    undefined,
+                                                    {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    },
+                                                );
+
+                                                const typeColors: Record<string, string> = {
+                                                    purchase: 'text-green-400',
+                                                    deduction: 'text-red-400',
+                                                    refund: 'text-blue-400',
+                                                    renewal: 'text-yellow-400',
+                                                    adjustment: 'text-purple-400',
+                                                };
+
+                                                const typeLabels: Record<string, string> = {
+                                                    purchase: 'Purchase',
+                                                    deduction: 'Deduction',
+                                                    refund: 'Refund',
+                                                    renewal: 'Renewal',
+                                                    adjustment: 'Adjustment',
+                                                };
+
+                                                const isPositive =
+                                                    transaction.type === 'purchase' || transaction.type === 'refund';
+                                                const amountSign = isPositive ? '+' : '-';
+                                                const amountColor = isPositive ? 'text-green-400' : 'text-red-400';
+
+                                                return (
+                                                    <tr
+                                                        key={transaction.id}
+                                                        className='border-b border-[#ffffff08] hover:bg-[#ffffff05] transition-colors'
+                                                    >
+                                                        <td className='py-3 px-4 text-sm text-white/70'>{date}</td>
+                                                        <td className='py-3 px-4'>
+                                                            <span
+                                                                className={`text-sm font-medium ${typeColors[transaction.type] || 'text-white/70'}`}
+                                                            >
+                                                                {typeLabels[transaction.type] || transaction.type}
+                                                            </span>
+                                                        </td>
+                                                        <td className='py-3 px-4 text-sm text-white/70'>
+                                                            {transaction.description || '—'}
+                                                        </td>
+                                                        <td
+                                                            className={`py-3 px-4 text-sm font-semibold text-right ${amountColor}`}
+                                                        >
+                                                            {amountSign}
+                                                            {new Intl.NumberFormat('en-US', {
+                                                                style: 'currency',
+                                                                currency:
+                                                                    creditsBalance?.data?.currency?.toUpperCase() ||
+                                                                    'USD',
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 2,
+                                                            }).format(transaction.amount)}
+                                                        </td>
+                                                        <td className='py-3 px-4 text-sm text-white/70 text-right'>
+                                                            {new Intl.NumberFormat('en-US', {
+                                                                style: 'currency',
+                                                                currency:
+                                                                    creditsBalance?.data?.currency?.toUpperCase() ||
+                                                                    'USD',
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 2,
+                                                            }).format(transaction.balance_after)}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </PageListContainer>
+                    </div>
+                </>
+            )}
+
             <div aria-hidden className='mt-16 mb-16 bg-[#ffffff33] min-h-[1px] w-full'></div>
 
-            <div className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'>
+            <div
+                className='transform-gpu skeleton-anim-2 mb-3 sm:mb-4'
+                style={{
+                    animationDelay: '0ms',
+                    animationTimingFunction:
+                        'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                }}
+            >
                 <MainPageHeader title='Billing & Invoices' />
                 <PageListContainer className='p-4 flex flex-col gap-3'>
                     {!invoices && !invoicesError ? (
@@ -531,6 +767,66 @@ const BillingContainer = () => {
                     Your subscription will continue from the end of the current billing period.
                 </p>
             </Dialog.Confirm>
+
+            {/* Buy Credits Dialog */}
+            <Dialog
+                open={buyCreditsDialogOpen}
+                onClose={() => {
+                    setBuyCreditsDialogOpen(false);
+                    setCreditsAmount('10');
+                }}
+                title='Purchase Credits'
+            >
+                <div className='space-y-4'>
+                    <p className='text-zinc-300'>
+                        Enter the amount of credits you want to purchase. Credits will be added to your account after
+                        payment is processed.
+                    </p>
+
+                    <div>
+                        <label htmlFor='credits-amount' className='block text-sm font-medium text-zinc-300 mb-2'>
+                            Amount (USD)
+                        </label>
+                        <input
+                            id='credits-amount'
+                            type='number'
+                            min='1'
+                            step='0.01'
+                            value={creditsAmount}
+                            onChange={(e) => setCreditsAmount(e.target.value)}
+                            className='w-full px-4 py-2 bg-[#ffffff08] border border-[#ffffff12] rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-brand transition-colors'
+                            placeholder='10.00'
+                        />
+                        <p className='mt-1 text-xs text-zinc-400'>Minimum purchase amount is $1.00</p>
+                    </div>
+                </div>
+
+                <Dialog.Footer>
+                    <ActionButton
+                        variant='secondary'
+                        onClick={() => {
+                            setBuyCreditsDialogOpen(false);
+                            setCreditsAmount('10');
+                        }}
+                    >
+                        Cancel
+                    </ActionButton>
+                    <ActionButton
+                        variant='primary'
+                        onClick={handleBuyCredits}
+                        disabled={isPurchasingCredits || !creditsAmount || parseFloat(creditsAmount) < 1}
+                    >
+                        {isPurchasingCredits ? (
+                            <>
+                                <Spinner size='small' className='mr-2' />
+                                Processing...
+                            </>
+                        ) : (
+                            'Continue to Payment'
+                        )}
+                    </ActionButton>
+                </Dialog.Footer>
+            </Dialog>
         </PageContentBlock>
     );
 };
