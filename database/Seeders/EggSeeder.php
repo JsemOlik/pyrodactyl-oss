@@ -24,6 +24,7 @@ class EggSeeder extends Seeder
         'Voice Servers',
         'Rust',
         'Vintage Story',
+        'Databases',
     ];
 
     /**

@@ -44,6 +44,7 @@ class NestSeeder extends Seeder
         $this->createSourceEngineNest(array_get($items, 'Source Engine'));
         $this->createVoiceServersNest(array_get($items, 'Voice Servers'));
         $this->createRustNest(array_get($items, 'Rust'));
+        $this->createDatabasesNest(array_get($items, 'Databases'));
     }
 
     /**
@@ -102,6 +103,21 @@ class NestSeeder extends Seeder
             $this->creationService->handle([
                 'name' => 'Rust',
                 'description' => 'Rust - A game where you must fight to survive.',
+            ], 'support@pterodactyl.io');
+        }
+    }
+
+    /**
+     * Create the Databases nest to be used later on.
+     *
+     * @throws \Pterodactyl\Exceptions\Model\DataValidationException
+     */
+    private function createDatabasesNest(?array $nest = null)
+    {
+        if (is_null($nest)) {
+            $this->creationService->handle([
+                'name' => 'Databases',
+                'description' => 'Databases - A service for storing and retrieving data.',
             ], 'support@pterodactyl.io');
         }
     }
