@@ -27,10 +27,12 @@ class ThemeController extends Controller
     public function index(): View
     {
         $primaryColor = $this->settings->get('settings::theme:primary_color', '#fa4e49');
+        $buttonBorderRadius = $this->settings->get('settings::theme:button_border_radius', '0.5rem');
         $logoPath = $this->settings->get('settings::theme:logo_path');
         
         return $this->view->make('admin.themes.index', [
             'primaryColor' => $primaryColor ?: '#fa4e49',
+            'buttonBorderRadius' => $buttonBorderRadius ?: '0.5rem',
             'logoPath' => $logoPath ? Storage::disk('public')->url($logoPath) : null,
         ]);
     }

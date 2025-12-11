@@ -7,9 +7,14 @@ interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
 }
 
 const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(
-    ({ variant = 'primary', size = 'md', className = '', children, ...props }, ref) => {
+    ({ variant = 'primary', size = 'md', className = '', children, style, ...props }, ref) => {
         const baseClasses =
-            'inline-flex cursor-pointer items-center justify-center whitespace-nowrap rounded-lg font-medium transition-all focus-visible:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed';
+            'inline-flex cursor-pointer items-center justify-center whitespace-nowrap font-medium transition-all focus-visible:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed';
+
+        const combinedStyle = {
+            borderRadius: 'var(--button-border-radius, 0.5rem)',
+            ...style,
+        };
 
         const variantClasses = {
             primary: 'bg-brand text-white hover:bg-brand/80 active:bg-brand/90 border border-brand/20',
@@ -28,6 +33,7 @@ const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(
             <button
                 ref={ref}
                 className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+                style={combinedStyle}
                 {...props}
             >
                 {children}

@@ -49,9 +49,11 @@
     <script>
         (function() {
             const primaryColor = '{{ config('theme.primary_color', '#fa4e49') }}';
+            const buttonBorderRadius = '{{ config('theme.button_border_radius', '0.5rem') }}';
             function applyThemeColor() {
                 const root = document.documentElement;
                 root.style.setProperty('--color-brand', primaryColor);
+                root.style.setProperty('--button-border-radius', buttonBorderRadius);
                 // Update brand gradient to use the new color
                 const rgb = hexToRgb(primaryColor);
                 if (rgb) {

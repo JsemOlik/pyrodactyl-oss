@@ -10,6 +10,8 @@ import DatabasesContainer from '@/components/server/databases/DatabasesContainer
 import FileManagerContainer from '@/components/server/files/FileManagerContainer';
 import ModrinthContainer from '@/components/server/modrinth/ModrinthContainer';
 import NetworkContainer from '@/components/server/network/NetworkContainer';
+import PlayersContainer from '@/components/server/players/PlayersContainer';
+import PropertiesContainer from '@/components/server/properties/PropertiesContainer';
 import ScheduleContainer from '@/components/server/schedules/ScheduleContainer';
 import SettingsContainer from '@/components/server/settings/SettingsContainer';
 import ShellContainer from '@/components/server/shell/ShellContainer';
@@ -17,8 +19,6 @@ import StartupContainer from '@/components/server/startup/StartupContainer';
 import CreateUserContainer from '@/components/server/users/CreateUserContainer';
 import EditUserContainer from '@/components/server/users/EditUserContainer';
 import UsersContainer from '@/components/server/users/UsersContainer';
-import PlayersContainer from '@/components/server/players/PlayersContainer';
-import PropertiesContainer from '@/components/server/properties/PropertiesContainer';
 
 // Each of the router files is already code split out appropriately — so
 // all the items above will only be loaded in when that router is loaded.

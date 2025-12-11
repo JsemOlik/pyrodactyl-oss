@@ -123,7 +123,7 @@ const ServerRow = ({
 
     if (server.active_subdomain && server.active_subdomain.is_active) {
         // Use subdomain
-            connectionText = server.active_subdomain.full_domain;
+        connectionText = server.active_subdomain.full_domain;
     } else if (defaultAllocation) {
         // Fallback to alias/ip with container port
         connectionText = `${defaultAllocation.alias || ip(defaultAllocation.ip)}:${defaultAllocation.port}`;
