@@ -306,4 +306,137 @@ class DatabaseController extends ClientApiController
 
         return response()->json(['success' => true, 'message' => 'Table deleted successfully']);
     }
+
+    /**
+     * Get table data with pagination.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getTableData(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'table' => 'required|string',
+            'database' => 'nullable|string',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $result = $this->dashboardService->getTableData(
+            $server,
+            $request->input('table'),
+            $request->input('page', 1),
+            $request->input('per_page', 50),
+            $request->input('database')
+        );
+
+        return $this->fractal->item($result)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Insert a new row into a table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function insertRow(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'table' => 'required|string',
+            'data' => 'required|array',
+            'database' => 'nullable|string',
+        ]);
+
+        $result = $this->dashboardService->insertRow(
+            $server,
+            $request->input('table'),
+            $request->input('data'),
+            $request->input('database')
+        );
+
+        return $this->fractal->item($result)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Update a row in a table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function updateRow(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'table' => 'required|string',
+            'data' => 'required|array',
+            'where' => 'required|array',
+            'database' => 'nullable|string',
+        ]);
+
+        $result = $this->dashboardService->updateRow(
+            $server,
+            $request->input('table'),
+            $request->input('data'),
+            $request->input('where'),
+            $request->input('database')
+        );
+
+        return $this->fractal->item($result)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Delete a row from a table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function deleteRow(GetDatabasesRequest $request, Server $server): Response
+    {
+        $request->validate([
+            'table' => 'required|string',
+            'where' => 'required|array',
+            'database' => 'nullable|string',
+        ]);
+
+        $this->dashboardService->deleteRow(
+            $server,
+            $request->input('table'),
+            $request->input('where'),
+            $request->input('database')
+        );
+
+        return response()->json(['success' => true, 'message' => 'Row deleted successfully']);
+    }
+
+    /**
+     * Execute a SQL query (SELECT only).
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function executeQuery(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'query' => 'required|string|max:10000',
+            'database' => 'nullable|string',
+        ]);
+
+        $result = $this->dashboardService->executeQuery(
+            $server,
+            $request->input('query'),
+            $request->input('database')
+        );
+
+        return $this->fractal->item($result)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
 }

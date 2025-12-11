@@ -597,6 +597,270 @@ class DatabaseDashboardService
     }
 
     /**
+     * Get table data with pagination.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getTableData(Server $server, string $tableName, int $page = 1, int $perPage = 50, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_data', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_data');
+
+            // Get total count
+            $total = $connection->selectOne("SELECT COUNT(*) as count FROM `" . str_replace('`', '``', $tableName) . "`");
+            $totalCount = (int) ($total->count ?? 0);
+
+            // Get data with pagination
+            $offset = ($page - 1) * $perPage;
+            $escapedTable = str_replace('`', '``', $tableName);
+            $data = $connection->select("SELECT * FROM `{$escapedTable}` LIMIT {$perPage} OFFSET {$offset}");
+
+            // Get column names
+            $columns = $connection->select("SHOW COLUMNS FROM `{$escapedTable}`");
+            $columnNames = array_map(fn($col) => $col->Field, $columns);
+
+            return [
+                'data' => array_map(function ($row) use ($columnNames) {
+                    $result = [];
+                    foreach ($columnNames as $col) {
+                        $result[$col] = $row->$col;
+                    }
+                    return $result;
+                }, $data),
+                'columns' => $columnNames,
+                'pagination' => [
+                    'total' => $totalCount,
+                    'perPage' => $perPage,
+                    'currentPage' => $page,
+                    'lastPage' => (int) ceil($totalCount / $perPage),
+                ],
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_data');
+        }
+    }
+
+    /**
+     * Insert a new row into a table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function insertRow(Server $server, string $tableName, array $data, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_insert', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_insert');
+            $escapedTable = str_replace('`', '``', $tableName);
+
+            // Build insert query
+            $columns = array_keys($data);
+            $values = array_values($data);
+
+            $escapedColumns = array_map(fn($col) => "`" . str_replace('`', '``', $col) . "`", $columns);
+            $placeholders = array_fill(0, count($values), '?');
+
+            $sql = "INSERT INTO `{$escapedTable}` (" . implode(', ', $escapedColumns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+
+            $connection->insert($sql, $values);
+
+            return [
+                'success' => true,
+                'insertId' => $connection->getPdo()->lastInsertId(),
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_insert');
+        }
+    }
+
+    /**
+     * Update a row in a table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function updateRow(Server $server, string $tableName, array $data, array $where, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_update', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_update');
+            $escapedTable = str_replace('`', '``', $tableName);
+
+            // Build update query
+            $setClauses = [];
+            $setValues = [];
+            foreach ($data as $column => $value) {
+                $escapedCol = "`" . str_replace('`', '``', $column) . "`";
+                $setClauses[] = "{$escapedCol} = ?";
+                $setValues[] = $value;
+            }
+
+            $whereClauses = [];
+            $whereValues = [];
+            foreach ($where as $column => $value) {
+                $escapedCol = "`" . str_replace('`', '``', $column) . "`";
+                $whereClauses[] = "{$escapedCol} = ?";
+                $whereValues[] = $value;
+            }
+
+            $sql = "UPDATE `{$escapedTable}` SET " . implode(', ', $setClauses) . " WHERE " . implode(' AND ', $whereClauses);
+            $connection->update($sql, array_merge($setValues, $whereValues));
+
+            return [
+                'success' => true,
+                'affected' => $connection->getPdo()->rowCount(),
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_update');
+        }
+    }
+
+    /**
+     * Delete a row from a table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function deleteRow(Server $server, string $tableName, array $where, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_delete_row', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_delete_row');
+            $escapedTable = str_replace('`', '``', $tableName);
+
+            // Build delete query
+            $whereClauses = [];
+            $whereValues = [];
+            foreach ($where as $column => $value) {
+                $escapedCol = "`" . str_replace('`', '``', $column) . "`";
+                $whereClauses[] = "{$escapedCol} = ?";
+                $whereValues[] = $value;
+            }
+
+            $sql = "DELETE FROM `{$escapedTable}` WHERE " . implode(' AND ', $whereClauses);
+            $connection->delete($sql, $whereValues);
+
+            return [
+                'success' => true,
+                'affected' => $connection->getPdo()->rowCount(),
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_delete_row');
+        }
+    }
+
+    /**
+     * Execute a SQL query (read-only SELECT queries for safety).
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function executeQuery(Server $server, string $query, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Validate query - only allow SELECT statements
+        $trimmedQuery = trim($query);
+        if (!preg_match('/^\s*SELECT\s+/i', $trimmedQuery)) {
+            throw new \InvalidArgumentException('Only SELECT queries are allowed for security reasons.');
+        }
+
+        // Prevent dangerous operations
+        $dangerousKeywords = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 'CREATE', 'TRUNCATE', 'EXEC', 'EXECUTE'];
+        foreach ($dangerousKeywords as $keyword) {
+            if (preg_match('/\b' . preg_quote($keyword, '/') . '\b/i', $trimmedQuery)) {
+                throw new \InvalidArgumentException("Query contains dangerous keyword: {$keyword}. Only SELECT queries are allowed.");
+            }
+        }
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_query', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_query');
+            
+            $startTime = microtime(true);
+            $results = $connection->select($query);
+            $executionTime = (microtime(true) - $startTime) * 1000; // Convert to milliseconds
+
+            // Convert results to array format
+            $data = [];
+            if (!empty($results)) {
+                $firstRow = (array) $results[0];
+                $columns = array_keys($firstRow);
+                
+                $data = array_map(function ($row) use ($columns) {
+                    $result = [];
+                    foreach ($columns as $col) {
+                        $result[$col] = is_object($row) ? $row->$col : $row[$col] ?? null;
+                    }
+                    return $result;
+                }, $results);
+            } else {
+                $columns = [];
+            }
+
+            return [
+                'success' => true,
+                'data' => $data,
+                'columns' => $columns,
+                'rowCount' => count($data),
+                'executionTime' => round($executionTime, 2),
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_query');
+        }
+    }
+
+    /**
      * Format bytes to human readable format.
      */
     private function formatBytes(int $bytes, int $precision = 2): string

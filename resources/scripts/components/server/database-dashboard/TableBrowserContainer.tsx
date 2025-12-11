@@ -1,6 +1,6 @@
-import { Eye, LayoutHeaderCellsLarge, Plus, TrashBin } from '@gravity-ui/icons';
+import { Database, Eye, LayoutHeaderCellsLarge, Plus, TrashBin } from '@gravity-ui/icons';
 import { FieldArray, Form, Formik, Field as FormikField, FormikHelpers } from 'formik';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { array, object, string } from 'yup';
 
@@ -18,10 +18,14 @@ import { PageListContainer, PageListItem } from '@/components/elements/pages/Pag
 
 import { httpErrorToHuman } from '@/api/http';
 import createTable, { TableColumn } from '@/api/server/database-dashboard/createTable';
+import deleteRow from '@/api/server/database-dashboard/deleteRow';
 import deleteTable from '@/api/server/database-dashboard/deleteTable';
 import getDatabaseConnectionInfo from '@/api/server/database-dashboard/getDatabaseConnectionInfo';
+import getTableData, { TableDataResponse } from '@/api/server/database-dashboard/getTableData';
 import getTableStructure, { TableStructure } from '@/api/server/database-dashboard/getTableStructure';
+import insertRow from '@/api/server/database-dashboard/insertRow';
 import listTables, { TableInfo } from '@/api/server/database-dashboard/listTables';
+import updateRow from '@/api/server/database-dashboard/updateRow';
 
 import { ServerContext } from '@/state/server';
 
@@ -60,8 +64,15 @@ const TableBrowserContainer = () => {
     const [createModalVisible, setCreateModalVisible] = useState(false);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [viewModalVisible, setViewModalVisible] = useState(false);
+    const [dataModalVisible, setDataModalVisible] = useState(false);
     const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
     const [viewTable, setViewTable] = useState<TableInfo | null>(null);
+    const [dataTable, setDataTable] = useState<TableInfo | null>(null);
+    const [dataPage, setDataPage] = useState(1);
+    const [editRowModalVisible, setEditRowModalVisible] = useState(false);
+    const [addRowModalVisible, setAddRowModalVisible] = useState(false);
+    const [editingRow, setEditingRow] = useState<Record<string, any> | null>(null);
+    const [primaryKeyColumns, setPrimaryKeyColumns] = useState<string[]>([]);
 
     // Get current database name from connection info
     const { data: connectionInfo } = useSWR(
@@ -84,6 +95,32 @@ const TableBrowserContainer = () => {
             ? [`/api/client/servers/${uuid}/database/tables/structure`, viewTable.name, connectionInfo.database]
             : null,
         () => getTableStructure(uuid!, viewTable!.name, connectionInfo?.database),
+    );
+
+    const { data: dataTableStructure } = useSWR<TableStructure>(
+        dataTable && uuid && connectionInfo
+            ? [`/api/client/servers/${uuid}/database/tables/structure`, dataTable.name, connectionInfo.database]
+            : null,
+        () => getTableStructure(uuid!, dataTable!.name, connectionInfo?.database),
+    );
+
+    // Extract primary key columns when structure loads
+    useEffect(() => {
+        if (dataTableStructure) {
+            const pkColumns = dataTableStructure.columns.filter((col) => col.key === 'PRI').map((col) => col.name);
+            setPrimaryKeyColumns(pkColumns);
+        }
+    }, [dataTableStructure]);
+
+    const {
+        data: tableData,
+        isLoading: dataLoading,
+        mutate: mutateData,
+    } = useSWR<TableDataResponse>(
+        dataTable && uuid && connectionInfo
+            ? [`/api/client/servers/${uuid}/database/tables/data`, dataTable.name, dataPage, connectionInfo.database]
+            : null,
+        () => getTableData(uuid!, dataTable!.name, dataPage, 50, connectionInfo?.database),
     );
 
     const submitTable = (values: CreateTableValues, { setSubmitting, resetForm }: FormikHelpers<CreateTableValues>) => {
@@ -133,6 +170,97 @@ const TableBrowserContainer = () => {
     const handleView = (table: TableInfo) => {
         setViewTable(table);
         setViewModalVisible(true);
+    };
+
+    const handleViewData = (table: TableInfo) => {
+        setDataTable(table);
+        setDataPage(1);
+        setDataModalVisible(true);
+    };
+
+    const handleEditRow = (row: Record<string, any>) => {
+        setEditingRow(row);
+        setEditRowModalVisible(true);
+    };
+
+    const handleAddRow = () => {
+        setEditingRow({});
+        setAddRowModalVisible(true);
+    };
+
+    const handleDeleteRow = async (row: Record<string, any>) => {
+        if (!dataTable || !uuid || !dataTableStructure) {
+            return;
+        }
+
+        // Build where clause from primary keys
+        const where: Record<string, any> = {};
+        primaryKeyColumns.forEach((col) => {
+            if (row[col] !== undefined && row[col] !== null) {
+                where[col] = row[col];
+            }
+        });
+
+        if (Object.keys(where).length === 0) {
+            addError({ key: 'row:delete', message: 'Cannot delete row: no primary key found' });
+            return;
+        }
+
+        clearFlashes('row:delete');
+        try {
+            await deleteRow(uuid, {
+                table: dataTable.name,
+                where,
+                database: connectionInfo?.database,
+            });
+            mutateData();
+        } catch (error: any) {
+            addError({ key: 'row:delete', message: httpErrorToHuman(error) });
+        }
+    };
+
+    const handleSaveRow = async (rowData: Record<string, any>, isNew: boolean) => {
+        if (!dataTable || !uuid) {
+            return;
+        }
+
+        clearFlashes('row:save');
+
+        try {
+            if (isNew) {
+                await insertRow(uuid, {
+                    table: dataTable.name,
+                    data: rowData,
+                    database: connectionInfo?.database,
+                });
+            } else {
+                // Build where clause from primary keys
+                const where: Record<string, any> = {};
+                primaryKeyColumns.forEach((col) => {
+                    if (editingRow && editingRow[col] !== undefined && editingRow[col] !== null) {
+                        where[col] = editingRow[col];
+                    }
+                });
+
+                if (Object.keys(where).length === 0) {
+                    addError({ key: 'row:save', message: 'Cannot update row: no primary key found' });
+                    return;
+                }
+
+                await updateRow(uuid, {
+                    table: dataTable.name,
+                    data: rowData,
+                    where,
+                    database: connectionInfo?.database,
+                });
+            }
+            setEditRowModalVisible(false);
+            setAddRowModalVisible(false);
+            setEditingRow(null);
+            mutateData();
+        } catch (error: any) {
+            addError({ key: 'row:save', message: httpErrorToHuman(error) });
+        }
     };
 
     if (isLoading || !connectionInfo) {
@@ -400,6 +528,207 @@ const TableBrowserContainer = () => {
                 </div>
             </Modal>
 
+            {/* View Table Data Modal */}
+            <Modal
+                visible={dataModalVisible}
+                title={`Table Data: ${dataTable?.name}`}
+                closeButton={true}
+                onDismissed={() => {
+                    setDataModalVisible(false);
+                    setDataTable(null);
+                    setDataPage(1);
+                }}
+            >
+                {dataLoading ? (
+                    <Spinner />
+                ) : tableData ? (
+                    <div className='flex flex-col gap-4 max-h-[80vh] overflow-y-auto'>
+                        <div className='flex items-center justify-between mb-2'>
+                            <div className='flex items-center gap-4'>
+                                <p className='text-sm text-white/60'>
+                                    Showing {tableData.data.length} of {tableData.pagination.total} rows
+                                </p>
+                                <Can action={'database.*'} matchAny>
+                                    <ActionButton variant='primary' size='sm' onClick={handleAddRow}>
+                                        <Plus className='w-4 h-4 mr-2' fill='currentColor' />
+                                        Add Row
+                                    </ActionButton>
+                                </Can>
+                            </div>
+                            <div className='flex gap-2'>
+                                <ActionButton
+                                    variant='secondary'
+                                    size='sm'
+                                    onClick={() => setDataPage(Math.max(1, dataPage - 1))}
+                                    disabled={dataPage === 1}
+                                >
+                                    Previous
+                                </ActionButton>
+                                <span className='px-4 py-2 text-sm text-white/80'>
+                                    Page {dataPage} of {tableData.pagination.lastPage}
+                                </span>
+                                <ActionButton
+                                    variant='secondary'
+                                    size='sm'
+                                    onClick={() => setDataPage(Math.min(tableData.pagination.lastPage, dataPage + 1))}
+                                    disabled={dataPage >= tableData.pagination.lastPage}
+                                >
+                                    Next
+                                </ActionButton>
+                            </div>
+                        </div>
+                        <FlashMessageRender byKey='row:delete' />
+                        <div className='overflow-x-auto'>
+                            <table className='w-full border-collapse'>
+                                <thead>
+                                    <tr className='border-b border-white/10'>
+                                        {tableData.columns.map((col) => (
+                                            <th key={col} className='text-left p-2 text-sm text-white/60 font-semibold'>
+                                                {col}
+                                            </th>
+                                        ))}
+                                        <Can action={'database.*'} matchAny>
+                                            <th className='text-left p-2 text-sm text-white/60 font-semibold'>
+                                                Actions
+                                            </th>
+                                        </Can>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {tableData.data.map((row, idx) => (
+                                        <tr key={idx} className='border-b border-white/5 hover:bg-white/5'>
+                                            {tableData.columns.map((col) => (
+                                                <td key={col} className='p-2 text-white/80 font-mono text-sm'>
+                                                    {row[col] !== null && row[col] !== undefined
+                                                        ? String(row[col])
+                                                        : 'NULL'}
+                                                </td>
+                                            ))}
+                                            <Can action={'database.*'} matchAny>
+                                                <td className='p-2'>
+                                                    <div className='flex gap-2'>
+                                                        <ActionButton
+                                                            variant='secondary'
+                                                            size='sm'
+                                                            onClick={() => handleEditRow(row)}
+                                                        >
+                                                            Edit
+                                                        </ActionButton>
+                                                        <ActionButton
+                                                            variant='danger'
+                                                            size='sm'
+                                                            onClick={() => handleDeleteRow(row)}
+                                                        >
+                                                            Delete
+                                                        </ActionButton>
+                                                    </div>
+                                                </td>
+                                            </Can>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {tableData.data.length === 0 && (
+                            <div className='text-center py-8 text-white/60'>No data found in this table</div>
+                        )}
+                    </div>
+                ) : null}
+            </Modal>
+
+            {/* Edit/Add Row Modal */}
+            {(editRowModalVisible || addRowModalVisible) && dataTableStructure && (
+                <Modal
+                    visible={editRowModalVisible || addRowModalVisible}
+                    title={addRowModalVisible ? `Add Row to ${dataTable?.name}` : `Edit Row in ${dataTable?.name}`}
+                    closeButton={true}
+                    onDismissed={() => {
+                        setEditRowModalVisible(false);
+                        setAddRowModalVisible(false);
+                        setEditingRow(null);
+                    }}
+                >
+                    <FlashMessageRender byKey='row:save' />
+                    <div className='flex flex-col gap-4 max-h-[80vh] overflow-y-auto'>
+                        <Formik
+                            initialValues={
+                                editingRow
+                                    ? { ...editingRow }
+                                    : dataTableStructure.columns.reduce(
+                                          (acc, col) => {
+                                              acc[col.name] = col.nullable ? null : '';
+                                              return acc;
+                                          },
+                                          {} as Record<string, any>,
+                                      )
+                            }
+                            onSubmit={(values) => {
+                                handleSaveRow(values, addRowModalVisible);
+                            }}
+                        >
+                            {({ isSubmitting, values }) => (
+                                <Form>
+                                    <div className='space-y-4'>
+                                        {dataTableStructure.columns.map((column) => {
+                                            const isPrimaryKey = column.key === 'PRI';
+                                            const isAutoIncrement = column.extra?.includes('auto_increment');
+                                            const isReadOnly = isPrimaryKey && !addRowModalVisible;
+
+                                            return (
+                                                <div key={column.name}>
+                                                    <Field
+                                                        type={
+                                                            column.type.includes('INT') ||
+                                                            column.type.includes('DECIMAL')
+                                                                ? 'number'
+                                                                : column.type.includes('TEXT')
+                                                                  ? 'textarea'
+                                                                  : 'string'
+                                                        }
+                                                        name={column.name}
+                                                        label={column.name}
+                                                        description={
+                                                            isPrimaryKey
+                                                                ? 'Primary Key'
+                                                                : column.nullable
+                                                                  ? 'Nullable'
+                                                                  : 'Required'
+                                                        }
+                                                        disabled={isReadOnly}
+                                                        readOnly={isReadOnly}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className='flex gap-3 justify-end mt-6'>
+                                        <ActionButton
+                                            variant='secondary'
+                                            onClick={() => {
+                                                setEditRowModalVisible(false);
+                                                setAddRowModalVisible(false);
+                                                setEditingRow(null);
+                                            }}
+                                        >
+                                            Cancel
+                                        </ActionButton>
+                                        <ActionButton variant='primary' type='submit' disabled={isSubmitting}>
+                                            {isSubmitting ? (
+                                                <Spinner size='small' />
+                                            ) : addRowModalVisible ? (
+                                                'Add Row'
+                                            ) : (
+                                                'Save Row'
+                                            )}
+                                        </ActionButton>
+                                    </div>
+                                </Form>
+                            )}
+                        </Formik>
+                    </div>
+                </Modal>
+            )}
+
             {/* View Table Structure Modal */}
             <Modal
                 visible={viewModalVisible}
@@ -551,6 +880,15 @@ const TableBrowserContainer = () => {
                                 </div>
 
                                 <div className='flex items-center gap-2 sm:flex-col sm:gap-3'>
+                                    <ActionButton
+                                        variant='secondary'
+                                        size='sm'
+                                        onClick={() => handleViewData(table)}
+                                        className='flex items-center gap-2'
+                                    >
+                                        <Database fill='currentColor' className='w-4 h-4' />
+                                        <span className='hidden sm:inline'>Data</span>
+                                    </ActionButton>
                                     <ActionButton
                                         variant='secondary'
                                         size='sm'
