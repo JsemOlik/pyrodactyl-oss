@@ -9,7 +9,7 @@ import { httpErrorToHuman } from '@/api/http';
 import { ServerContext } from '@/state/server';
 
 const ServerRouter = lazy(() => import('@/routers/ServerRouter'));
-// const DatabaseRouter = lazy(() => import('@/routers/DatabaseRouter'));
+const DatabaseRouter = lazy(() => import('@/routers/DatabaseRouter'));
 // const WebsiteRouter = lazy(() => import('@/routers/WebsiteRouter'));
 // const S3StorageRouter = lazy(() => import('@/routers/S3StorageRouter'));
 // const VpsRouter = lazy(() => import('@/routers/VpsRouter'));
@@ -70,16 +70,9 @@ const DashboardRouterFactory = () => {
                 );
 
             case 'database':
-                // TODO: Implement DatabaseRouter in Phase 2
-                // return (
-                //     <Suspense fallback={<Spinner />}>
-                //         <DatabaseRouter />
-                //     </Suspense>
-                // );
-                // For now, fall back to ServerRouter until DatabaseRouter is implemented
                 return (
                     <Suspense fallback={<Spinner />}>
-                        <ServerRouter />
+                        <DatabaseRouter />
                     </Suspense>
                 );
 

@@ -10,6 +10,7 @@ use Pterodactyl\Services\Databases\DatabasePasswordService;
 use Pterodactyl\Transformers\Api\Client\DatabaseTransformer;
 use Pterodactyl\Services\Databases\DatabaseManagementService;
 use Pterodactyl\Services\Databases\DeployServerDatabaseService;
+use Pterodactyl\Services\Databases\DatabaseDashboardService;
 use Pterodactyl\Http\Controllers\Api\Client\ClientApiController;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Databases\GetDatabasesRequest;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Databases\StoreDatabaseRequest;
@@ -25,6 +26,7 @@ class DatabaseController extends ClientApiController
         private DeployServerDatabaseService $deployDatabaseService,
         private DatabaseManagementService $managementService,
         private DatabasePasswordService $passwordService,
+        private DatabaseDashboardService $dashboardService,
     ) {
         parent::__construct();
     }
@@ -98,5 +100,53 @@ class DatabaseController extends ClientApiController
             ->log();
 
         return new Response('', Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Get connection information for the server's database.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getConnectionInfo(GetDatabasesRequest $request, Server $server): array
+    {
+        $info = $this->dashboardService->getConnectionInfo($server);
+
+        return $this->fractal->item($info)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Get database metrics for the server's database.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getMetrics(GetDatabasesRequest $request, Server $server): array
+    {
+        $metrics = $this->dashboardService->getMetrics($server);
+
+        return $this->fractal->item($metrics)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Test database connection.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function testConnection(GetDatabasesRequest $request, Server $server): Response
+    {
+        $success = $this->dashboardService->testConnection($server);
+
+        if (!$success) {
+            return response()->json(['error' => 'Connection test failed'], Response::HTTP_BAD_REQUEST);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Connection successful']);
     }
 }
