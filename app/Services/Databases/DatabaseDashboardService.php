@@ -861,6 +861,241 @@ class DatabaseDashboardService
     }
 
     /**
+     * Get database logs (error log, general log, slow query log).
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getLogs(Server $server, string $logType = 'error', int $limit = 100, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_logs', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_logs');
+
+            $logs = [];
+
+            switch ($logType) {
+                case 'error':
+                    // Get MySQL error log entries from information_schema
+                    // Note: This requires MySQL 5.7+ and log_error_verbosity >= 2
+                    try {
+                        $errorLog = $connection->select("
+                            SELECT 
+                                time,
+                                level,
+                                code,
+                                message
+                            FROM performance_schema.error_log
+                            ORDER BY time DESC
+                            LIMIT {$limit}
+                        ");
+                        $logs = array_map(function ($entry) {
+                            return [
+                                'timestamp' => $entry->time,
+                                'level' => $entry->level ?? 'ERROR',
+                                'code' => $entry->code ?? null,
+                                'message' => $entry->message ?? '',
+                            ];
+                        }, $errorLog);
+                    } catch (\Exception $e) {
+                        // performance_schema.error_log might not be available
+                        // Fall back to general query log or return empty
+                        $logs = [];
+                    }
+                    break;
+
+                case 'slow':
+                    // Get slow query log entries
+                    try {
+                        $slowQueries = $connection->select("
+                            SELECT 
+                                start_time,
+                                user_host,
+                                query_time,
+                                lock_time,
+                                rows_sent,
+                                rows_examined,
+                                sql_text
+                            FROM mysql.slow_log
+                            ORDER BY start_time DESC
+                            LIMIT {$limit}
+                        ");
+                        $logs = array_map(function ($entry) {
+                            return [
+                                'timestamp' => $entry->start_time,
+                                'user_host' => $entry->user_host ?? '',
+                                'query_time' => $entry->query_time ?? 0,
+                                'lock_time' => $entry->lock_time ?? 0,
+                                'rows_sent' => $entry->rows_sent ?? 0,
+                                'rows_examined' => $entry->rows_examined ?? 0,
+                                'query' => $entry->sql_text ?? '',
+                            ];
+                        }, $slowQueries);
+                    } catch (\Exception $e) {
+                        // mysql.slow_log might not be available
+                        $logs = [];
+                    }
+                    break;
+
+                case 'general':
+                default:
+                    // Get general query log entries
+                    try {
+                        $generalLog = $connection->select("
+                            SELECT 
+                                event_time,
+                                user_host,
+                                thread_id,
+                                server_id,
+                                command_type,
+                                argument as query
+                            FROM mysql.general_log
+                            WHERE command_type = 'Query'
+                            ORDER BY event_time DESC
+                            LIMIT {$limit}
+                        ");
+                        $logs = array_map(function ($entry) {
+                            return [
+                                'timestamp' => $entry->event_time,
+                                'user_host' => $entry->user_host ?? '',
+                                'thread_id' => $entry->thread_id ?? null,
+                                'query' => $entry->query ?? '',
+                            ];
+                        }, $generalLog);
+                    } catch (\Exception $e) {
+                        // mysql.general_log might not be available
+                        $logs = [];
+                    }
+                    break;
+            }
+
+            return [
+                'logs' => $logs,
+                'type' => $logType,
+                'count' => count($logs),
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_logs');
+        }
+    }
+
+    /**
+     * Get database settings and variables.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getSettings(Server $server, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_settings', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_settings');
+
+            // Get database character set and collation
+            $dbInfo = $connection->selectOne("
+                SELECT 
+                    DEFAULT_CHARACTER_SET_NAME as charset,
+                    DEFAULT_COLLATION_NAME as collation
+                FROM information_schema.SCHEMATA
+                WHERE SCHEMA_NAME = ?
+            ", [$targetDatabase]);
+
+            // Get important MySQL variables
+            $variables = $connection->select("SHOW VARIABLES WHERE Variable_name IN (
+                'character_set_server',
+                'collation_server',
+                'max_connections',
+                'max_allowed_packet',
+                'innodb_buffer_pool_size',
+                'query_cache_size',
+                'slow_query_log',
+                'general_log'
+            )");
+
+            $vars = [];
+            foreach ($variables as $var) {
+                $vars[$var->Variable_name] = $var->Value;
+            }
+
+            return [
+                'database' => [
+                    'name' => $targetDatabase,
+                    'charset' => $dbInfo->charset ?? 'utf8mb4',
+                    'collation' => $dbInfo->collation ?? 'utf8mb4_unicode_ci',
+                ],
+                'server' => $vars,
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_settings');
+        }
+    }
+
+    /**
+     * Update database settings (character set and collation).
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function updateSettings(Server $server, ?string $charset = null, ?string $collation = null, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_update_settings', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_update_settings');
+            $escapedDb = str_replace('`', '``', $targetDatabase);
+
+            $updates = [];
+            if ($charset) {
+                $updates[] = "DEFAULT CHARACTER SET = " . $connection->getPdo()->quote($charset);
+            }
+            if ($collation) {
+                $updates[] = "DEFAULT COLLATE = " . $connection->getPdo()->quote($collation);
+            }
+
+            if (!empty($updates)) {
+                $sql = "ALTER DATABASE `{$escapedDb}` " . implode(' ', $updates);
+                $connection->statement($sql);
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Database settings updated successfully',
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_update_settings');
+        }
+    }
+
+    /**
      * Format bytes to human readable format.
      */
     private function formatBytes(int $bytes, int $precision = 2): string

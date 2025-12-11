@@ -137,6 +137,9 @@ Route::group([
         Route::put('/tables/data', [Client\Servers\DatabaseController::class, 'updateRow']);
         Route::delete('/tables/data', [Client\Servers\DatabaseController::class, 'deleteRow']);
         Route::post('/query', [Client\Servers\DatabaseController::class, 'executeQuery']);
+        Route::get('/logs', [Client\Servers\DatabaseController::class, 'getLogs']);
+        Route::get('/settings', [Client\Servers\DatabaseController::class, 'getSettings']);
+        Route::put('/settings', [Client\Servers\DatabaseController::class, 'updateSettings']);
     });
 
     Route::group(['prefix' => '/files'], function () {

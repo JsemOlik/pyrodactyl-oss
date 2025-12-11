@@ -439,4 +439,81 @@ class DatabaseController extends ClientApiController
             })
             ->toArray();
     }
+
+    /**
+     * Get database logs.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getLogs(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'type' => 'nullable|string|in:error,slow,general',
+            'limit' => 'nullable|integer|min:1|max:1000',
+            'database' => 'nullable|string',
+        ]);
+
+        $result = $this->dashboardService->getLogs(
+            $server,
+            $request->input('type', 'general'),
+            $request->input('limit', 100),
+            $request->input('database')
+        );
+
+        return $this->fractal->item($result)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Get database settings.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getSettings(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'database' => 'nullable|string',
+        ]);
+
+        $result = $this->dashboardService->getSettings(
+            $server,
+            $request->input('database')
+        );
+
+        return $this->fractal->item($result)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Update database settings.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function updateSettings(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'charset' => 'nullable|string|max:50',
+            'collation' => 'nullable|string|max:50',
+            'database' => 'nullable|string',
+        ]);
+
+        $result = $this->dashboardService->updateSettings(
+            $server,
+            $request->input('charset'),
+            $request->input('collation'),
+            $request->input('database')
+        );
+
+        return $this->fractal->item($result)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
 }
