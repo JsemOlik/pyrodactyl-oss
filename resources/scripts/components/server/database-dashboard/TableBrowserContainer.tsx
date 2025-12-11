@@ -1,5 +1,5 @@
-import { Table, Eye, TrashBin, Plus } from '@gravity-ui/icons';
-import { Form, Formik, FormikHelpers, FieldArray, Field as FormikField } from 'formik';
+import { Eye, Plus, Table, TrashBin } from '@gravity-ui/icons';
+import { FieldArray, Form, Formik, Field as FormikField, FormikHelpers } from 'formik';
 import { useState } from 'react';
 import useSWR from 'swr';
 import { array, object, string } from 'yup';
@@ -17,14 +17,15 @@ import Spinner from '@/components/elements/Spinner';
 import { PageListContainer, PageListItem } from '@/components/elements/pages/PageList';
 
 import { httpErrorToHuman } from '@/api/http';
-import { ServerContext } from '@/state/server';
-
-import useFlash from '@/plugins/useFlash';
-import listTables, { TableInfo } from '@/api/server/database-dashboard/listTables';
-import getTableStructure, { TableStructure } from '@/api/server/database-dashboard/getTableStructure';
 import createTable, { TableColumn } from '@/api/server/database-dashboard/createTable';
 import deleteTable from '@/api/server/database-dashboard/deleteTable';
 import getDatabaseConnectionInfo from '@/api/server/database-dashboard/getDatabaseConnectionInfo';
+import getTableStructure, { TableStructure } from '@/api/server/database-dashboard/getTableStructure';
+import listTables, { TableInfo } from '@/api/server/database-dashboard/listTables';
+
+import { ServerContext } from '@/state/server';
+
+import useFlash from '@/plugins/useFlash';
 
 interface CreateTableValues {
     name: string;
@@ -74,26 +75,18 @@ const TableBrowserContainer = () => {
         isLoading,
         mutate,
     } = useSWR<TableInfo[]>(
-        uuid && connectionInfo
-            ? [`/api/client/servers/${uuid}/database/tables`, uuid, connectionInfo.database]
-            : null,
+        uuid && connectionInfo ? [`/api/client/servers/${uuid}/database/tables`, uuid, connectionInfo.database] : null,
         () => listTables(uuid!, connectionInfo?.database),
     );
 
-    const {
-        data: tableStructure,
-        isLoading: structureLoading,
-    } = useSWR<TableStructure>(
+    const { data: tableStructure, isLoading: structureLoading } = useSWR<TableStructure>(
         viewTable && uuid && connectionInfo
             ? [`/api/client/servers/${uuid}/database/tables/structure`, viewTable.name, connectionInfo.database]
             : null,
         () => getTableStructure(uuid!, viewTable!.name, connectionInfo?.database),
     );
 
-    const submitTable = (
-        values: CreateTableValues,
-        { setSubmitting, resetForm }: FormikHelpers<CreateTableValues>,
-    ) => {
+    const submitTable = (values: CreateTableValues, { setSubmitting, resetForm }: FormikHelpers<CreateTableValues>) => {
         clearFlashes('table:create');
 
         createTable(uuid!, {
@@ -219,7 +212,9 @@ const TableBrowserContainer = () => {
                                     id={'table_name'}
                                     name={'name'}
                                     label={'Table Name'}
-                                    description={'A name for your table. Only alphanumeric characters and underscores allowed.'}
+                                    description={
+                                        'A name for your table. Only alphanumeric characters and underscores allowed.'
+                                    }
                                 />
                                 <div className='mt-6'>
                                     <label className='text-sm font-medium text-white mb-2 block'>Columns</label>
@@ -240,7 +235,9 @@ const TableBrowserContainer = () => {
                                                             <FormikField name={`columns.${index}.type`}>
                                                                 {({ field }: any) => (
                                                                     <div className='flex flex-col gap-2'>
-                                                                        <label className='text-sm text-[#ffffff77]'>Type</label>
+                                                                        <label className='text-sm text-[#ffffff77]'>
+                                                                            Type
+                                                                        </label>
                                                                         <select
                                                                             {...field}
                                                                             className='px-4 py-2 rounded-lg outline-hidden bg-[#ffffff17] text-sm text-white'
@@ -456,7 +453,9 @@ const TableBrowserContainer = () => {
                                         {tableStructure.columns.map((column, idx) => (
                                             <tr key={idx} className='border-b border-white/5'>
                                                 <td className='p-2 text-white font-mono text-sm'>{column.name}</td>
-                                                <td className='p-2 text-white/80 font-mono text-sm'>{column.fullType}</td>
+                                                <td className='p-2 text-white/80 font-mono text-sm'>
+                                                    {column.fullType}
+                                                </td>
                                                 <td className='p-2 text-white/80 text-sm'>
                                                     {column.nullable ? 'YES' : 'NO'}
                                                 </td>
@@ -488,9 +487,7 @@ const TableBrowserContainer = () => {
                                                 )}
                                                 <span className='text-xs text-white/60'>{index.type}</span>
                                             </div>
-                                            <p className='text-sm text-white/80'>
-                                                Columns: {index.columns.join(', ')}
-                                            </p>
+                                            <p className='text-sm text-white/80'>Columns: {index.columns.join(', ')}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -545,7 +542,9 @@ const TableBrowserContainer = () => {
                                             <p className='text-zinc-300'>{table.engine}</p>
                                         </div>
                                         <div>
-                                            <p className='text-xs text-zinc-500 uppercase tracking-wide mb-1'>Collation</p>
+                                            <p className='text-xs text-zinc-500 uppercase tracking-wide mb-1'>
+                                                Collation
+                                            </p>
                                             <p className='text-zinc-300 font-mono text-xs'>{table.collation}</p>
                                         </div>
                                     </div>
