@@ -187,7 +187,11 @@ const DatabaseSettingsContainer = () => {
                                                     Refresh
                                                 </ActionButton>
                                                 <ActionButton variant='primary' type='submit' disabled={isSubmitting}>
-                                                    {isSubmitting || isSaving ? <Spinner size='small' /> : 'Save Changes'}
+                                                    {isSubmitting || isSaving ? (
+                                                        <Spinner size='small' />
+                                                    ) : (
+                                                        'Save Changes'
+                                                    )}
                                                 </ActionButton>
                                             </div>
                                         </div>
@@ -241,17 +245,13 @@ const DatabaseSettingsContainer = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <p className='text-xs text-white/60 uppercase tracking-wide mb-1'>
-                                        Slow Query Log
-                                    </p>
+                                    <p className='text-xs text-white/60 uppercase tracking-wide mb-1'>Slow Query Log</p>
                                     <p className='text-zinc-300 font-mono text-sm'>
                                         {settings.server.slow_query_log === 'ON' ? 'Enabled' : 'Disabled'}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className='text-xs text-white/60 uppercase tracking-wide mb-1'>
-                                        General Log
-                                    </p>
+                                    <p className='text-xs text-white/60 uppercase tracking-wide mb-1'>General Log</p>
                                     <p className='text-zinc-300 font-mono text-sm'>
                                         {settings.server.general_log === 'ON' ? 'Enabled' : 'Disabled'}
                                     </p>
