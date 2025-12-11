@@ -1,4 +1,4 @@
-import { Eye, Plus, Table, TrashBin } from '@gravity-ui/icons';
+import { Eye, LayoutHeaderCellsLarge, Plus, TrashBin } from '@gravity-ui/icons';
 import { FieldArray, Form, Formik, Field as FormikField, FormikHelpers } from 'formik';
 import { useState } from 'react';
 import useSWR from 'swr';
@@ -501,7 +501,7 @@ const TableBrowserContainer = () => {
                 <div className='flex flex-col items-center justify-center min-h-[60vh] py-12 px-4'>
                     <div className='text-center'>
                         <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-[#ffffff11] flex items-center justify-center'>
-                            <Table className='w-8 h-8 text-zinc-400' fill='currentColor' />
+                            <LayoutHeaderCellsLarge className='w-8 h-8 text-zinc-400' fill='currentColor' />
                         </div>
                         <h3 className='text-lg font-medium text-zinc-200 mb-2'>No tables found</h3>
                         <p className='text-sm text-zinc-400 max-w-sm'>
