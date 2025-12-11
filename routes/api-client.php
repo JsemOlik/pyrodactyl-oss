@@ -125,6 +125,9 @@ Route::group([
         Route::get('/connection', [Client\Servers\DatabaseController::class, 'getConnectionInfo']);
         Route::get('/metrics', [Client\Servers\DatabaseController::class, 'getMetrics']);
         Route::post('/connection/test', [Client\Servers\DatabaseController::class, 'testConnection']);
+        Route::get('/databases', [Client\Servers\DatabaseController::class, 'listDatabases']);
+        Route::post('/databases', [Client\Servers\DatabaseController::class, 'createDatabase']);
+        Route::delete('/databases', [Client\Servers\DatabaseController::class, 'deleteDatabase']);
     });
 
     Route::group(['prefix' => '/files'], function () {

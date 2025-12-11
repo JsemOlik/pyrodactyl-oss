@@ -149,4 +149,65 @@ class DatabaseController extends ClientApiController
 
         return response()->json(['success' => true, 'message' => 'Connection successful']);
     }
+
+    /**
+     * List all databases on the server's database host.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function listDatabases(GetDatabasesRequest $request, Server $server): array
+    {
+        $databases = $this->dashboardService->listDatabases($server);
+
+        return $this->fractal->collection($databases)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Create a new database on the server's database host.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function createDatabase(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'name' => 'required|string|min:1|max:64|regex:/^[a-zA-Z0-9_]+$/',
+            'username' => 'nullable|string|min:1|max:32|regex:/^[a-zA-Z0-9_]+$/',
+            'password' => 'nullable|string|min:1',
+            'remote' => 'nullable|string|max:255',
+        ]);
+
+        $database = $this->dashboardService->createDatabase(
+            $server,
+            $request->input('name'),
+            $request->input('username'),
+            $request->input('password'),
+            $request->input('remote', '%')
+        );
+
+        return $this->fractal->item($database)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Delete a database from the server's database host.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function deleteDatabase(GetDatabasesRequest $request, Server $server): Response
+    {
+        $request->validate([
+            'name' => 'required|string',
+        ]);
+
+        $this->dashboardService->deleteDatabase($server, $request->input('name'));
+
+        return response()->json(['success' => true, 'message' => 'Database deleted successfully']);
+    }
 }
