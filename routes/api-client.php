@@ -128,6 +128,10 @@ Route::group([
         Route::get('/databases', [Client\Servers\DatabaseController::class, 'listDatabases']);
         Route::post('/databases', [Client\Servers\DatabaseController::class, 'createDatabase']);
         Route::delete('/databases', [Client\Servers\DatabaseController::class, 'deleteDatabase']);
+        Route::get('/tables', [Client\Servers\DatabaseController::class, 'listTables']);
+        Route::get('/tables/structure', [Client\Servers\DatabaseController::class, 'getTableStructure']);
+        Route::post('/tables', [Client\Servers\DatabaseController::class, 'createTable']);
+        Route::delete('/tables', [Client\Servers\DatabaseController::class, 'deleteTable']);
     });
 
     Route::group(['prefix' => '/files'], function () {

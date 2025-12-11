@@ -1,6 +1,15 @@
 'use client';
 
-import { ChartLine, Database, Ellipsis, FileText, Gear, House, Table, Terminal } from '@gravity-ui/icons';
+import {
+    ChartLine,
+    Database,
+    Ellipsis,
+    FileText,
+    Gear,
+    House,
+    LayoutHeaderCellsLarge,
+    Terminal,
+} from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import React, { Fragment, Suspense, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
@@ -252,7 +261,7 @@ const DatabaseRouter = () => {
                                         to={`/server/${id}/tables`}
                                         end
                                     >
-                                        <Table width={22} height={22} fill='currentColor' />
+                                        <LayoutHeaderCellsLarge width={22} height={22} fill='currentColor' />
                                         <p>Tables</p>
                                     </NavLink>
                                 </Can>

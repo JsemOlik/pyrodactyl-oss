@@ -300,6 +300,303 @@ class DatabaseDashboardService
     }
 
     /**
+     * List all tables in the server's primary database.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function listTables(Server $server, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_tables', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_tables');
+
+            // Get all tables with their sizes
+            $tables = $connection->select(
+                "SELECT 
+                    TABLE_NAME as name,
+                    ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) as size_mb,
+                    TABLE_ROWS as row_count,
+                    ENGINE as engine,
+                    TABLE_COLLATION as collation
+                FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = ?
+                ORDER BY TABLE_NAME",
+                [$targetDatabase]
+            );
+
+            return array_map(function ($table) {
+                return [
+                    'name' => $table->name,
+                    'size' => (float) ($table->size_mb ?? 0),
+                    'sizeFormatted' => $this->formatBytes((int) (($table->size_mb ?? 0) * 1024 * 1024)),
+                    'rowCount' => (int) ($table->row_count ?? 0),
+                    'engine' => $table->engine ?? 'InnoDB',
+                    'collation' => $table->collation ?? '',
+                ];
+            }, $tables);
+        } finally {
+            $this->databaseManager->purge('dashboard_tables');
+        }
+    }
+
+    /**
+     * Get table structure (columns, indexes, etc.).
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getTableStructure(Server $server, string $tableName, ?string $databaseName = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_structure', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_structure');
+
+            // Get column information
+            $columns = $connection->select(
+                "SELECT 
+                    COLUMN_NAME as name,
+                    DATA_TYPE as type,
+                    COLUMN_TYPE as fullType,
+                    IS_NULLABLE as nullable,
+                    COLUMN_DEFAULT as defaultValue,
+                    COLUMN_KEY as key,
+                    EXTRA as extra,
+                    COLUMN_COMMENT as comment,
+                    CHARACTER_MAXIMUM_LENGTH as maxLength,
+                    NUMERIC_PRECISION as precision,
+                    NUMERIC_SCALE as scale
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                ORDER BY ORDINAL_POSITION",
+                [$targetDatabase, $tableName]
+            );
+
+            // Get indexes
+            $indexes = $connection->select(
+                "SELECT 
+                    INDEX_NAME as name,
+                    COLUMN_NAME as column,
+                    NON_UNIQUE as nonUnique,
+                    SEQ_IN_INDEX as sequence,
+                    INDEX_TYPE as type
+                FROM information_schema.STATISTICS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                ORDER BY INDEX_NAME, SEQ_IN_INDEX",
+                [$targetDatabase, $tableName]
+            );
+
+            // Get table info
+            $tableInfo = $connection->selectOne(
+                "SELECT 
+                    ENGINE as engine,
+                    TABLE_COLLATION as collation,
+                    TABLE_COMMENT as comment,
+                    ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) as size_mb,
+                    TABLE_ROWS as row_count
+                FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?",
+                [$targetDatabase, $tableName]
+            );
+
+            return [
+                'name' => $tableName,
+                'columns' => array_map(function ($col) {
+                    return [
+                        'name' => $col->name,
+                        'type' => $col->type,
+                        'fullType' => $col->fullType,
+                        'nullable' => $col->nullable === 'YES',
+                        'defaultValue' => $col->defaultValue,
+                        'key' => $col->key,
+                        'extra' => $col->extra,
+                        'comment' => $col->comment,
+                        'maxLength' => $col->maxLength,
+                        'precision' => $col->precision,
+                        'scale' => $col->scale,
+                    ];
+                }, $columns),
+                'indexes' => $this->groupIndexes($indexes),
+                'engine' => $tableInfo->engine ?? 'InnoDB',
+                'collation' => $tableInfo->collation ?? '',
+                'comment' => $tableInfo->comment ?? '',
+                'size' => (float) ($tableInfo->size_mb ?? 0),
+                'sizeFormatted' => $this->formatBytes((int) (($tableInfo->size_mb ?? 0) * 1024 * 1024)),
+                'rowCount' => (int) ($tableInfo->row_count ?? 0),
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_structure');
+        }
+    }
+
+    /**
+     * Create a new table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function createTable(Server $server, string $tableName, array $columns, ?string $databaseName = null, ?string $engine = null, ?string $collation = null): array
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Validate table name
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableName)) {
+            throw new \InvalidArgumentException('Table name can only contain alphanumeric characters and underscores.');
+        }
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_create_table', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_create_table');
+
+            // Build CREATE TABLE statement
+            $columnDefinitions = [];
+            foreach ($columns as $column) {
+                $def = "`" . str_replace('`', '``', $column['name']) . "` " . $column['type'];
+                
+                if (isset($column['length']) && $column['length']) {
+                    $def .= "(" . (int) $column['length'] . ")";
+                } elseif (isset($column['precision']) && isset($column['scale'])) {
+                    $def .= "(" . (int) $column['precision'] . "," . (int) $column['scale'] . ")";
+                }
+
+                if (isset($column['unsigned']) && $column['unsigned']) {
+                    $def .= " UNSIGNED";
+                }
+
+                if (isset($column['nullable']) && !$column['nullable']) {
+                    $def .= " NOT NULL";
+                }
+
+                if (isset($column['defaultValue']) && $column['defaultValue'] !== null && $column['defaultValue'] !== '') {
+                    if (strtoupper($column['defaultValue']) === 'CURRENT_TIMESTAMP') {
+                        $def .= " DEFAULT CURRENT_TIMESTAMP";
+                    } else {
+                        $def .= " DEFAULT " . $connection->getPdo()->quote($column['defaultValue']);
+                    }
+                }
+
+                if (isset($column['autoIncrement']) && $column['autoIncrement']) {
+                    $def .= " AUTO_INCREMENT";
+                }
+
+                if (isset($column['comment']) && $column['comment']) {
+                    $def .= " COMMENT " . $connection->getPdo()->quote($column['comment']);
+                }
+
+                $columnDefinitions[] = $def;
+            }
+
+            // Add primary key if specified
+            $primaryKey = null;
+            foreach ($columns as $column) {
+                if (isset($column['primaryKey']) && $column['primaryKey']) {
+                    if ($primaryKey) {
+                        $primaryKey .= ", `" . str_replace('`', '``', $column['name']) . "`";
+                    } else {
+                        $primaryKey = "`" . str_replace('`', '``', $column['name']) . "`";
+                    }
+                }
+            }
+
+            if ($primaryKey) {
+                $columnDefinitions[] = "PRIMARY KEY ({$primaryKey})";
+            }
+
+            $engine = $engine ?? 'InnoDB';
+            $collation = $collation ?? 'utf8mb4_unicode_ci';
+
+            $sql = "CREATE TABLE `" . str_replace('`', '``', $tableName) . "` (\n  " . implode(",\n  ", $columnDefinitions) . "\n) ENGINE={$engine} DEFAULT CHARSET=utf8mb4 COLLATE={$collation}";
+
+            $connection->statement($sql);
+
+            return [
+                'name' => $tableName,
+                'created' => true,
+            ];
+        } finally {
+            $this->databaseManager->purge('dashboard_create_table');
+        }
+    }
+
+    /**
+     * Delete a table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function deleteTable(Server $server, string $tableName, ?string $databaseName = null): bool
+    {
+        $database = $server->databases()->with('host')->first();
+
+        if (!$database) {
+            throw new RecordNotFoundException('No database found for this server.');
+        }
+
+        $host = $database->host;
+        $targetDatabase = $databaseName ?? $database->database;
+
+        // Set up dynamic connection
+        $this->dynamic->set('dashboard_delete_table', $host, $targetDatabase);
+
+        try {
+            $connection = $this->databaseManager->connection('dashboard_delete_table');
+            $escapedTable = str_replace('`', '``', $tableName);
+            $connection->statement("DROP TABLE IF EXISTS `{$escapedTable}`");
+            return true;
+        } finally {
+            $this->databaseManager->purge('dashboard_delete_table');
+        }
+    }
+
+    /**
+     * Group indexes by name.
+     */
+    private function groupIndexes(array $indexes): array
+    {
+        $grouped = [];
+        foreach ($indexes as $index) {
+            $name = $index->name;
+            if (!isset($grouped[$name])) {
+                $grouped[$name] = [
+                    'name' => $name,
+                    'type' => $index->type,
+                    'unique' => $index->nonUnique == 0,
+                    'columns' => [],
+                ];
+            }
+            $grouped[$name]['columns'][] = $index->column;
+        }
+        return array_values($grouped);
+    }
+
+    /**
      * Format bytes to human readable format.
      */
     private function formatBytes(int $bytes, int $precision = 2): string

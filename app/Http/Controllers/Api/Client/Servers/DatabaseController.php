@@ -210,4 +210,100 @@ class DatabaseController extends ClientApiController
 
         return response()->json(['success' => true, 'message' => 'Database deleted successfully']);
     }
+
+    /**
+     * List all tables in the server's database.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function listTables(GetDatabasesRequest $request, Server $server): array
+    {
+        $databaseName = $request->input('database');
+        $tables = $this->dashboardService->listTables($server, $databaseName);
+
+        return $this->fractal->collection($tables)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Get table structure.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function getTableStructure(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'table' => 'required|string',
+            'database' => 'nullable|string',
+        ]);
+
+        $structure = $this->dashboardService->getTableStructure(
+            $server,
+            $request->input('table'),
+            $request->input('database')
+        );
+
+        return $this->fractal->item($structure)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Create a new table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function createTable(GetDatabasesRequest $request, Server $server): array
+    {
+        $request->validate([
+            'name' => 'required|string|min:1|max:64|regex:/^[a-zA-Z0-9_]+$/',
+            'columns' => 'required|array|min:1',
+            'columns.*.name' => 'required|string|regex:/^[a-zA-Z0-9_]+$/',
+            'columns.*.type' => 'required|string',
+            'database' => 'nullable|string',
+            'engine' => 'nullable|string',
+            'collation' => 'nullable|string',
+        ]);
+
+        $table = $this->dashboardService->createTable(
+            $server,
+            $request->input('name'),
+            $request->input('columns'),
+            $request->input('database'),
+            $request->input('engine'),
+            $request->input('collation')
+        );
+
+        return $this->fractal->item($table)
+            ->transformWith(function ($item) {
+                return ['attributes' => $item];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Delete a table.
+     *
+     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
+     */
+    public function deleteTable(GetDatabasesRequest $request, Server $server): Response
+    {
+        $request->validate([
+            'table' => 'required|string',
+            'database' => 'nullable|string',
+        ]);
+
+        $this->dashboardService->deleteTable(
+            $server,
+            $request->input('table'),
+            $request->input('database')
+        );
+
+        return response()->json(['success' => true, 'message' => 'Table deleted successfully']);
+    }
 }
