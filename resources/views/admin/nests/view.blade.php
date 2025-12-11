@@ -32,6 +32,19 @@
                             <textarea name="description" class="form-control" rows="7">{{ $nest->description }}</textarea>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="control-label">Dashboard Type <span class="field-required"></span></label>
+                        <div>
+                            <select name="dashboard_type" class="form-control">
+                                <option value="game-server" {{ ($nest->dashboard_type ?? 'game-server') === 'game-server' ? 'selected' : '' }}>Game Server</option>
+                                <option value="database" {{ ($nest->dashboard_type ?? '') === 'database' ? 'selected' : '' }}>Database</option>
+                                <option value="website" {{ ($nest->dashboard_type ?? '') === 'website' ? 'selected' : '' }}>Website</option>
+                                <option value="s3-storage" {{ ($nest->dashboard_type ?? '') === 's3-storage' ? 'selected' : '' }}>S3 Storage</option>
+                                <option value="vps" {{ ($nest->dashboard_type ?? '') === 'vps' ? 'selected' : '' }}>VPS</option>
+                            </select>
+                            <p class="text-muted"><small>Determines which dashboard interface will be shown for servers using this nest.</small></p>
+                        </div>
+                    </div>
                 </div>
                 <div class="box-footer">
                     {!! csrf_field() !!}

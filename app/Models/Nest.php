@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property string $author
  * @property string $name
  * @property string|null $description
+ * @property string $dashboard_type
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Server[] $servers
@@ -38,13 +39,23 @@ class Nest extends Model
     protected $fillable = [
         'name',
         'description',
+        'dashboard_type',
     ];
 
     public static array $validationRules = [
         'author' => 'required|string|email',
         'name' => 'required|string|max:191',
         'description' => 'nullable|string',
+        'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage,vps',
     ];
+
+    /**
+     * Get the dashboard type, defaulting to 'game-server' if not set.
+     */
+    public function getDashboardTypeAttribute(?string $value): string
+    {
+        return $value ?? 'game-server';
+    }
 
     /**
      * Gets all eggs associated with this service.

@@ -69,6 +69,7 @@ class ServerTransformer extends BaseClientTransformer
       'egg_features' => $server->egg->inherit_features,
       'egg' => $server->egg->uuid,
       'nest' => $server->nest_id,
+      'dashboard_type' => $server->dashboard_type,
       'feature_limits' => [
         'databases' => $server->database_limit,
         'allocations' => $server->allocation_limit,

@@ -59,6 +59,7 @@ use Pterodactyl\Models\ServerSubdomain;
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Database[] $databases
  * @property int|null $databases_count
  * @property Egg|null $egg
+ * @property string $dashboard_type
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Mount[] $mounts
  * @property int|null $mounts_count
  * @property Nest $nest
@@ -434,6 +435,17 @@ class Server extends Model
     public function allowsAllocations(): bool
     {
         return is_null($this->allocation_limit) || $this->allocation_limit > 0;
+    }
+
+    /**
+     * Get the dashboard type for this server.
+     * Inherits from the egg's effective dashboard type.
+     */
+    public function getDashboardTypeAttribute(): string
+    {
+        $this->loadMissing('egg.nest');
+
+        return $this->egg->effective_dashboard_type ?? 'game-server';
     }
 
     /**
