@@ -1,4 +1,4 @@
-import { Gear, Refresh } from '@gravity-ui/icons';
+import { ArrowRotateRight, Gear } from '@gravity-ui/icons';
 import { Form, Formik } from 'formik';
 import { useState } from 'react';
 import useSWR from 'swr';
@@ -185,10 +185,17 @@ const DatabaseSettingsContainer = () => {
                                                         onClick={() => mutate()}
                                                         disabled={isSubmitting}
                                                     >
-                                                        <Refresh className='w-4 h-4 mr-2' fill='currentColor' />
+                                                        <ArrowRotateRight
+                                                            className='w-4 h-4 mr-2'
+                                                            fill='currentColor'
+                                                        />
                                                         Refresh
                                                     </ActionButton>
-                                                    <ActionButton variant='primary' type='submit' disabled={isSubmitting}>
+                                                    <ActionButton
+                                                        variant='primary'
+                                                        type='submit'
+                                                        disabled={isSubmitting}
+                                                    >
                                                         {isSubmitting || isSaving ? (
                                                             <Spinner size='small' />
                                                         ) : (
