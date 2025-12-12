@@ -452,8 +452,9 @@ class Server extends Model
             return 'game-server';
         }
         
-        // Check if egg has its own dashboard_type set
-        $eggDashboardType = $this->egg->getAttributes()['dashboard_type'] ?? null;
+        // Check if egg has its own dashboard_type set (use raw attribute to avoid accessor)
+        $eggAttributes = $this->egg->getAttributes();
+        $eggDashboardType = $eggAttributes['dashboard_type'] ?? null;
         if (!is_null($eggDashboardType) && $eggDashboardType !== '') {
             return $eggDashboardType;
         }
@@ -467,8 +468,12 @@ class Server extends Model
             return 'game-server';
         }
 
-        // Get nest's dashboard_type (using accessor which handles defaults)
-        return $this->egg->nest->dashboard_type;
+        // Get nest's dashboard_type from raw attributes (avoid accessor to get actual DB value)
+        $nestAttributes = $this->egg->nest->getAttributes();
+        $nestDashboardType = $nestAttributes['dashboard_type'] ?? null;
+        
+        // Return the nest's dashboard_type or default to 'game-server'
+        return $nestDashboardType ?? 'game-server';
     }
 
     /**
