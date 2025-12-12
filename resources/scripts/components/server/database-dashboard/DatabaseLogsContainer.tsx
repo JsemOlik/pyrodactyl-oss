@@ -1,4 +1,4 @@
-import { FileText, Funnel, Refresh } from '@gravity-ui/icons';
+import { ArrowRotateRight, FileText, Funnel } from '@gravity-ui/icons';
 import { useState } from 'react';
 import useSWR from 'swr';
 
@@ -83,7 +83,7 @@ const DatabaseLogsContainer = () => {
                                 </Select>
                             </div>
                             <ActionButton variant='secondary' size='sm' onClick={() => mutate()}>
-                                <Refresh className='w-4 h-4 mr-2' fill='currentColor' />
+                                <ArrowRotateRight className='w-4 h-4 mr-2' fill='currentColor' />
                                 Refresh
                             </ActionButton>
                         </div>
