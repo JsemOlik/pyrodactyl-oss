@@ -4,6 +4,7 @@ import useSWR from 'swr';
 
 import FlashMessageRender from '@/components/FlashMessageRender';
 import ActionButton from '@/components/elements/ActionButton';
+import Can from '@/components/elements/Can';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import ServerContentBlock from '@/components/elements/ServerContentBlock';
 import Spinner from '@/components/elements/Spinner';
@@ -70,6 +71,7 @@ const QueryInterfaceContainer = () => {
         <ServerContentBlock title='Query'>
             <FlashMessageRender byKey='query' />
             <MainPageHeader title={serverName || 'Database'} />
+            <Can action={'database.read'} matchAny>
             <div className='w-full h-full min-h-full flex-1 flex flex-col px-2 sm:px-0 mt-6'>
                 <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 h-full'>
                     {/* Query Editor */}
@@ -179,6 +181,12 @@ const QueryInterfaceContainer = () => {
                     </div>
                 )}
             </div>
+            </Can>
+            <Can action={'database.read'} matchAny={false}>
+                <div className='text-center py-8 text-white/60'>
+                    You do not have permission to execute queries on this database.
+                </div>
+            </Can>
         </ServerContentBlock>
     );
 };

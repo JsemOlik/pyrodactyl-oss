@@ -6,6 +6,7 @@ import { object, string } from 'yup';
 
 import FlashMessageRender from '@/components/FlashMessageRender';
 import ActionButton from '@/components/elements/ActionButton';
+import Can from '@/components/elements/Can';
 import Field from '@/components/elements/Field';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import ServerContentBlock from '@/components/elements/ServerContentBlock';
@@ -177,23 +178,30 @@ const DatabaseSettingsContainer = () => {
                                                 </select>
                                             </div>
 
-                                            <div className='flex gap-3 justify-end pt-4'>
-                                                <ActionButton
-                                                    variant='secondary'
-                                                    onClick={() => mutate()}
-                                                    disabled={isSubmitting}
-                                                >
-                                                    <Refresh className='w-4 h-4 mr-2' fill='currentColor' />
-                                                    Refresh
-                                                </ActionButton>
-                                                <ActionButton variant='primary' type='submit' disabled={isSubmitting}>
-                                                    {isSubmitting || isSaving ? (
-                                                        <Spinner size='small' />
-                                                    ) : (
-                                                        'Save Changes'
-                                                    )}
-                                                </ActionButton>
-                                            </div>
+                                            <Can action={'database.update'} matchAny>
+                                                <div className='flex gap-3 justify-end pt-4'>
+                                                    <ActionButton
+                                                        variant='secondary'
+                                                        onClick={() => mutate()}
+                                                        disabled={isSubmitting}
+                                                    >
+                                                        <Refresh className='w-4 h-4 mr-2' fill='currentColor' />
+                                                        Refresh
+                                                    </ActionButton>
+                                                    <ActionButton variant='primary' type='submit' disabled={isSubmitting}>
+                                                        {isSubmitting || isSaving ? (
+                                                            <Spinner size='small' />
+                                                        ) : (
+                                                            'Save Changes'
+                                                        )}
+                                                    </ActionButton>
+                                                </div>
+                                            </Can>
+                                            <Can action={'database.update'} matchAny={false}>
+                                                <div className='text-sm text-white/60 pt-4'>
+                                                    You do not have permission to update database settings.
+                                                </div>
+                                            </Can>
                                         </div>
                                     </Form>
                                 )}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 
 import ActionButton from '@/components/elements/ActionButton';
+import Can from '@/components/elements/Can';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 import ServerContentBlock from '@/components/elements/ServerContentBlock';
 import Spinner from '@/components/elements/Spinner';
@@ -179,32 +180,34 @@ const DatabaseOverviewContainer = () => {
                                         </ActionButton>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className='text-sm text-white/60'>Password</label>
-                                    <div className='flex items-center gap-2 mt-1'>
-                                        <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
-                                            {showPassword && connectionInfo.password
-                                                ? connectionInfo.password
-                                                : '••••••••'}
-                                        </code>
-                                        <ActionButton
-                                            variant='secondary'
-                                            size='sm'
-                                            onClick={() => setShowPassword(!showPassword)}
-                                        >
-                                            {showPassword ? 'Hide' : 'Show'}
-                                        </ActionButton>
-                                        {connectionInfo.password && (
+                                <Can action={'database.view_password'} matchAny>
+                                    <div>
+                                        <label className='text-sm text-white/60'>Password</label>
+                                        <div className='flex items-center gap-2 mt-1'>
+                                            <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
+                                                {showPassword && connectionInfo.password
+                                                    ? connectionInfo.password
+                                                    : '••••••••'}
+                                            </code>
                                             <ActionButton
                                                 variant='secondary'
                                                 size='sm'
-                                                onClick={() => copyToClipboard(connectionInfo.password || '')}
+                                                onClick={() => setShowPassword(!showPassword)}
                                             >
-                                                Copy
+                                                {showPassword ? 'Hide' : 'Show'}
                                             </ActionButton>
-                                        )}
+                                            {connectionInfo.password && (
+                                                <ActionButton
+                                                    variant='secondary'
+                                                    size='sm'
+                                                    onClick={() => copyToClipboard(connectionInfo.password || '')}
+                                                >
+                                                    Copy
+                                                </ActionButton>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                </Can>
                                 <div className='pt-2'>
                                     <ActionButton variant='primary' onClick={testConnection}>
                                         Test Connection
