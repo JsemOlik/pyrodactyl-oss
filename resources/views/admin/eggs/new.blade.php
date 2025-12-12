@@ -46,6 +46,18 @@
                                 <p class="text-muted small">A description of this Egg.</p>
                             </div>
                             <div class="form-group">
+                                <label for="pDashboardType" class="form-label">Dashboard Type</label>
+                                <select name="dashboard_type" id="pDashboardType" class="form-control">
+                                    <option value="">Inherit from Nest</option>
+                                    <option value="game-server" {{ old('dashboard_type') === 'game-server' ? 'selected' : '' }}>Game Server</option>
+                                    <option value="database" {{ old('dashboard_type') === 'database' ? 'selected' : '' }}>Database</option>
+                                    <option value="website" {{ old('dashboard_type') === 'website' ? 'selected' : '' }}>Website</option>
+                                    <option value="s3-storage" {{ old('dashboard_type') === 's3-storage' ? 'selected' : '' }}>S3 Storage</option>
+                                    <option value="vps" {{ old('dashboard_type') === 'vps' ? 'selected' : '' }}>VPS</option>
+                                </select>
+                                <p class="text-muted small">Determines which dashboard interface will be shown for servers using this egg. If left empty, inherits from the nest's dashboard type.</p>
+                            </div>
+                            <div class="form-group">
                                 <div class="checkbox checkbox-primary no-margin-bottom">
                                     <input id="pForceOutgoingIp" name="force_outgoing_ip" type="checkbox" value="1" {{ \Pterodactyl\Helpers\Utilities::checked('force_outgoing_ip', 0) }} />
                                     <label for="pForceOutgoingIp" class="strong">Force Outgoing IP</label>
