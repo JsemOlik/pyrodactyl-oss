@@ -230,12 +230,20 @@ const HostingContainer = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClick}
-            className='relative overflow-hidden bg-brand px-8 py-4 font-bold text-white group'
+            className='relative overflow-hidden bg-transparent hover:border-brand hover:border-1 px-8 py-4 font-bold text-white group'
             style={{
                 borderRadius: 'var(--button-border-radius, 0.5rem)',
                 boxShadow: '0 0 20px color-mix(in srgb, var(--color-brand) 40%, transparent)',
             }}
         >
+            {/* Brand color overlay that sweeps from right to left on hover */}
+            <div
+                className='absolute inset-y-0 right-0 bg-brand transition-all duration-300 ease-in-out w-full group-hover:w-0'
+                style={{
+                    borderRadius: 'var(--button-border-radius, 0.5rem)',
+                }}
+            />
+
             <span className='relative z-10 flex items-center gap-2'>
                 {text} <ChevronRight width={16} height={16} />
             </span>
@@ -407,7 +415,7 @@ const HostingContainer = () => {
                 </section>
 
                 {/* USED BY (Infinite Scroll) */}
-                <section className='py-10 border-y border-white/5 bg-white/5 backdrop-blur-sm'>
+                <section className='py-10 border-y border-white/5 bg-neutral-950/65 backdrop-blur-md'>
                     <InfiniteMarquee speed={30}>
                         {[
                             'MICROSOFT',
