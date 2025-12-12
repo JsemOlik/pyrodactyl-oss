@@ -52,7 +52,7 @@ class Nest extends Model
     /**
      * Get the dashboard type, defaulting to 'game-server' if not set.
      */
-    public function getDashboardTypeAttribute(?string $value): string
+    public function getDashboardTypeAttribute($value): string
     {
         return $value ?? 'game-server';
     }

@@ -272,9 +272,12 @@ class Egg extends Model
      */
     public function getEffectiveDashboardTypeAttribute(): string
     {
+        // Check raw attribute first to avoid infinite recursion
+        $eggDashboardType = $this->attributes['dashboard_type'] ?? null;
+        
         // If egg has its own dashboard_type, use it
-        if (!is_null($this->dashboard_type) && $this->dashboard_type !== '') {
-            return $this->dashboard_type;
+        if (!is_null($eggDashboardType) && $eggDashboardType !== '') {
+            return $eggDashboardType;
         }
 
         // Otherwise, inherit from nest
@@ -286,7 +289,8 @@ class Egg extends Model
             return 'game-server';
         }
 
-        return $this->nest->dashboard_type ?? 'game-server';
+        // Get nest's dashboard_type (using accessor which handles defaults)
+        return $this->nest->dashboard_type;
     }
 
     /**
