@@ -1,9 +1,21 @@
+import {
+    ArrowRight,
+    ArrowUpToLine,
+    ChevronRight,
+    Database,
+    Gear,
+    Link as LinkIcon,
+    Magnifier,
+    Play,
+    Server,
+    Shield,
+} from '@gravity-ui/icons';
+import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 
 import Navbar from '@/components/Navbar';
-import ActionButton from '@/components/elements/ActionButton';
 
 import getHostingPlans, {
     CustomPlanCalculation,
@@ -16,9 +28,37 @@ import { useStoreState } from '@/state/hooks';
 
 type HostingType = 'game-server' | 'vps';
 
+// --- ANIMATION VARIANTS ---
+const containerVar = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1 },
+    },
+};
+
+const itemVar = {
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 50 } },
+};
+
+// --- DATA: PRICING CONFIGURATION ---
+const BILLING_CYCLES = [
+    { label: 'Monthly', discount: 0, interval: 'month' },
+    { label: 'Quarterly', discount: 0.05, interval: 'quarter' },
+    { label: 'Bi-Annual', discount: 0.1, interval: 'half-year' },
+    { label: 'Yearly', discount: 0.2, interval: 'year' },
+];
+
+const CATEGORIES = ['Game', 'VPS'];
+
 const HostingContainer = () => {
     const navigate = useNavigate();
     const [hostingType, setHostingType] = useState<HostingType>('game-server');
+    const [activeCategory, setActiveCategory] = useState('Game');
+    const [billingIndex, setBillingIndex] = useState(0);
+    const [customRam, _setCustomRam] = useState(16);
+
     const {
         data: plans,
         error,
@@ -26,10 +66,9 @@ const HostingContainer = () => {
     } = useSWR<HostingPlan[]>(['/api/client/hosting/plans', hostingType], () => getHostingPlans(hostingType));
     const isAuthenticated = useStoreState((state) => !!state.user.data?.uuid);
 
-    const [customMemory, setCustomMemory] = useState<number>(2048);
-    const customInterval = 'month';
+    const [customMemory, setCustomMemory] = useState<number>(16384); // 16GB in MB
     const [customPlanCalculation, setCustomPlanCalculation] = useState<CustomPlanCalculation | null>(null);
-    const [isCalculating, setIsCalculating] = useState(false);
+    const [_isCalculating, setIsCalculating] = useState(false);
 
     // Check server creation status
     const { data: serverCreationStatus } = useSWR<{ enabled: boolean }>(
@@ -44,6 +83,20 @@ const HostingContainer = () => {
         document.title = 'Oasis Cloud - Complete I.T. Solutions';
     }, []);
 
+    // Sync category with hosting type
+    useEffect(() => {
+        if (activeCategory === 'Game') {
+            setHostingType('game-server');
+        } else if (activeCategory === 'VPS') {
+            setHostingType('vps');
+        }
+    }, [activeCategory]);
+
+    // Sync custom RAM slider with custom memory
+    useEffect(() => {
+        setCustomMemory(customRam * 1024); // Convert GB to MB
+    }, [customRam]);
+
     useEffect(() => {
         const calculatePrice = async () => {
             if (customMemory < 512 || customMemory > 32768) {
@@ -52,7 +105,10 @@ const HostingContainer = () => {
 
             setIsCalculating(true);
             try {
-                const calculation = await calculateCustomPlan(customMemory, customInterval);
+                const cycle = BILLING_CYCLES[billingIndex];
+                if (!cycle) return;
+                const interval = cycle.interval;
+                const calculation = await calculateCustomPlan(customMemory, interval);
                 setCustomPlanCalculation(calculation);
             } catch (err) {
                 console.error('Failed to calculate custom plan:', httpErrorToHuman(err));
@@ -63,16 +119,7 @@ const HostingContainer = () => {
 
         const timeoutId = setTimeout(calculatePrice, 500);
         return () => clearTimeout(timeoutId);
-    }, [customMemory, customInterval]);
-
-    const formatPrice = (price: number, currency: string = 'USD'): string => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(price);
-    };
+    }, [customMemory, billingIndex]);
 
     const formatMemory = (memory: number | null): string => {
         if (!memory) return 'N/A';
@@ -80,24 +127,50 @@ const HostingContainer = () => {
         return `${(memory / 1024).toFixed(0)} GB`;
     };
 
-    const getFirstMonthPrice = (price: number, plan?: HostingPlan): number => {
-        if (plan?.attributes.first_month_sales_percentage && plan.attributes.first_month_sales_percentage > 0) {
-            const discount = plan.attributes.first_month_sales_percentage / 100;
-            return Math.round(price * (1 - discount) * 100) / 100;
-        }
-        return price;
-    };
-
-    const getFirstMonthDiscount = (plan?: HostingPlan): number | null => {
-        if (plan?.attributes.first_month_sales_percentage && plan.attributes.first_month_sales_percentage > 0) {
-            return plan.attributes.first_month_sales_percentage;
-        }
-        return null;
-    };
-
     const getVCores = (cpu: number | null): number => {
         if (!cpu) return 0;
         return Math.round(cpu / 100);
+    };
+
+    // Helper to calculate price with discount
+    const getPrice = (base: number, plan?: HostingPlan): number => {
+        const cycle = BILLING_CYCLES[billingIndex];
+        if (!cycle) return base;
+
+        const discount = cycle.discount;
+        let price = base;
+
+        // Apply first month discount if available
+        if (plan?.attributes.first_month_sales_percentage && plan.attributes.first_month_sales_percentage > 0) {
+            const firstMonthDiscount = plan.attributes.first_month_sales_percentage / 100;
+            price = price * (1 - firstMonthDiscount);
+        }
+
+        // Apply billing cycle discount
+        price = price * (1 - discount);
+        return parseFloat(price.toFixed(2));
+    };
+
+    // Get price for a plan based on billing cycle
+    const getPlanPrice = (plan: HostingPlan): number => {
+        const cycle = BILLING_CYCLES[billingIndex];
+        if (!cycle) return plan.attributes.pricing.monthly;
+
+        const interval = cycle.interval;
+        const pricing = plan.attributes.pricing;
+
+        switch (interval) {
+            case 'month':
+                return pricing.monthly;
+            case 'quarter':
+                return pricing.quarterly;
+            case 'half-year':
+                return pricing.half_year;
+            case 'year':
+                return pricing.yearly;
+            default:
+                return pricing.monthly;
+        }
     };
 
     const handlePlanSelect = (plan: HostingPlan) => {
@@ -118,7 +191,7 @@ const HostingContainer = () => {
         navigate(`/hosting/checkout?plan=${plan.attributes.id}&type=${hostingType}`);
     };
 
-    const handleCustomPlanSelect = () => {
+    const _handleCustomPlanSelect = () => {
         if (!customPlanCalculation) {
             return;
         }
@@ -128,842 +201,730 @@ const HostingContainer = () => {
             return;
         }
 
+        const cycle = BILLING_CYCLES[billingIndex];
+        if (!cycle) return;
+
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
-                    from: `/hosting/checkout?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`,
+                    from: `/hosting/checkout?custom=true&memory=${customMemory}&interval=${cycle.interval}&type=${hostingType}`,
                 },
                 replace: false,
             });
             return;
         }
-        navigate(`/hosting/checkout?custom=true&memory=${customMemory}&interval=${customInterval}&type=${hostingType}`);
+        navigate(`/hosting/checkout?custom=true&memory=${customMemory}&interval=${cycle.interval}&type=${hostingType}`);
     };
 
     const scrollToPricing = () => {
-        const pricingSection = document.getElementById('services');
+        const pricingSection = document.getElementById('pricing');
         if (pricingSection) {
             pricingSection.scrollIntoView({ behavior: 'smooth' });
         }
     };
 
+    // --- COMPONENTS ---
+
+    const ShimmerButton = ({ text, onClick }: { text: string; onClick?: () => void }) => (
+        <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onClick}
+            className='relative overflow-hidden bg-brand px-8 py-4 font-bold text-white group'
+            style={{
+                borderRadius: 'var(--button-border-radius, 0.5rem)',
+                boxShadow: '0 0 20px color-mix(in srgb, var(--color-brand) 40%, transparent)',
+            }}
+        >
+            <span className='relative z-10 flex items-center gap-2'>
+                {text} <ChevronRight width={16} height={16} />
+            </span>
+            <div className='absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0' />
+        </motion.button>
+    );
+
+    const ServiceCard = ({
+        icon: Icon,
+        title,
+        desc,
+        colSpan = 'col-span-1',
+        accent = false,
+    }: {
+        icon: React.ComponentType<{ width?: number; height?: number; className?: string }>;
+        title: string;
+        desc: string;
+        colSpan?: string;
+        accent?: boolean;
+    }) => (
+        <motion.div
+            variants={itemVar}
+            whileHover={{
+                y: -8,
+                boxShadow: '0 20px 40px -15px color-mix(in srgb, var(--color-brand) 20%, transparent)',
+            }}
+            className={`${colSpan} group relative overflow-hidden bg-neutral-900 border-l-2 ${accent ? 'border-brand' : 'border-neutral-700 hover:border-brand'} p-8 transition-colors duration-300`}
+        >
+            <div className='absolute inset-0 bg-gradient-to-br from-neutral-800 to-black opacity-0 group-hover:opacity-100 transition-opacity duration-500' />
+            <div className='relative z-10 h-full flex flex-col'>
+                <div
+                    className={`mb-6 inline-flex p-3 ${accent ? 'bg-brand text-white' : 'bg-neutral-800 text-brand group-hover:bg-brand group-hover:text-white'} transition-colors`}
+                    style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                >
+                    <Icon width={28} height={28} />
+                </div>
+                <h3 className='text-xl font-bold text-white mb-3 uppercase tracking-wide'>{title}</h3>
+                <p className='text-neutral-400 text-sm leading-relaxed mb-6 flex-grow'>{desc}</p>
+                <div className='flex items-center text-xs font-bold text-brand opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300'>
+                    SERVICE DETAILS <ArrowRight width={12} height={12} className='ml-1' />
+                </div>
+            </div>
+        </motion.div>
+    );
+
+    const InfiniteMarquee = ({
+        children,
+        direction = 'left',
+        speed = 20,
+    }: {
+        children: React.ReactNode;
+        direction?: 'left' | 'right';
+        speed?: number;
+    }) => {
+        return (
+            <div className='w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]'>
+                <motion.div
+                    className='flex items-center gap-8 md:gap-16 py-4'
+                    animate={{ x: direction === 'left' ? '-50%' : '0%' }}
+                    initial={{ x: direction === 'left' ? '0%' : '-50%' }}
+                    transition={{ ease: 'linear', duration: speed, repeat: Infinity }}
+                >
+                    {children} {children}
+                </motion.div>
+            </div>
+        );
+    };
+
+    // Star icon component (since Gravity UI doesn't have a star icon)
+    const StarIcon = ({ filled = false, size = 14 }: { filled?: boolean; size?: number }) => (
+        <svg
+            width={size}
+            height={size}
+            viewBox='0 0 24 24'
+            fill={filled ? 'currentColor' : 'none'}
+            stroke='currentColor'
+            strokeWidth={2}
+        >
+            <polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2' />
+        </svg>
+    );
+
     return (
-        <div className='h-full min-h-screen bg-[#0a0a0a] overflow-y-auto -mx-2 -my-2 w-[calc(100%+1rem)]'>
+        <div className='min-h-screen bg-black text-white font-sans overflow-x-hidden'>
+            {/* Background Ambience */}
+            <div className='fixed inset-0 z-0 pointer-events-none'>
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-30 mix-blend-overlay" />
+                <div className='absolute inset-0 bg-gradient-to-b from-black/80 via-black/95 to-black' />
+            </div>
+
             <Navbar />
 
-            {/* Hero Section */}
-            <section className='relative overflow-hidden'>
-                <div className='absolute inset-0 bg-gradient-to-br from-[var(--color-brand)]/10 via-transparent to-transparent' />
-                <div className='relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24'>
-                    <div className='text-center'>
-                        <div className='inline-block mb-6'>
-                            <span className='text-xs font-semibold text-white/70 uppercase tracking-wider px-4 py-2 bg-white/5 rounded-full border border-white/10'>
-                                IT SOLUTIONS
-                            </span>
-                            <span className='text-xs font-semibold text-white/70 uppercase tracking-wider px-4 py-2 bg-white/5 rounded-full border border-white/10 ml-2'>
-                                CONSULTING
+            <div className='relative z-10'>
+                {/* HERO SECTION */}
+                <section className='relative pt-40 pb-20 px-6 max-w-7xl mx-auto flex flex-col justify-center min-h-[85vh]'>
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className='max-w-4xl'
+                    >
+                        <div className='flex items-center gap-4 mb-6'>
+                            <span className='w-12 h-[2px] bg-brand' />
+                            <span className='text-brand font-bold tracking-widest text-sm uppercase'>
+                                Professional Hosting
                             </span>
                         </div>
-                        <h1 className='text-6xl md:text-7xl font-bold text-white mb-6 leading-tight'>
-                            Complete I.T. <span className='text-[var(--color-brand)]'>Clean & Simple</span>
+
+                        <h1 className='text-5xl md:text-8xl font-black uppercase leading-[0.9] mb-8'>
+                            Complete{' '}
+                            <span className='text-transparent bg-clip-text bg-gradient-to-r from-neutral-500 to-white'>
+                                Power.
+                            </span>
+                            <br />
+                            <span className='text-brand'>Clean & Simple.</span>
                         </h1>
-                        <p className='text-xl text-white/60 mb-10 max-w-3xl mx-auto leading-relaxed'>
-                            At Oasis Cloud our goal is to provide you with I.T. support that helps your business
-                            succeed.
+
+                        <p className='text-lg text-neutral-400 max-w-xl mb-12 leading-relaxed border-l-2 border-white/20 pl-6'>
+                            At Oasis Cloud, our goal is to provide you with infrastructure that scales effortlessly.
+                            Game servers, VPS, and enterprise storage tailored for success.
                         </p>
-                        <div className='flex flex-col sm:flex-row gap-4 justify-center items-center'>
-                            <ActionButton
-                                variant='primary'
-                                size='lg'
-                                onClick={scrollToPricing}
-                                className='bg-[var(--color-brand)] hover:bg-[var(--color-brand)]/90'
+
+                        <div className='flex gap-4'>
+                            <ShimmerButton text='GET STARTED' onClick={scrollToPricing} />
+                            <button
+                                className='px-8 py-4 border border-white/20 hover:bg-white hover:text-black font-bold uppercase text-sm tracking-widest transition-all flex items-center gap-2'
+                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
                             >
-                                GET STARTED
-                            </ActionButton>
-                            <ActionButton
-                                variant='secondary'
-                                size='lg'
-                                className='border-white/20 hover:border-white/40'
+                                Our Services <ChevronRight width={16} height={16} />
+                            </button>
+                        </div>
+                    </motion.div>
+                </section>
+
+                {/* USED BY (Infinite Scroll) */}
+                <section className='py-10 border-y border-white/5 bg-white/5 backdrop-blur-sm'>
+                    <InfiniteMarquee speed={30}>
+                        {[
+                            'MICROSOFT',
+                            'NVIDIA',
+                            'RIOT GAMES',
+                            'SPOTIFY',
+                            'DISCORD',
+                            'NASA',
+                            'VALVE',
+                            'EPIC GAMES',
+                            'UNITY',
+                            'AMD',
+                        ].map((logo, i) => (
+                            <span
+                                key={i}
+                                className='text-2xl font-black text-neutral-700 uppercase tracking-tighter hover:text-brand transition-colors cursor-default'
                             >
-                                LEARN MORE
-                            </ActionButton>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Core Features */}
-            <section className='py-20'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='grid md:grid-cols-3 gap-8'>
-                        {/* Tailor-made Strategies */}
-                        <div className='bg-[#0a0a0a] border border-white/10 rounded-lg p-8 text-center hover:border-[var(--color-brand)]/50 transition-all'>
-                            <div className='w-16 h-16 bg-[var(--color-brand)]/10 rounded-lg flex items-center justify-center mx-auto mb-6'>
-                                <svg
-                                    className='w-8 h-8 text-[var(--color-brand)]'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-4'>Tailor-made Strategies</h3>
-                            <p className='text-white/60 leading-relaxed'>
-                                We do not believe in one-size-fits-all. Our solutions are customized to your business
-                                needs.
-                            </p>
-                        </div>
-
-                        {/* Experienced Team */}
-                        <div className='bg-[var(--color-brand)] rounded-lg p-8 text-center transform hover:scale-105 transition-all'>
-                            <div className='w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-6'>
-                                <svg
-                                    className='w-8 h-8 text-white'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-4'>Experienced Team</h3>
-                            <p className='text-white/90 leading-relaxed'>
-                                We have professionals with experience on our team. Each project benefits from their
-                                expertise and enthusiasm.
-                            </p>
-                        </div>
-
-                        {/* Quality Assurance */}
-                        <div className='bg-[#0a0a0a] border border-white/10 rounded-lg p-8 text-center hover:border-[var(--color-brand)]/50 transition-all'>
-                            <div className='w-16 h-16 bg-[var(--color-brand)]/10 rounded-lg flex items-center justify-center mx-auto mb-6'>
-                                <svg
-                                    className='w-8 h-8 text-[var(--color-brand)]'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-4'>Quality Assurance</h3>
-                            <p className='text-white/60 leading-relaxed'>
-                                We take quality seriously. It is essential to our workflow, ensuring high-quality
-                                deliverables.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* About Us Section with 3D Element */}
-            <section className='py-24 bg-[#0f0f0f]'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='grid lg:grid-cols-2 gap-16 items-center'>
-                        {/* Left Content */}
-                        <div>
-                            <span className='text-sm font-semibold text-[var(--color-brand)] uppercase tracking-wider'>
-                                ABOUT US
+                                {logo}
                             </span>
-                            <h2 className='text-5xl font-bold text-white mt-4 mb-8 leading-tight'>
-                                Our Core Offerings - Meeting Your Needs
+                        ))}
+                    </InfiniteMarquee>
+                </section>
+
+                {/* THE "O" FEATURE SECTION */}
+                <section className='py-32 relative overflow-hidden'>
+                    <div className='max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-16 items-center'>
+                        {/* Text Side */}
+                        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+                            <div className='flex items-center gap-2 mb-4'>
+                                <div className='w-2 h-2 bg-brand rounded-full animate-pulse' />
+                                <span className='text-xs font-bold uppercase tracking-widest text-white'>
+                                    About Oasis Core
+                                </span>
+                            </div>
+                            <h2 className='text-4xl md:text-5xl font-bold mb-6'>
+                                Our Core Offerings - <br />
+                                Meeting Your Needs
                             </h2>
-                            <p className='text-white/60 mb-8 leading-relaxed'>
-                                Technology is transforming the business floor. Many are stuck ramping up strategies to
-                                meet the new demands of Digital modernization. Oasis Technologies combines deep
-                                technical expertise with strategic consulting prowess, enabling businesses to navigate
-                                digital transformation and unlock unprecedented growth.
-                            </p>
-                            <p className='text-white/60 mb-12 leading-relaxed'>
-                                Our commitment to excellence is reflected in our comprehensive range of services - from
-                                custom software development and cloud migration to cybersecurity and IT infrastructure
-                                management, we provide end-to-end solutions that are scalable, secure, and tailored to
-                                your unique business requirements.
+                            <p className='text-neutral-400 mb-8 leading-relaxed'>
+                                Technology has the tendency to be frustrating. With our custom &quot;Proton&quot; panel,
+                                we relieve the stress of managing failing nodes so that you can focus on building your
+                                community.
                             </p>
 
                             <div className='space-y-6'>
-                                <div className='flex gap-4'>
-                                    <div className='flex-shrink-0'>
-                                        <div className='w-12 h-12 bg-[var(--color-brand)]/10 rounded-none flex items-center justify-center'>
-                                            <svg
-                                                className='w-6 h-6 text-[var(--color-brand)]'
-                                                fill='currentColor'
-                                                viewBox='0 0 20 20'
-                                            >
-                                                <path
-                                                    fillRule='evenodd'
-                                                    d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                                                    clipRule='evenodd'
-                                                />
-                                            </svg>
+                                {[
+                                    { title: 'Customer-centric Focus', desc: '24/7 Support via Discord & Ticket.' },
+                                    { title: 'Professional Hardware', desc: 'Ryzen 9 7950X Nodes exclusively.' },
+                                ].map((item, i) => (
+                                    <div key={i} className='flex gap-4'>
+                                        <div className='w-12 h-12 bg-brand/20 rounded-full flex items-center justify-center text-brand shrink-0'>
+                                            <ArrowUpToLine width={20} height={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className='font-bold text-lg'>{item.title}</h4>
+                                            <p className='text-sm text-neutral-500'>{item.desc}</p>
                                         </div>
                                     </div>
-                                    <div>
-                                        <h4 className='text-xl font-bold text-white mb-2'>Customer Support Focus</h4>
-                                        <p className='text-white/60'>
-                                            24/7 dedicated support team ensuring your business operations run smoothly
-                                            without interruption. We're here when you need us most.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className='flex gap-4'>
-                                    <div className='flex-shrink-0'>
-                                        <div className='w-12 h-12 bg-[var(--color-brand)]/10 rounded-none flex items-center justify-center'>
-                                            <svg
-                                                className='w-6 h-6 text-[var(--color-brand)]'
-                                                fill='currentColor'
-                                                viewBox='0 0 20 20'
-                                            >
-                                                <path
-                                                    fillRule='evenodd'
-                                                    d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                                                    clipRule='evenodd'
-                                                />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 className='text-xl font-bold text-white mb-2'>Professional Support</h4>
-                                        <p className='text-white/60'>
-                                            Expert consultation and technical guidance from certified professionals with
-                                            proven track records in enterprise IT solutions.
-                                        </p>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
+                        </motion.div>
 
-                            <button
-                                className='mt-8 text-[var(--color-brand)] hover:text-[var(--color-brand)]/80 font-semibold flex items-center gap-2'
-                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                        {/* Visual Side (The Planet) */}
+                        <div className='relative flex justify-center'>
+                            <motion.div
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                whileInView={{ scale: 1, opacity: 1 }}
+                                transition={{ duration: 1 }}
+                                className='w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full bg-black border relative flex items-center justify-center'
+                                style={{
+                                    borderColor: 'color-mix(in srgb, var(--color-brand) 50%, transparent)',
+                                    boxShadow: '0 0 100px color-mix(in srgb, var(--color-brand) 30%, transparent)',
+                                }}
                             >
-                                READ MORE
-                                <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 5l7 7-7 7'
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Right - 3D Element */}
-                        <div className='relative'>
-                            <div className='relative w-full aspect-square'>
-                                {/* 3D Opera-like element simulation */}
-                                <div className='absolute inset-0 flex items-center justify-center'>
-                                    <div className='relative w-full h-full max-w-[500px] max-h-[500px]'>
-                                        {/* Outer ring */}
-                                        <div className='absolute inset-0 rounded-full bg-gradient-to-br from-[var(--color-brand)] to-[var(--color-brand)] opacity-90 blur-3xl'></div>
-                                        {/* Middle ring */}
-                                        <div className='absolute inset-[10%] rounded-full bg-gradient-to-br from-[var(--color-brand)] to-[var(--color-brand)] opacity-80 blur-2xl'></div>
-                                        {/* Inner hole */}
-                                        <div className='absolute inset-[30%] rounded-full bg-[#0a0a0a]'></div>
-                                        {/* Highlight */}
-                                        <div className='absolute inset-[5%] rounded-full bg-gradient-to-tr from-transparent via-white/10 to-transparent'></div>
-                                    </div>
-                                </div>
-                                {/* Stats overlay */}
-                                <div className='absolute bottom-8 right-8 bg-[#0a0a0a] border border-white/10 rounded-none p-6 backdrop-blur-sm'>
-                                    <div className='text-6xl font-bold text-white mb-2'>62+</div>
-                                    <div className='text-white/60'>Global Clients</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Elevate Your Digital Image */}
-            <section className='py-20 bg-[#0a0a0a]'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='text-center mb-16'>
-                        <h2 className='text-5xl font-bold text-white mb-6'>
-                            <span className='text-white/20'>ELEVATE YOUR DIGITAL IMAGE.</span>
-                        </h2>
-                        <div className='h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-12'></div>
-                        <p className='text-xl text-white/60 max-w-4xl mx-auto leading-relaxed mb-4'>
-                            Oasis Technologies specializes in comprehensive IT solutions
-                        </p>
-                        <h3 className='text-4xl font-bold text-white mb-6'>
-                            Crafting digital solutions tailored to your unique business needs.
-                        </h3>
-                        <p className='text-white/60 max-w-3xl mx-auto leading-relaxed'>
-                            From cloud infrastructure to cybersecurity, we deliver cutting-edge technology solutions
-                            that empower your business to thrive in the digital age. Our expert team ensures seamless
-                            integration and maximum efficiency.
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            {/* Services Grid */}
-            <section id='services' className='py-20 bg-[#0f0f0f]'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-6'>
-                        {/* Managed IT */}
-                        <div className='bg-[#0a0a0a] border border-[var(--color-brand)] rounded-none p-8 hover:border-[var(--color-brand)]/50 transition-all group'>
-                            <div className='mb-6'>
-                                <svg
-                                    className='w-12 h-12 text-[var(--color-brand)]'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-3'>Managed IT</h3>
-                            <p className='text-white/60 mb-6 leading-relaxed'>
-                                Comprehensive IT management services ensuring your infrastructure runs at peak
-                                performance. From monitoring to maintenance, we handle it all.
-                            </p>
-                            <button
-                                className='text-[var(--color-brand)] hover:text-[var(--color-brand)]/80 font-semibold flex items-center gap-2 group-hover:gap-3 transition-all'
-                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                            >
-                                SERVICE DETAILS
-                                <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 5l7 7-7 7'
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Co-Managed IT */}
-                        <div className='bg-[#0a0a0a] border border-white/10 rounded-none p-8 hover:border-[var(--color-brand)]/50 transition-all group'>
-                            <div className='mb-6'>
-                                <svg
-                                    className='w-12 h-12 text-[var(--color-brand)]'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-3'>Co-Managed IT</h3>
-                            <p className='text-white/60 mb-6 leading-relaxed'>
-                                Collaborative IT support that works alongside your existing team. We fill the gaps and
-                                provide expertise where you need it most.
-                            </p>
-                            <button
-                                className='text-[var(--color-brand)] hover:text-[var(--color-brand)]/80 font-semibold flex items-center gap-2 group-hover:gap-3 transition-all'
-                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                            >
-                                SERVICE DETAILS
-                                <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 5l7 7-7 7'
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Compliance & Security */}
-                        <div className='bg-[#0a0a0a] border border-white/10 rounded-none p-8 hover:border-[var(--color-brand)]/50 transition-all group'>
-                            <div className='mb-6'>
-                                <svg
-                                    className='w-12 h-12 text-[var(--color-brand)]'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-3'>Compliance & Security</h3>
-                            <p className='text-white/60 mb-6 leading-relaxed'>
-                                Stay compliant and secure with our comprehensive security solutions. We protect your
-                                data and ensure regulatory compliance.
-                            </p>
-                            <button
-                                className='text-[var(--color-brand)] hover:text-[var(--color-brand)]/80 font-semibold flex items-center gap-2 group-hover:gap-3 transition-all'
-                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                            >
-                                SERVICE DETAILS
-                                <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 5l7 7-7 7'
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Web Services */}
-                        <div className='bg-[#0a0a0a] border border-white/10 rounded-none p-8 hover:border-[var(--color-brand)]/50 transition-all group'>
-                            <div className='mb-6'>
-                                <svg
-                                    className='w-12 h-12 text-[var(--color-brand)]'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-3'>Web Services</h3>
-                            <p className='text-white/60 mb-6 leading-relaxed'>
-                                Custom web development and hosting solutions that scale with your business. Fast,
-                                secure, and reliable web services.
-                            </p>
-                            <button
-                                className='text-[var(--color-brand)] hover:text-[var(--color-brand)]/80 font-semibold flex items-center gap-2 group-hover:gap-3 transition-all'
-                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                            >
-                                SERVICE DETAILS
-                                <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 5l7 7-7 7'
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Proactive */}
-                        <div className='bg-[#0a0a0a] border border-white/10 rounded-none p-8 hover:border-[var(--color-brand)]/50 transition-all group'>
-                            <div className='mb-6'>
-                                <svg
-                                    className='w-12 h-12 text-[var(--color-brand)]'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M13 10V3L4 14h7v7l9-11h-7z'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-3'>Proactive</h3>
-                            <p className='text-white/60 mb-6 leading-relaxed'>
-                                Anticipate and prevent IT issues before they impact your business. Our proactive
-                                approach keeps you ahead of problems.
-                            </p>
-                            <button
-                                className='text-[var(--color-brand)] hover:text-[var(--color-brand)]/80 font-semibold flex items-center gap-2 group-hover:gap-3 transition-all'
-                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                            >
-                                SERVICE DETAILS
-                                <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 5l7 7-7 7'
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* VoIP */}
-                        <div className='bg-[#0a0a0a] border border-[var(--color-brand)] rounded-none p-8 hover:border-[var(--color-brand)]/50 transition-all group'>
-                            <div className='mb-6'>
-                                <svg
-                                    className='w-12 h-12 text-[var(--color-brand)]'
-                                    fill='none'
-                                    viewBox='0 0 24 24'
-                                    stroke='currentColor'
-                                >
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'
-                                    />
-                                </svg>
-                            </div>
-                            <h3 className='text-2xl font-bold text-white mb-3'>VoIP</h3>
-                            <p className='text-white/60 mb-6 leading-relaxed'>
-                                Modern communication solutions with crystal-clear voice quality. Reduce costs while
-                                improving connectivity and collaboration.
-                            </p>
-                            <button
-                                className='text-[var(--color-brand)] hover:text-[var(--color-brand)]/80 font-semibold flex items-center gap-2 group-hover:gap-3 transition-all'
-                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                            >
-                                LEARN MAINTENANCE
-                                <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 5l7 7-7 7'
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Trusted Partners */}
-            <section className='py-20 bg-[#0a0a0a]'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='text-center mb-12'>
-                        <span className='text-sm font-semibold text-white/50 uppercase tracking-wider'>
-                            OUR PARTNERS
-                        </span>
-                    </div>
-                    <div className='grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center opacity-50'>
-                        {['Microsoft', 'Lenovo', 'Dell', 'WatchGuard', 'RapidX', 'XCPEP', 'NetApp'].map(
-                            (partner, index) => (
-                                <div key={index} className='flex items-center justify-center'>
-                                    <span className='text-white/70 font-semibold text-xl'>{partner}</span>
-                                </div>
-                            ),
-                        )}
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA Section - Partner with us */}
-            <section className='py-20 bg-[#0f0f0f]'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='grid lg:grid-cols-2 gap-12'>
-                        {/* Left - Red Box */}
-                        <div className='bg-[var(--color-brand)] rounded-none p-12'>
-                            <span className='text-sm font-semibold text-white/90 uppercase tracking-wider'>
-                                LET'S CONNECT
-                            </span>
-                            <h3 className='text-4xl font-bold text-white mt-4 mb-8'>
-                                Your partner in digital success.
-                            </h3>
-                            <p className='text-white/90 mb-8 leading-relaxed'>
-                                Whether you're looking to modernize your IT infrastructure, enhance security, or
-                                streamline operations, Oasis Technologies is your trusted partner. Our team of experts
-                                is ready to transform your business with innovative solutions tailored to your needs.
-                            </p>
-                            <div className='space-y-4'>
-                                <div className='flex items-start gap-3'>
-                                    <svg
-                                        className='w-6 h-6 text-white flex-shrink-0 mt-1'
-                                        fill='currentColor'
-                                        viewBox='0 0 20 20'
-                                    >
-                                        <path
-                                            fillRule='evenodd'
-                                            d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                                            clipRule='evenodd'
-                                        />
-                                    </svg>
-                                    <span className='text-white/90'>Highly qualified team of tech experts</span>
-                                </div>
-                                <div className='flex items-start gap-3'>
-                                    <svg
-                                        className='w-6 h-6 text-white flex-shrink-0 mt-1'
-                                        fill='currentColor'
-                                        viewBox='0 0 20 20'
-                                    >
-                                        <path
-                                            fillRule='evenodd'
-                                            d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                                            clipRule='evenodd'
-                                        />
-                                    </svg>
-                                    <span className='text-white/90'>Strengthen your team with our consultants</span>
-                                </div>
-                                <div className='flex items-start gap-3'>
-                                    <svg
-                                        className='w-6 h-6 text-white flex-shrink-0 mt-1'
-                                        fill='currentColor'
-                                        viewBox='0 0 20 20'
-                                    >
-                                        <path
-                                            fillRule='evenodd'
-                                            d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                                            clipRule='evenodd'
-                                        />
-                                    </svg>
-                                    <span className='text-white/90'>Guaranteed results for exceptional clients</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right - Stats & Image */}
-                        <div className='space-y-6'>
-                            <div className='bg-[#0a0a0a] border border-white/10 rounded-none overflow-hidden'>
-                                <div className='aspect-video bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center'>
-                                    <span className='text-white/50 text-lg'>[Team Image]</span>
-                                </div>
-                            </div>
-                            <div className='grid grid-cols-2 gap-6'>
-                                <div className='bg-[#0a0a0a] border border-white/10 rounded-none p-6 text-center'>
-                                    <div className='text-5xl font-bold text-[var(--color-brand)] mb-2'>17+</div>
-                                    <div className='text-white/60'>Years Experience</div>
-                                </div>
-                                <div className='bg-[#0a0a0a] border border-white/10 rounded-none p-6 text-center'>
-                                    <div className='text-5xl font-bold text-[var(--color-brand)] mb-2'>71+</div>
-                                    <div className='text-white/60'>Expert Team</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Business Solutions Checklist */}
-            <section className='py-20 bg-[#0a0a0a]'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='grid lg:grid-cols-2 gap-16'>
-                        <div>
-                            <span className='text-sm font-semibold text-[var(--color-brand)] uppercase tracking-wider'>
-                                WHY CHOOSE US
-                            </span>
-                            <h2 className='text-5xl font-bold text-white mt-4 mb-8 leading-tight'>
-                                Crafting experiences, delivering success.
-                            </h2>
-                            <p className='text-white/60 leading-relaxed'>
-                                At Oasis Technologies, we understand that every business is unique. That's why we offer
-                                customized IT solutions designed to meet your specific needs and goals. From initial
-                                consultation to ongoing support, we're with you every step of the way.
-                            </p>
-                        </div>
-                        <div className='space-y-4'>
-                            {[
-                                'BYOD (Managed Endpoint)',
-                                'Professional Cybersecurity',
-                                'Ransomware Protection',
-                                'Compliance (SOX MAS)',
-                                'On-Cloud Project Delivery',
-                                'Public, Private, Hybrid cloud',
-                            ].map((item, index) => (
                                 <div
-                                    key={index}
-                                    className='flex items-center justify-between py-4 border-b border-white/10'
+                                    className='absolute inset-0 rounded-full bg-gradient-to-tr to-transparent'
+                                    style={{
+                                        background: `radial-gradient(circle, color-mix(in srgb, var(--color-brand) 40%, transparent) 0%, transparent 100%)`,
+                                    }}
+                                />
+                                <div
+                                    className='absolute inset-4 rounded-full border'
+                                    style={{ borderColor: 'color-mix(in srgb, var(--color-brand) 20%, transparent)' }}
+                                />
+                                <div
+                                    className='absolute inset-20 rounded-full bg-gradient-to-br to-black opacity-80 mix-blend-multiply'
+                                    style={{
+                                        background: `linear-gradient(to bottom right, var(--color-brand), black)`,
+                                    }}
+                                />
+                                <span
+                                    className='text-[200px] md:text-[300px] font-black select-none'
+                                    style={{ color: 'color-mix(in srgb, var(--color-brand) 10%, transparent)' }}
                                 >
-                                    <span className='text-white/70'>{item}</span>
-                                    <svg
-                                        className='w-5 h-5 text-[var(--color-brand)]'
-                                        fill='none'
-                                        viewBox='0 0 24 24'
-                                        stroke='currentColor'
-                                    >
-                                        <path
-                                            strokeLinecap='round'
-                                            strokeLinejoin='round'
-                                            strokeWidth={2}
-                                            d='M9 5l7 7-7 7'
-                                        />
-                                    </svg>
-                                </div>
-                            ))}
+                                    O
+                                </span>
+
+                                <motion.div
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{ repeat: Infinity, duration: 4 }}
+                                    className='absolute bottom-10 left-0 bg-neutral-900 border border-neutral-700 p-4 rounded-sm shadow-xl'
+                                >
+                                    <div className='text-3xl font-bold text-white'>50k+</div>
+                                    <div className='text-xs text-neutral-400 uppercase tracking-widest'>
+                                        Happy Clients
+                                    </div>
+                                </motion.div>
+                            </motion.div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Method to the Creativity */}
-            <section className='py-20 bg-[#0f0f0f]'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='text-center mb-16'>
-                        <span className='text-sm font-semibold text-[var(--color-brand)] uppercase tracking-wider'>
-                            OUR PROCESS
-                        </span>
-                        <h2 className='text-5xl font-bold text-white mt-4 mb-6'>Method to the creativity</h2>
-                        <p className='text-white/60 max-w-3xl mx-auto leading-relaxed'>
-                            Innovation combined with proven methodologies. Our streamlined process ensures every project
-                            is delivered on time, within budget, and exceeds expectations.
-                        </p>
+                {/* SERVICES (BENTO GRID) */}
+                <section className='py-24 bg-neutral-950'>
+                    <div className='max-w-7xl mx-auto px-6'>
+                        <div className='flex flex-col md:flex-row justify-between items-end mb-16'>
+                            <div>
+                                <div className='flex items-center gap-2 mb-2'>
+                                    <div className='w-8 h-[1px] bg-brand'></div>
+                                    <span className='text-xs font-bold uppercase tracking-widest'>Our Services</span>
+                                </div>
+                                <h2 className='text-4xl font-bold max-w-lg'>
+                                    Crafting digital solutions tailored to your unique needs.
+                                </h2>
+                            </div>
+                            <button className='hidden md:flex items-center gap-2 text-brand font-bold text-sm uppercase hover:text-white transition-colors'>
+                                View All Services <ArrowRight width={16} height={16} />
+                            </button>
+                        </div>
+
+                        <motion.div
+                            variants={containerVar}
+                            initial='hidden'
+                            whileInView='show'
+                            viewport={{ once: true, margin: '-100px' }}
+                            className='grid grid-cols-1 md:grid-cols-3 gap-6'
+                        >
+                            <ServiceCard
+                                colSpan='md:col-span-1'
+                                icon={Server}
+                                title='Game Hosting'
+                                desc='We offer an array of services for high-performance gaming. Rust, Minecraft, CS2. 128-tick reliable networks.'
+                                // accent={true}
+                            />
+                            <ServiceCard
+                                colSpan='md:col-span-1'
+                                icon={Server}
+                                title='NVMe VPS'
+                                desc='Root access. Linux or Windows. Deploy in seconds with our automated hypervisor orchestration.'
+                            />
+                            <ServiceCard
+                                colSpan='md:col-span-1'
+                                icon={Database}
+                                title='Object Storage'
+                                desc='S3-Compatible buckets for your assets. Simply put, infinite storage that scales with your business.'
+                            />
+                            <ServiceCard
+                                colSpan='md:col-span-2'
+                                icon={LinkIcon}
+                                title='Web & Database Clusters'
+                                desc='We not only build your site, we host it. Automated Redis and Postgres clusters with daily backups and point-in-time recovery.'
+                            />
+                            <ServiceCard
+                                colSpan='md:col-span-1'
+                                icon={Shield}
+                                title='Dedicated Metal'
+                                desc='Oasis offers top-tier bare metal hardware. No sharing resources. 100% of the CPU is yours.'
+                            />
+                        </motion.div>
+                    </div>
+                </section>
+
+                {/* TESTIMONIALS (Infinite Scroll Right-to-Left) */}
+                <section className='py-24 overflow-hidden bg-neutral-900 border-b border-neutral-800'>
+                    <div className='max-w-7xl mx-auto px-6 mb-12'>
+                        <h2 className='text-2xl font-bold'>Trusted by Developers</h2>
                     </div>
 
-                    <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-6'>
+                    <InfiniteMarquee speed={40} direction='left'>
                         {[
                             {
-                                number: '01',
-                                title: 'Discovery',
-                                description: 'We start by understanding your business, challenges, and goals.',
+                                n: 'Oliver',
+                                r: 'Game Developer',
+                                t: 'The latency is non-existent. Best Rust servers I&apos;ve ever hosted.',
                             },
                             {
-                                number: '02',
-                                title: 'Strategy',
-                                description: 'Develop a comprehensive strategy aligned with your objectives.',
+                                n: 'Sarah J.',
+                                r: 'SysAdmin',
+                                t: 'The S3 compatible storage saved us thousands compared to AWS.',
                             },
                             {
-                                number: '03',
-                                title: 'Execution',
-                                description: 'Implement solutions with precision and attention to detail.',
+                                n: 'Mark R.',
+                                r: 'Engineer',
+                                t: 'I love the open source ethos. The Proton panel is a joy to use.',
                             },
                             {
-                                number: '04',
-                                title: 'Launch',
-                                description: 'Deploy your solution and provide ongoing support and optimization.',
+                                n: 'David K.',
+                                r: 'CTO, TechCorp',
+                                t: 'Scalability was our main concern. Oasis handled our spike perfectly.',
                             },
-                        ].map((step, index) => (
+                            {
+                                n: 'Jessica L.',
+                                r: 'Web Agency',
+                                t: 'We host 50+ client sites here. Uptime has been 100%.',
+                            },
+                        ].map((item, i) => (
                             <div
-                                key={index}
-                                className='bg-[#0a0a0a] border border-white/10 rounded-none p-8 hover:border-[var(--color-brand)]/50 transition-all'
+                                key={i}
+                                className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
                             >
-                                <div className='text-6xl font-bold text-[var(--color-brand)]/20 mb-4'>
-                                    {step.number}
+                                <div className='flex gap-1 text-brand mb-4'>
+                                    {[1, 2, 3, 4, 5].map((j) => (
+                                        <StarIcon key={j} filled={true} size={14} />
+                                    ))}
                                 </div>
-                                <h3 className='text-2xl font-bold text-white mb-3'>{step.title}</h3>
-                                <p className='text-white/60 leading-relaxed'>{step.description}</p>
+                                <p className='text-neutral-400 text-sm italic mb-6 leading-relaxed'>
+                                    &quot;{item.t}&quot;
+                                </p>
+                                <div className='flex items-center gap-3'>
+                                    <div className='w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center font-bold text-white'>
+                                        {item.n[0]}
+                                    </div>
+                                    <div>
+                                        <div className='text-white font-bold text-sm'>{item.n}</div>
+                                        <div className='text-neutral-600 text-xs uppercase tracking-wider'>
+                                            {item.r}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         ))}
-                    </div>
-                </div>
-            </section>
+                    </InfiniteMarquee>
+                </section>
 
-            {/* Footer */}
-            <footer className='bg-[#0a0a0a] border-t border-white/10 py-16'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='grid md:grid-cols-4 gap-12 mb-12'>
-                        {/* Company Info */}
-                        <div className='md:col-span-2'>
-                            <h3 className='text-white font-bold text-2xl mb-4'>Oasis Cloud</h3>
-                            <p className='text-white/60 mb-6 leading-relaxed'>
-                                Oasis Technologies was founded in 2019 with a vision to become the preeminent provider
-                                of comprehensive IT solutions globally. We deliver excellence in every project.
-                            </p>
-                            <div className='flex gap-4'>
-                                <a
-                                    href='#'
-                                    className='w-10 h-10 bg-white/5 rounded-none flex items-center justify-center hover:bg-[var(--color-brand)]/20 transition-colors'
-                                >
-                                    <span className='text-white/70'>f</span>
-                                </a>
-                                <a
-                                    href='#'
-                                    className='w-10 h-10 bg-white/5 rounded-none flex items-center justify-center hover:bg-[var(--color-brand)]/20 transition-colors'
-                                >
-                                    <span className='text-white/70'>t</span>
-                                </a>
-                                <a
-                                    href='#'
-                                    className='w-10 h-10 bg-white/5 rounded-none flex items-center justify-center hover:bg-[var(--color-brand)]/20 transition-colors'
-                                >
-                                    <span className='text-white/70'>in</span>
-                                </a>
+                {/* PRICING ENGINE */}
+                <section id='pricing' className='py-32 px-6 max-w-7xl mx-auto'>
+                    <div className='text-center mb-20'>
+                        <div className='w-2 h-2 bg-brand rounded-full mx-auto mb-4' />
+                        <h2 className='text-sm font-bold uppercase tracking-widest text-neutral-500 mb-4'>
+                            Plans & Pricing
+                        </h2>
+                        <h3 className='text-4xl font-bold'>Simple Scaling</h3>
+                    </div>
+
+                    <div className='w-full'>
+                        {/* Category and Billing Cycle Switchers - Stacked */}
+                        <div className='flex justify-center mb-16'>
+                            <div className='flex flex-col gap-0'>
+                                {/* 1. Category Switcher */}
+                                <div className='grid grid-cols-2 gap-0 bg-black border border-neutral-800 rounded-none overflow-hidden'>
+                                    {CATEGORIES.map((cat) => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => setActiveCategory(cat)}
+                                            className={`px-4 py-3 text-xs uppercase tracking-wider font-bold transition-colors border-r border-neutral-800 last:border-0 ${
+                                                activeCategory === cat
+                                                    ? 'bg-white text-black'
+                                                    : 'text-neutral-500 hover:text-white'
+                                            }`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* 2. Billing Cycle Switcher */}
+                                <div className='grid grid-cols-4 gap-0 bg-black border border-neutral-800 border-t-0 rounded-none overflow-hidden'>
+                                    {BILLING_CYCLES.map((cycle, i) => (
+                                        <button
+                                            key={cycle.label}
+                                            onClick={() => setBillingIndex(i)}
+                                            className={`px-4 py-3 text-xs uppercase tracking-wider font-bold transition-colors border-r border-neutral-800 last:border-0 ${
+                                                billingIndex === i
+                                                    ? 'bg-white text-black'
+                                                    : 'text-neutral-500 hover:text-white'
+                                            }`}
+                                        >
+                                            {cycle.label}
+                                            {cycle.discount > 0 && (
+                                                <span className='block text-[9px] text-brand mt-1'>
+                                                    -{cycle.discount * 100}%
+                                                </span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Quick Links */}
+                        {/* 3. The 4 Main Cards */}
+                        {isLoading ? (
+                            <div className='text-center py-20 text-neutral-400'>Loading plans...</div>
+                        ) : error ? (
+                            <div className='text-center py-20 text-brand'>
+                                Failed to load plans. Please try again later.
+                            </div>
+                        ) : plans && plans.length > 0 ? (
+                            <motion.div
+                                key={activeCategory}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-16'
+                            >
+                                {plans.slice(0, 4).map((plan) => {
+                                    const planPrice = getPlanPrice(plan);
+                                    const finalPrice = getPrice(planPrice, plan);
+                                    const isRecommended = plan?.attributes.is_most_popular ?? false;
+
+                                    return (
+                                        <div
+                                            key={plan.attributes.id}
+                                            className={`p-6 md:p-8 flex flex-col relative ${
+                                                isRecommended
+                                                    ? 'bg-neutral-900 border border-brand'
+                                                    : 'bg-neutral-950 border border-neutral-800'
+                                            }`}
+                                        >
+                                            {isRecommended && (
+                                                <div className='absolute top-0 right-0 bg-brand text-white text-[10px] font-bold px-3 py-1 uppercase'>
+                                                    Top Pick
+                                                </div>
+                                            )}
+                                            <h3 className='text-brand font-bold uppercase tracking-widest text-sm mb-2'>
+                                                {plan.attributes.name}
+                                            </h3>
+
+                                            <div className='mt-auto mb-6'>
+                                                <div className='text-4xl font-bold text-white flex items-start gap-1'>
+                                                    <span className='text-lg mt-1'>$</span>
+                                                    {finalPrice.toFixed(0)}
+                                                </div>
+                                                <div className='text-xs text-neutral-500 uppercase mt-1'>
+                                                    Per Month / Billed{' '}
+                                                    {BILLING_CYCLES[billingIndex]?.label ?? 'Monthly'}
+                                                </div>
+                                            </div>
+
+                                            <ul className='space-y-3 mb-8 text-sm text-neutral-400'>
+                                                <li className='flex gap-2'>
+                                                    <Server width={14} height={14} className='text-white' />{' '}
+                                                    {getVCores(plan.attributes.cpu)} vCore
+                                                </li>
+                                                <li className='flex gap-2'>
+                                                    <Gear width={14} height={14} className='text-white' />{' '}
+                                                    {formatMemory(plan.attributes.memory)} Memory
+                                                </li>
+                                                <li className='flex gap-2'>
+                                                    <Shield width={14} height={14} className='text-white' /> DDoS
+                                                    Protection
+                                                </li>
+                                            </ul>
+
+                                            <button
+                                                onClick={() => handlePlanSelect(plan)}
+                                                className={`w-full py-3 text-xs font-bold uppercase tracking-widest border transition-all ${
+                                                    isRecommended
+                                                        ? 'bg-brand border-brand text-white'
+                                                        : 'border-neutral-700 text-neutral-400 hover:border-white hover:text-white'
+                                                }`}
+                                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                                            >
+                                                Deploy
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </motion.div>
+                        ) : (
+                            <div className='text-center py-20 text-neutral-400'>No plans available.</div>
+                        )}
+
+                        {/* 4. Custom Slider Section */}
+                        {/* <div className='border border-neutral-800 bg-neutral-900/50 p-8 rounded-xl relative overflow-hidden'>
+                            <div className='absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-red-900/10 to-transparent' />
+
+                            <div className='flex flex-col md:flex-row gap-12 items-center relative z-10'>
+                                <div className='flex-1 w-full'>
+                                    <div className='flex items-center gap-3 mb-6'>
+                                        <SlidersVertical className='text-red-500' width={24} height={24} />
+                                        <h3 className='text-2xl font-bold'>Custom Configuration</h3>
+                                    </div>
+                                    <p className='text-neutral-400 mb-8'>
+                                        Need specific resources? Slide to configure your exact RAM requirements. CPU
+                                        cores scale automatically.
+                                    </p>
+
+                                    <div className='space-y-6'>
+                                        <div className='flex justify-between font-mono text-sm'>
+                                            <span>4 GB</span>
+                                            <span className='text-red-500 font-bold'>{customRam} GB RAM</span>
+                                            <span>32 GB</span>
+                                        </div>
+                                        <input
+                                            type='range'
+                                            min='4'
+                                            max='32'
+                                            step='1'
+                                            value={customRam}
+                                            onChange={(e) => setCustomRam(Number(e.target.value))}
+                                            className='w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-600 hover:accent-red-500'
+                                        />
+                                        <div className='text-xs text-neutral-500 flex justify-between'>
+                                            <span>2 vCore</span>
+                                            <span>32 vCore</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className='bg-black border border-neutral-800 p-8 rounded-xl min-w-[300px] text-center'>
+                                    <div className='text-neutral-500 uppercase text-xs font-bold mb-2'>
+                                        Estimated Cost
+                                    </div>
+                                    {isCalculating ? (
+                                        <div className='text-5xl font-black text-white mb-2'>...</div>
+                                    ) : customPlanCalculation ? (
+                                        <>
+                                            <div className='text-5xl font-black text-white mb-2'>
+                                                ${customPlanCalculation.price_per_month.toFixed(0)}
+                                            </div>
+                                            <div className='text-neutral-600 text-sm mb-6'>
+                                                / {BILLING_CYCLES[billingIndex]?.label.toLowerCase() ?? 'month'}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className='text-5xl font-black text-white mb-2'>$0</div>
+                                            <div className='text-neutral-600 text-sm mb-6'>
+                                                / {BILLING_CYCLES[billingIndex]?.label.toLowerCase() ?? 'month'}
+                                            </div>
+                                        </>
+                                    )}
+                                    <button
+                                        onClick={handleCustomPlanSelect}
+                                        disabled={!customPlanCalculation || isCalculating}
+                                        className='w-full bg-white text-black font-bold py-3 uppercase text-sm hover:bg-neutral-200 transition disabled:opacity-50 disabled:cursor-not-allowed'
+                                    >
+                                        Create Custom
+                                    </button>
+                                </div>
+                            </div>
+                        </div> */}
+                    </div>
+                </section>
+
+                {/* PROCESS SECTION (With Rotated Hover) */}
+                <section className='py-32 px-6 max-w-7xl mx-auto border-t border-neutral-900'>
+                    <div className='flex flex-col md:flex-row justify-between items-start mb-20 gap-8'>
                         <div>
-                            <h4 className='text-white font-semibold mb-4'>QUICK LINKS</h4>
-                            <ul className='space-y-3'>
-                                <li>
-                                    <a
-                                        href='#'
-                                        className='text-white/60 hover:text-[var(--color-brand)] transition-colors'
-                                    >
-                                        About Us
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href='#'
-                                        className='text-white/60 hover:text-[var(--color-brand)] transition-colors'
-                                    >
-                                        Our Services
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href='#'
-                                        className='text-white/60 hover:text-[var(--color-brand)] transition-colors'
-                                    >
-                                        Case Studies
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href='#'
-                                        className='text-white/60 hover:text-[var(--color-brand)] transition-colors'
-                                    >
-                                        Contact
-                                    </a>
-                                </li>
+                            <h3 className='text-4xl font-bold mb-4'>Method to the Creativity</h3>
+                            <p className='text-neutral-400'>
+                                Discover how we transform bare metal into digital solutions.
+                            </p>
+                        </div>
+                        <button className='px-6 py-3 border border-neutral-800 text-sm font-bold uppercase hover:bg-white hover:text-black transition-colors'>
+                            View Full Documentation
+                        </button>
+                    </div>
+
+                    <motion.div
+                        variants={containerVar}
+                        initial='hidden'
+                        whileInView='show'
+                        viewport={{ once: true }}
+                        className='grid grid-cols-2 md:grid-cols-4 gap-12 relative'
+                    >
+                        {/* Connector Line */}
+                        <div className='hidden md:block absolute top-10 left-0 right-0 h-[1px] bg-neutral-800 -z-10' />
+
+                        {[
+                            { icon: Magnifier, t: 'Discovery', s: '01' },
+                            { icon: Gear, t: 'Config', s: '02' },
+                            { icon: ArrowUpToLine, t: 'Deploy', s: '03' },
+                            { icon: Play, t: 'Launch', s: '04' },
+                        ].map((item, i) => (
+                            <motion.div
+                                key={i}
+                                variants={itemVar}
+                                className='flex flex-col items-center text-center group cursor-pointer'
+                            >
+                                <motion.div
+                                    whileHover={{ rotate: 90 }}
+                                    transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+                                    className='w-20 h-20 border border-neutral-700 bg-neutral-900 flex items-center justify-center mb-6 transition-colors group-hover:border-brand'
+                                    style={{
+                                        borderRadius: 'var(--button-border-radius, 0.5rem)',
+                                    }}
+                                >
+                                    <item.icon
+                                        className='text-white group-hover:text-brand transition-colors'
+                                        width={32}
+                                        height={32}
+                                    />
+                                </motion.div>
+                                <div className='text-brand font-mono text-xs font-bold mb-2'>STEP {item.s}</div>
+                                <h4 className='text-white font-bold text-lg uppercase'>{item.t}</h4>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                </section>
+
+                {/* FOOTER */}
+                <footer className='bg-neutral-950 pt-20 pb-10 border-t border-neutral-900'>
+                    <div className='max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16'>
+                        <div>
+                            <div className='flex items-center gap-2 mb-6'>
+                                <div
+                                    className='w-6 h-6 bg-brand'
+                                    style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                                />
+                                <span className='font-bold text-lg'>OASIS</span>
+                            </div>
+                            <p className='text-neutral-500 text-sm leading-relaxed'>
+                                Professional infrastructure for the next generation of digital experiences.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 className='font-bold uppercase text-xs tracking-widest mb-6'>Contact</h4>
+                            <ul className='space-y-4 text-sm text-neutral-400'>
+                                <li>(405) 555-0123</li>
+                                <li>support@oasis.cloud</li>
                             </ul>
                         </div>
-
-                        {/* Newsletter */}
                         <div>
-                            <h4 className='text-white font-semibold mb-4'>NEWSLETTER</h4>
-                            <p className='text-white/60 mb-4 text-sm'>Subscribe to our newsletter for updates</p>
+                            <h4 className='font-bold uppercase text-xs tracking-widest mb-6'>Legal</h4>
+                            <ul className='space-y-4 text-sm text-neutral-400'>
+                                <li>Privacy Policy</li>
+                                <li>Terms & Conditions</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className='font-bold uppercase text-xs tracking-widest mb-6'>Subscribe</h4>
                             <div className='flex gap-2'>
                                 <input
                                     type='email'
-                                    placeholder='Email Address'
-                                    className='flex-1 bg-white/5 border border-white/10 rounded-none px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-[var(--color-brand)]/50'
+                                    placeholder='Email'
+                                    className='bg-black border-b border-neutral-700 w-full p-2 text-sm focus:outline-none focus:border-brand'
+                                    style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
                                 />
                                 <button
-                                    className='bg-[var(--color-brand)] hover:bg-[var(--color-brand)]/90 text-white px-4 py-2 transition-colors'
+                                    className='bg-brand text-xs font-bold px-4 py-2 uppercase'
                                     style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
                                 >
-                                    →
+                                    GO
                                 </button>
                             </div>
                         </div>
                     </div>
-
-                    <div className='border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4'>
-                        <div className='text-sm text-white/50'>
-                            © 2025 Oasis Technologies. All rights reserved. Designed by Oliver ❤️
-                        </div>
-                        <div className='flex gap-6 text-sm text-white/50'>
-                            <a href='#' className='hover:text-[var(--color-brand)] transition-colors'>
-                                Privacy Policy
-                            </a>
-                            <a href='#' className='hover:text-[var(--color-brand)] transition-colors'>
-                                Terms of Service
-                            </a>
-                        </div>
+                    <div className='text-center text-xs text-neutral-600 pt-8 border-t border-neutral-900'>
+                        © 2025 Oasis Technologies. Designed by Oliver.
                     </div>
-                </div>
-            </footer>
+                </footer>
+            </div>
         </div>
     );
 };

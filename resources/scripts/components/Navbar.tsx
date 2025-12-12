@@ -69,7 +69,7 @@ export default function Navbar() {
                     {/* Left: Logo */}
                     <Link to='/' className='flex items-center gap-2 rounded-lg px-2 py-1'>
                         <Logo className='h-5 w-5' />
-                        <span className='font-yaro tracking-tight'>OSphere</span>
+                        <span className='font-yaro tracking-tight'>Oasis Cloud</span>
                     </Link>
 
                     {/* Center: Links */}

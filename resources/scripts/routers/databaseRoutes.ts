@@ -5,18 +5,10 @@ import { lazy } from 'react';
 const DatabaseOverviewContainer = lazy(
     () => import('@/components/server/database-dashboard/DatabaseOverviewContainer'),
 );
-const DatabaseListContainer = lazy(
-    () => import('@/components/server/database-dashboard/DatabaseListContainer'),
-);
-const TableBrowserContainer = lazy(
-    () => import('@/components/server/database-dashboard/TableBrowserContainer'),
-);
-const QueryInterfaceContainer = lazy(
-    () => import('@/components/server/database-dashboard/QueryInterfaceContainer'),
-);
-const DatabaseLogsContainer = lazy(
-    () => import('@/components/server/database-dashboard/DatabaseLogsContainer'),
-);
+const DatabaseListContainer = lazy(() => import('@/components/server/database-dashboard/DatabaseListContainer'));
+const TableBrowserContainer = lazy(() => import('@/components/server/database-dashboard/TableBrowserContainer'));
+const QueryInterfaceContainer = lazy(() => import('@/components/server/database-dashboard/QueryInterfaceContainer'));
+const DatabaseLogsContainer = lazy(() => import('@/components/server/database-dashboard/DatabaseLogsContainer'));
 const DatabaseSettingsContainer = lazy(
     () => import('@/components/server/database-dashboard/DatabaseSettingsContainer'),
 );
