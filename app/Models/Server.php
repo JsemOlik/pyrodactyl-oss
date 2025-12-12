@@ -452,11 +452,23 @@ class Server extends Model
             return 'game-server';
         }
         
+        // Check if egg has its own dashboard_type set
+        $eggDashboardType = $this->egg->getAttributes()['dashboard_type'] ?? null;
+        if (!is_null($eggDashboardType) && $eggDashboardType !== '') {
+            return $eggDashboardType;
+        }
+        
+        // Otherwise, inherit from nest
         if (!$this->egg->relationLoaded('nest')) {
             $this->egg->load('nest');
         }
+        
+        if (!$this->egg->nest) {
+            return 'game-server';
+        }
 
-        return $this->egg->effective_dashboard_type ?? 'game-server';
+        // Get nest's dashboard_type (using accessor which handles defaults)
+        return $this->egg->nest->dashboard_type;
     }
 
     /**
