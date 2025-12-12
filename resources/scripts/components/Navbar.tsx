@@ -95,7 +95,7 @@ export default function Navbar() {
                                         Dashboard
                                     </ActionButton>
 
-                                    {user.rootAdmin && (
+                                    {/* {user.rootAdmin && (
                                         <ActionButton
                                             variant='secondary'
                                             size='sm'
@@ -106,7 +106,7 @@ export default function Navbar() {
                                         >
                                             Admin
                                         </ActionButton>
-                                    )}
+                                    )} */}
 
                                     {/* Avatar dropdown */}
                                     <DropdownMenu>
