@@ -443,7 +443,18 @@ class Server extends Model
      */
     public function getDashboardTypeAttribute(): string
     {
-        $this->loadMissing('egg.nest');
+        // Ensure egg and nest relationships are loaded
+        if (!$this->relationLoaded('egg')) {
+            $this->load('egg');
+        }
+        
+        if (!$this->egg) {
+            return 'game-server';
+        }
+        
+        if (!$this->egg->relationLoaded('nest')) {
+            $this->egg->load('nest');
+        }
 
         return $this->egg->effective_dashboard_type ?? 'game-server';
     }

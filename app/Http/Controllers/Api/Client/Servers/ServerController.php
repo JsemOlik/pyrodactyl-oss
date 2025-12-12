@@ -30,6 +30,9 @@ class ServerController extends ClientApiController
      */
     public function index(GetServerRequest $request, Server $server): array
     {
+        // Ensure egg and nest relationships are loaded for dashboard_type accessor
+        $server->loadMissing('egg.nest');
+
         return $this->fractal->item($server)
             ->transformWith($this->getTransformer(ServerTransformer::class))
             ->addMeta([

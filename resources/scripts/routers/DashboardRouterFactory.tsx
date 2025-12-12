@@ -59,6 +59,17 @@ const DashboardRouterFactory = () => {
     // Default to 'game-server' if not set (shouldn't happen, but safe fallback)
     const dashboardType = serverData.dashboard_type || 'game-server';
 
+    // Debug logging (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+        console.log('DashboardRouterFactory - Server Data:', {
+            uuid: serverData.uuid,
+            name: serverData.name,
+            dashboard_type: serverData.dashboard_type,
+            nest: serverData.nest,
+            egg: serverData.egg,
+        });
+    }
+
     // Map dashboard types to their respective router components
     const renderRouter = () => {
         switch (dashboardType) {

@@ -272,11 +272,19 @@ class Egg extends Model
      */
     public function getEffectiveDashboardTypeAttribute(): string
     {
-        if (!is_null($this->dashboard_type)) {
+        // If egg has its own dashboard_type, use it
+        if (!is_null($this->dashboard_type) && $this->dashboard_type !== '') {
             return $this->dashboard_type;
         }
 
-        $this->loadMissing('nest');
+        // Otherwise, inherit from nest
+        if (!$this->relationLoaded('nest')) {
+            $this->load('nest');
+        }
+        
+        if (!$this->nest) {
+            return 'game-server';
+        }
 
         return $this->nest->dashboard_type ?? 'game-server';
     }

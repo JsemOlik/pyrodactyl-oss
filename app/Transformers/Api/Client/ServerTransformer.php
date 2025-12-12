@@ -69,7 +69,7 @@ class ServerTransformer extends BaseClientTransformer
       'egg_features' => $server->egg->inherit_features,
       'egg' => $server->egg->uuid,
       'nest' => $server->nest_id,
-      'dashboard_type' => $server->dashboard_type,
+      'dashboard_type' => $server->dashboard_type ?? 'game-server',
       'feature_limits' => [
         'databases' => $server->database_limit,
         'allocations' => $server->allocation_limit,
