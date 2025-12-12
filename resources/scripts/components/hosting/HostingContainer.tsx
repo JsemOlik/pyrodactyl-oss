@@ -11,7 +11,7 @@ import {
     Shield,
 } from '@gravity-ui/icons';
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 
@@ -281,28 +281,64 @@ const HostingContainer = () => {
         </motion.div>
     );
 
-    const InfiniteMarquee = ({
-        children,
-        direction = 'left',
-        speed = 20,
-    }: {
-        children: React.ReactNode;
-        direction?: 'left' | 'right';
-        speed?: number;
-    }) => {
-        return (
-            <div className='w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]'>
-                <motion.div
-                    className='flex items-center gap-8 md:gap-16 py-4'
-                    animate={{ x: direction === 'left' ? '-50%' : '0%' }}
-                    initial={{ x: direction === 'left' ? '0%' : '-50%' }}
-                    transition={{ ease: 'linear', duration: speed, repeat: Infinity }}
-                >
-                    {children} {children}
-                </motion.div>
-            </div>
-        );
-    };
+    // Memoize testimonials to prevent re-rendering when billing/category changes
+    const testimonialsContent = useMemo(
+        () => [
+            {
+                n: 'Oliver',
+                r: 'Game Developer',
+                t: 'The latency is non-existent. Best Rust servers I&apos;ve ever hosted.',
+            },
+            {
+                n: 'Sarah J.',
+                r: 'SysAdmin',
+                t: 'The S3 compatible storage saved us thousands compared to AWS.',
+            },
+            {
+                n: 'Mark R.',
+                r: 'Engineer',
+                t: 'I love the open source ethos. The Proton panel is a joy to use.',
+            },
+            {
+                n: 'David K.',
+                r: 'CTO, TechCorp',
+                t: 'Scalability was our main concern. Oasis handled our spike perfectly.',
+            },
+            {
+                n: 'Jessica L.',
+                r: 'Web Agency',
+                t: 'We host 50+ client sites here. Uptime has been 100%.',
+            },
+        ],
+        [],
+    );
+
+    const InfiniteMarquee = React.memo(
+        ({
+            children,
+            direction = 'right',
+            speed = 20,
+        }: {
+            children: React.ReactNode;
+            direction?: 'left' | 'right';
+            speed?: number;
+        }) => {
+            return (
+                <div className='w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]'>
+                    <motion.div
+                        className='flex items-center gap-8 md:gap-16 py-4'
+                        animate={{ x: direction === 'right' ? ['0%', '-50%'] : ['-50%', '0%'] }}
+                        initial={{ x: direction === 'right' ? '0%' : '-50%' }}
+                        transition={{ ease: 'linear', duration: speed, repeat: Infinity, repeatType: 'loop' }}
+                    >
+                        {children} {children}
+                    </motion.div>
+                </div>
+            );
+        },
+    );
+
+    InfiniteMarquee.displayName = 'InfiniteMarquee';
 
     // Star icon component (since Gravity UI doesn't have a star icon)
     const StarIcon = ({ filled = false, size = 14 }: { filled?: boolean; size?: number }) => (
@@ -322,8 +358,8 @@ const HostingContainer = () => {
         <div className='min-h-screen bg-black text-white font-sans overflow-x-hidden'>
             {/* Background Ambience */}
             <div className='fixed inset-0 z-0 pointer-events-none'>
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-30 mix-blend-overlay" />
-                <div className='absolute inset-0 bg-gradient-to-b from-black/80 via-black/95 to-black' />
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-50 mix-blend-overlay" />
+                <div className='absolute inset-0 bg-gradient-to-b from-black/40 via-black/70 to-black' />
             </div>
 
             <Navbar />
@@ -506,7 +542,7 @@ const HostingContainer = () => {
                             variants={containerVar}
                             initial='hidden'
                             whileInView='show'
-                            viewport={{ once: true, margin: '-100px' }}
+                            viewport={{ once: false, margin: '0px' }}
                             className='grid grid-cols-1 md:grid-cols-3 gap-6'
                         >
                             <ServiceCard
@@ -545,66 +581,46 @@ const HostingContainer = () => {
                 </section>
 
                 {/* TESTIMONIALS (Infinite Scroll Right-to-Left) */}
-                <section className='py-24 overflow-hidden bg-neutral-900 border-b border-neutral-800'>
-                    <div className='max-w-7xl mx-auto px-6 mb-12'>
-                        <h2 className='text-2xl font-bold'>Trusted by Developers</h2>
-                    </div>
+                {useMemo(
+                    () => (
+                        <section className='py-24 overflow-hidden bg-neutral-900 border-b border-neutral-800'>
+                            <div className='max-w-7xl mx-auto px-6 mb-12'>
+                                <h2 className='text-2xl font-bold'>Trusted by Developers</h2>
+                            </div>
 
-                    <InfiniteMarquee speed={40} direction='left'>
-                        {[
-                            {
-                                n: 'Oliver',
-                                r: 'Game Developer',
-                                t: 'The latency is non-existent. Best Rust servers I&apos;ve ever hosted.',
-                            },
-                            {
-                                n: 'Sarah J.',
-                                r: 'SysAdmin',
-                                t: 'The S3 compatible storage saved us thousands compared to AWS.',
-                            },
-                            {
-                                n: 'Mark R.',
-                                r: 'Engineer',
-                                t: 'I love the open source ethos. The Proton panel is a joy to use.',
-                            },
-                            {
-                                n: 'David K.',
-                                r: 'CTO, TechCorp',
-                                t: 'Scalability was our main concern. Oasis handled our spike perfectly.',
-                            },
-                            {
-                                n: 'Jessica L.',
-                                r: 'Web Agency',
-                                t: 'We host 50+ client sites here. Uptime has been 100%.',
-                            },
-                        ].map((item, i) => (
-                            <div
-                                key={i}
-                                className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
-                            >
-                                <div className='flex gap-1 text-brand mb-4'>
-                                    {[1, 2, 3, 4, 5].map((j) => (
-                                        <StarIcon key={j} filled={true} size={14} />
-                                    ))}
-                                </div>
-                                <p className='text-neutral-400 text-sm italic mb-6 leading-relaxed'>
-                                    &quot;{item.t}&quot;
-                                </p>
-                                <div className='flex items-center gap-3'>
-                                    <div className='w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center font-bold text-white'>
-                                        {item.n[0]}
-                                    </div>
-                                    <div>
-                                        <div className='text-white font-bold text-sm'>{item.n}</div>
-                                        <div className='text-neutral-600 text-xs uppercase tracking-wider'>
-                                            {item.r}
+                            <InfiniteMarquee speed={40} direction='right'>
+                                {testimonialsContent.map((item, i) => (
+                                    <div
+                                        key={i}
+                                        className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
+                                    >
+                                        <div className='flex gap-1 text-brand mb-4'>
+                                            {[1, 2, 3, 4, 5].map((j) => (
+                                                <StarIcon key={j} filled={true} size={14} />
+                                            ))}
+                                        </div>
+                                        <p className='text-neutral-400 text-sm italic mb-6 leading-relaxed'>
+                                            &quot;{item.t}&quot;
+                                        </p>
+                                        <div className='flex items-center gap-3'>
+                                            <div className='w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center font-bold text-white'>
+                                                {item.n[0]}
+                                            </div>
+                                            <div>
+                                                <div className='text-white font-bold text-sm'>{item.n}</div>
+                                                <div className='text-neutral-600 text-xs uppercase tracking-wider'>
+                                                    {item.r}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        ))}
-                    </InfiniteMarquee>
-                </section>
+                                ))}
+                            </InfiniteMarquee>
+                        </section>
+                    ),
+                    // eslint-disable-next-line react-hooks/exhaustive-deps
+                    [],
+                )}
 
                 {/* PRICING ENGINE */}
                 <section id='pricing' className='py-32 px-6 max-w-7xl mx-auto'>
@@ -676,69 +692,91 @@ const HostingContainer = () => {
                                 transition={{ duration: 0.4 }}
                                 className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-16'
                             >
-                                {plans.slice(0, 4).map((plan) => {
-                                    const planPrice = getPlanPrice(plan);
-                                    const finalPrice = getPrice(planPrice, plan);
-                                    const isRecommended = plan?.attributes.is_most_popular ?? false;
+                                {plans
+                                    .slice()
+                                    .sort((a, b) => {
+                                        // Sort most popular first, then by sort_order
+                                        if (a.attributes.is_most_popular && !b.attributes.is_most_popular) return -1;
+                                        if (!a.attributes.is_most_popular && b.attributes.is_most_popular) return 1;
+                                        return a.attributes.sort_order - b.attributes.sort_order;
+                                    })
+                                    .slice(0, 4)
+                                    .map((plan) => {
+                                        const planPrice = getPlanPrice(plan);
+                                        const finalPrice = getPrice(planPrice, plan);
+                                        const isRecommended = plan?.attributes.is_most_popular ?? false;
 
-                                    return (
-                                        <div
-                                            key={plan.attributes.id}
-                                            className={`p-6 md:p-8 flex flex-col relative ${
-                                                isRecommended
-                                                    ? 'bg-neutral-900 border border-brand'
-                                                    : 'bg-neutral-950 border border-neutral-800'
-                                            }`}
-                                        >
-                                            {isRecommended && (
-                                                <div className='absolute top-0 right-0 bg-brand text-white text-[10px] font-bold px-3 py-1 uppercase'>
-                                                    Top Pick
-                                                </div>
-                                            )}
-                                            <h3 className='text-brand font-bold uppercase tracking-widest text-sm mb-2'>
-                                                {plan.attributes.name}
-                                            </h3>
-
-                                            <div className='mt-auto mb-6'>
-                                                <div className='text-4xl font-bold text-white flex items-start gap-1'>
-                                                    <span className='text-lg mt-1'>$</span>
-                                                    {finalPrice.toFixed(0)}
-                                                </div>
-                                                <div className='text-xs text-neutral-500 uppercase mt-1'>
-                                                    Per Month / Billed{' '}
-                                                    {BILLING_CYCLES[billingIndex]?.label ?? 'Monthly'}
-                                                </div>
-                                            </div>
-
-                                            <ul className='space-y-3 mb-8 text-sm text-neutral-400'>
-                                                <li className='flex gap-2'>
-                                                    <Server width={14} height={14} className='text-white' />{' '}
-                                                    {getVCores(plan.attributes.cpu)} vCore
-                                                </li>
-                                                <li className='flex gap-2'>
-                                                    <Gear width={14} height={14} className='text-white' />{' '}
-                                                    {formatMemory(plan.attributes.memory)} Memory
-                                                </li>
-                                                <li className='flex gap-2'>
-                                                    <Shield width={14} height={14} className='text-white' /> DDoS
-                                                    Protection
-                                                </li>
-                                            </ul>
-
-                                            <button
-                                                onClick={() => handlePlanSelect(plan)}
-                                                className={`w-full py-3 text-xs font-bold uppercase tracking-widest border transition-all ${
+                                        return (
+                                            <div
+                                                key={plan.attributes.id}
+                                                className={`p-6 md:p-8 flex flex-col relative ${
                                                     isRecommended
-                                                        ? 'bg-brand border-brand text-white'
-                                                        : 'border-neutral-700 text-neutral-400 hover:border-white hover:text-white'
+                                                        ? 'bg-neutral-900 border-2 border-brand shadow-[0_0_20px_color-mix(in_srgb,var(--color-brand)_30%,transparent)]'
+                                                        : 'bg-neutral-950 border border-neutral-800'
                                                 }`}
-                                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
                                             >
-                                                Deploy
-                                            </button>
-                                        </div>
-                                    );
-                                })}
+                                                {isRecommended && (
+                                                    <div className='absolute -top-3 left-1/2 -translate-x-1/2 bg-brand text-white text-[10px] font-bold px-4 py-1.5 uppercase tracking-wider shadow-lg'>
+                                                        Most Popular
+                                                    </div>
+                                                )}
+                                                <div className='flex items-center gap-2 mb-2'>
+                                                    <h3 className='text-brand font-bold uppercase tracking-widest text-sm'>
+                                                        {plan.attributes.name}
+                                                    </h3>
+                                                    {isRecommended && (
+                                                        <svg
+                                                            width={16}
+                                                            height={16}
+                                                            viewBox='0 0 24 24'
+                                                            fill='currentColor'
+                                                            className='text-brand'
+                                                        >
+                                                            <polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2' />
+                                                        </svg>
+                                                    )}
+                                                </div>
+
+                                                <div className='mt-auto mb-6'>
+                                                    <div className='text-4xl font-bold text-white flex items-start gap-1'>
+                                                        <span className='text-lg mt-1'>$</span>
+                                                        {finalPrice.toFixed(0)}
+                                                    </div>
+                                                    <div className='text-xs text-neutral-500 uppercase mt-1'>
+                                                        Per Month / Billed{' '}
+                                                        {BILLING_CYCLES[billingIndex]?.label ?? 'Monthly'}
+                                                    </div>
+                                                </div>
+
+                                                <ul className='space-y-3 mb-8 text-sm text-neutral-400'>
+                                                    <li className='flex gap-2'>
+                                                        <Server width={14} height={14} className='text-white' />{' '}
+                                                        {getVCores(plan.attributes.cpu)} vCore
+                                                    </li>
+                                                    <li className='flex gap-2'>
+                                                        <Gear width={14} height={14} className='text-white' />{' '}
+                                                        {formatMemory(plan.attributes.memory)} Memory
+                                                    </li>
+                                                    <li className='flex gap-2'>
+                                                        <Shield width={14} height={14} className='text-white' /> DDoS
+                                                        Protection
+                                                    </li>
+                                                </ul>
+
+                                                <button
+                                                    onClick={() => handlePlanSelect(plan)}
+                                                    className={`w-full py-3 text-xs font-bold uppercase tracking-widest border transition-all ${
+                                                        isRecommended
+                                                            ? 'bg-brand border-brand text-white'
+                                                            : 'border-neutral-700 text-neutral-400 hover:border-white hover:text-white'
+                                                    }`}
+                                                    style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                                                >
+                                                    Deploy
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
                             </motion.div>
                         ) : (
                             <div className='text-center py-20 text-neutral-400'>No plans available.</div>
@@ -851,20 +889,30 @@ const HostingContainer = () => {
                                 key={i}
                                 variants={itemVar}
                                 className='flex flex-col items-center text-center group cursor-pointer'
+                                whileHover='hover'
                             >
                                 <motion.div
-                                    whileHover={{ rotate: 90 }}
+                                    variants={{
+                                        hover: { rotate: 90 },
+                                    }}
                                     transition={{ type: 'spring', stiffness: 200, damping: 10 }}
                                     className='w-20 h-20 border border-neutral-700 bg-neutral-900 flex items-center justify-center mb-6 transition-colors group-hover:border-brand'
                                     style={{
                                         borderRadius: 'var(--button-border-radius, 0.5rem)',
                                     }}
                                 >
-                                    <item.icon
-                                        className='text-white group-hover:text-brand transition-colors'
-                                        width={32}
-                                        height={32}
-                                    />
+                                    <motion.div
+                                        variants={{
+                                            hover: { rotate: -90 },
+                                        }}
+                                        transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+                                    >
+                                        <item.icon
+                                            className='text-white group-hover:text-brand transition-colors'
+                                            width={32}
+                                            height={32}
+                                        />
+                                    </motion.div>
                                 </motion.div>
                                 <div className='text-brand font-mono text-xs font-bold mb-2'>STEP {item.s}</div>
                                 <h4 className='text-white font-bold text-lg uppercase'>{item.t}</h4>
