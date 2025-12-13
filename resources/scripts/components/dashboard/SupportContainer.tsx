@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/elements/Accordion';
 
@@ -160,6 +161,25 @@ const SupportContainer = () => {
                     'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
             }}
         >
+            {/* View Tickets Link */}
+            <div className='mb-6 flex justify-end'>
+                <Link
+                    to='/support/tickets'
+                    className='inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-100'
+                    style={{ backgroundColor: 'var(--color-brand)' }}
+                >
+                    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                        <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                        />
+                    </svg>
+                    <span>View My Tickets</span>
+                </Link>
+            </div>
+
             {/* Create Ticket Section */}
             <div
                 className='mb-12 transform-gpu skeleton-anim-2'

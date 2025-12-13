@@ -8,6 +8,8 @@ import routes from '@/routers/routes';
 import BillingContainer from '@/components/dashboard/BillingContainer';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import SupportContainer from '@/components/dashboard/SupportContainer';
+import TicketDetailContainer from '@/components/dashboard/TicketDetailContainer';
+import TicketsContainer from '@/components/dashboard/TicketsContainer';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -82,7 +84,7 @@ const DashboardRouter = () => {
             return (ButtonSettings as any).offsetTop + HighlightOffset;
         if (pathname.includes('/billing') && ButtonSettingsBilling != null)
             return (ButtonSettingsBilling as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith('/support') && ButtonSupport != null)
+        if ((pathname.includes('/support') || pathname.includes('/tickets')) && ButtonSupport != null)
             return (ButtonSupport as any).offsetTop + HighlightOffset;
 
         return '0';
@@ -261,6 +263,8 @@ const DashboardRouter = () => {
                                 <Route path='/billing' element={<BillingContainer />} />
 
                                 <Route path='/support' element={<SupportContainer />} />
+                                <Route path='/support/tickets' element={<TicketsContainer />} />
+                                <Route path='/support/tickets/:id' element={<TicketDetailContainer />} />
 
                                 <Route path='/vps-servers' element={<VpsContainer />} />
 

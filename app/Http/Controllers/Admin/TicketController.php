@@ -13,8 +13,10 @@ use Spatie\QueryBuilder\AllowedFilter;
 use Illuminate\View\Factory as ViewFactory;
 use Pterodactyl\Services\Activity\ActivityLogService;
 use Pterodactyl\Http\Controllers\Controller;
+use Pterodactyl\Models\TicketReply;
 use Pterodactyl\Http\Requests\Admin\Ticket\UpdateTicketRequest;
 use Pterodactyl\Http\Requests\Admin\Ticket\AssignTicketRequest;
+use Pterodactyl\Http\Requests\Admin\Ticket\StoreTicketReplyRequest;
 
 class TicketController extends Controller
 {
@@ -211,5 +213,38 @@ class TicketController extends Controller
         $this->alert->success('Ticket has been deleted successfully.')->flash();
 
         return redirect()->route('admin.tickets');
+    }
+
+    /**
+     * Add a reply to a ticket.
+     */
+    public function storeReply(StoreTicketReplyRequest $request, int $ticket): RedirectResponse
+    {
+        $ticketModel = Ticket::findOrFail($ticket);
+
+        $reply = TicketReply::create([
+            'ticket_id' => $ticketModel->id,
+            'user_id' => $request->user()->id,
+            'message' => $request->input('message'),
+            'is_internal' => $request->input('is_internal', false),
+        ]);
+
+        // If ticket was resolved, reopen it when admin replies
+        if ($ticketModel->status === Ticket::STATUS_RESOLVED) {
+            $ticketModel->status = Ticket::STATUS_OPEN;
+            $ticketModel->resolved_at = null;
+            $ticketModel->resolved_by = null;
+            $ticketModel->save();
+        }
+
+        $this->activity
+            ->event('ticket:reply:created')
+            ->subject($ticketModel)
+            ->description("Reply added to ticket #{$ticketModel->id} by admin: {$ticketModel->subject}")
+            ->log();
+
+        $this->alert->success('Reply has been added successfully.')->flash();
+
+        return redirect()->route('admin.tickets.view', $ticket);
     }
 }

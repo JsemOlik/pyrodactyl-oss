@@ -311,6 +311,7 @@ Route::group(['prefix' => 'tickets'], function () {
     Route::patch('/view/{ticket}', [Admin\TicketController::class, 'update'])->name('admin.tickets.update');
     Route::post('/view/{ticket}/assign', [Admin\TicketController::class, 'assign'])->name('admin.tickets.assign');
     Route::post('/view/{ticket}/resolve', [Admin\TicketController::class, 'resolve'])->name('admin.tickets.resolve');
+    Route::post('/view/{ticket}/reply', [Admin\TicketController::class, 'storeReply'])->name('admin.tickets.reply');
     Route::delete('/view/{ticket}', [Admin\TicketController::class, 'destroy'])->name('admin.tickets.delete');
 });
 
