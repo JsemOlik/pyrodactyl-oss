@@ -9,6 +9,12 @@ import {
     Play,
     Server,
     Shield,
+    Thunderbolt,
+    Cpu,
+    FolderOpen,
+    FloppyDisk,
+    PlugConnection,
+    PlanetEarth,
 } from '@gravity-ui/icons';
 import { motion } from 'framer-motion';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -795,24 +801,24 @@ const HostingContainer = () => {
                                                         <Shield width={14} height={14} className='text-white' /> AMD Ryzen™ 9 9950X
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <Server width={14} height={14} className='text-white' />{' '}
+                                                        <Thunderbolt width={14} height={14} className='text-white' />{' '}
                                                         {getVCores(plan.attributes.cpu)} vCores @ ~5.7 GHz
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <Gear width={14} height={14} className='text-white' />{' '}
+                                                        <Cpu width={14} height={14} className='text-white' />{' '}
                                                         {formatMemory(plan.attributes.memory)} DDR5 RAM
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <Shield width={14} height={14} className='text-white' /> Unlimited NVMe Storage
+                                                        <FolderOpen width={14} height={14} className='text-white' /> Unlimited NVMe Storage
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <Shield width={14} height={14} className='text-white' /> 18 Free Backup Slots
+                                                        <FloppyDisk width={14} height={14} className='text-white' /> 24 Free Backup Slots
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <Shield width={14} height={14} className='text-white' /> 12 Port Allocations
+                                                        <PlugConnection width={14} height={14} className='text-white' /> 12 Port Allocations
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <Shield width={14} height={14} className='text-white' /> Free oasis.cloud subdomain
+                                                        <PlanetEarth width={14} height={14} className='text-white' /> Free oasis.cloud subdomain
                                                     </li>
                                                     <li className='flex gap-2'>
                                                         <Shield width={14} height={14} className='text-white' /> Always-On DDoS
