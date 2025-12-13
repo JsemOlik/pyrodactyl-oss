@@ -52,7 +52,7 @@ const HostingConfigureContainer = () => {
 
     useEffect(() => {
         if (!serverCreationStatusLoading && serverCreationStatus && !serverCreationStatus.enabled) {
-            navigate('/hosting/server-creation-disabled');
+            navigate('/server-creation-disabled');
         }
     }, [serverCreationStatus, serverCreationStatusLoading, navigate]);
 
@@ -75,7 +75,7 @@ const HostingConfigureContainer = () => {
             });
         } else {
             // No plan selected, redirect back
-            navigate('/hosting');
+            navigate('/');
         }
     }, [searchParams, navigate]);
 
@@ -122,7 +122,7 @@ const HostingConfigureContainer = () => {
             params.set('distribution', selectedDistribution!);
         }
 
-        navigate(`/hosting/checkout?${params.toString()}`);
+        navigate(`/checkout?${params.toString()}`);
     };
 
     const handleBack = () => {
@@ -130,7 +130,7 @@ const HostingConfigureContainer = () => {
             setCurrentStep('select-nest');
             setSelectedEgg(null);
         } else {
-            navigate('/hosting');
+            navigate('/');
         }
     };
 

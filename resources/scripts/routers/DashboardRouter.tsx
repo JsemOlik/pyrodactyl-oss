@@ -55,7 +55,7 @@ const DashboardRouter = () => {
     };
 
     const onTriggerReturnToWebsite = () => {
-        window.location.href = '/hosting';
+        window.location.href = '/';
     };
 
     const onSelectAdminPanel = () => {

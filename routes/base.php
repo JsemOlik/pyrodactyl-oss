@@ -4,7 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Pterodactyl\Http\Controllers\Base;
 use Pterodactyl\Http\Middleware\RequireTwoFactorAuthentication;
 
-Route::get('/', [Base\IndexController::class, 'index'])->name('index')->fallback();
+Route::get('/dashboard', [Base\IndexController::class, 'index'])->name('index')->fallback();
+Route::get('/', [Base\IndexController::class, 'index']);
 Route::get('/account', [Base\IndexController::class, 'index'])
   ->withoutMiddleware(RequireTwoFactorAuthentication::class)
   ->name('account');

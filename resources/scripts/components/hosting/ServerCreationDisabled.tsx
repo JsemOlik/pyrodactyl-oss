@@ -33,7 +33,7 @@ const ServerCreationDisabled = () => {
     // If server creation is enabled, redirect back to hosting
     useEffect(() => {
         if (data && data.enabled) {
-            navigate('/hosting');
+            navigate('/');
         }
     }, [data, navigate]);
 
@@ -86,7 +86,7 @@ const ServerCreationDisabled = () => {
                                     View our status page
                                 </ActionButton>
                             )}
-                            <ActionButton variant='secondary' size='lg' onClick={() => navigate('/hosting')}>
+                            <ActionButton variant='secondary' size='lg' onClick={() => navigate('/')}>
                                 Return to Website
                             </ActionButton>
                         </div>

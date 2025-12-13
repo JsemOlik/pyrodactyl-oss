@@ -21,9 +21,9 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-    { label: 'Game Hosting', href: '/hosting/services/game-hosting' },
-    { label: 'VPS', href: '/hosting/services/vps' },
-    { label: 'About Us', href: '/hosting' },
+    { label: 'Game Hosting', href: '/services/game-hosting' },
+    { label: 'VPS', href: '/services/vps' },
+    { label: 'About Us', href: '/' },
 ];
 
 export default function Navbar() {
@@ -67,7 +67,7 @@ export default function Navbar() {
                     }`}
                 >
                     {/* Left: Logo */}
-                    <Link to='/' className='flex items-center gap-2 rounded-lg px-2 py-1'>
+                    <Link to='/dashboard' className='flex items-center gap-2 rounded-lg px-2 py-1'>
                         <Logo className='h-5 w-5' />
                         <span className='font-yaro tracking-tight'>Oasis Cloud</span>
                     </Link>
@@ -89,7 +89,7 @@ export default function Navbar() {
                                     <ActionButton
                                         variant='secondary'
                                         size='sm'
-                                        onClick={() => navigate('/')}
+                                        onClick={() => navigate('/dashboard')}
                                         className='h-8 rounded-lg border-brand/30 bg-brand/10 px-3 text-brand hover:bg-brand/30 hover:text-white hover:border-brand/80'
                                     >
                                         Dashboard
@@ -189,7 +189,7 @@ export default function Navbar() {
                             {user ? (
                                 <>
                                     <Link
-                                        to='/'
+                                        to='/dashboard'
                                         onClick={() => setOpen(false)}
                                         className='rounded-xl bg-brand/10 px-3 py-2 text-center hover:bg-brand/30 hover:text-white text-brand border border-brand/30 hover:border-brand/80'
                                     >

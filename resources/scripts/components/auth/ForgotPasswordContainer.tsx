@@ -66,7 +66,7 @@ const ForgotPasswordContainer = () => {
             >
                 {({ isSubmitting }) => (
                     <LoginFormContainer className={`w-full flex`}>
-                        <Link to='/'>
+                        <Link to='/dashboard'>
                             <div className='flex h-12 mb-4 items-center w-full'>
                                 <Logo />
                             </div>

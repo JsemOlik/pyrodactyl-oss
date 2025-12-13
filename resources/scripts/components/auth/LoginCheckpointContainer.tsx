@@ -35,7 +35,7 @@ function LoginCheckpointForm() {
     return (
         <ContentBox className='p-12 bg-[#ffffff09] border-[1px] border-[#ffffff11] shadow-xs rounded-xl'>
             <LoginFormContainer className={`w-full flex`}>
-                <Link to='/'>
+                <Link to='/dashboard'>
                     <div className='flex h-12 mb-4 items-center w-full'>
                         <Logo />
                     </div>

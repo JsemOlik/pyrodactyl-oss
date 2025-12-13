@@ -186,20 +186,20 @@ const HostingContainer = () => {
 
     const handlePlanSelect = (plan: HostingPlan) => {
         if (serverCreationStatus && !serverCreationStatus.enabled) {
-            navigate('/hosting/server-creation-disabled');
+            navigate('/server-creation-disabled');
             return;
         }
 
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
-                    from: `/hosting/checkout?plan=${plan.attributes.id}&type=${hostingType}`,
+                    from: `/checkout?plan=${plan.attributes.id}&type=${hostingType}`,
                 },
                 replace: false,
             });
             return;
         }
-        navigate(`/hosting/checkout?plan=${plan.attributes.id}&type=${hostingType}`);
+        navigate(`/checkout?plan=${plan.attributes.id}&type=${hostingType}`);
     };
 
     const _handleCustomPlanSelect = () => {
@@ -208,7 +208,7 @@ const HostingContainer = () => {
         }
 
         if (serverCreationStatus && !serverCreationStatus.enabled) {
-            navigate('/hosting/server-creation-disabled');
+            navigate('/server-creation-disabled');
             return;
         }
 
@@ -218,13 +218,13 @@ const HostingContainer = () => {
         if (!isAuthenticated) {
             navigate(`/auth/login`, {
                 state: {
-                    from: `/hosting/checkout?custom=true&memory=${customMemory}&interval=${cycle.interval}&type=${hostingType}`,
+                    from: `/checkout?custom=true&memory=${customMemory}&interval=${cycle.interval}&type=${hostingType}`,
                 },
                 replace: false,
             });
             return;
         }
-        navigate(`/hosting/checkout?custom=true&memory=${customMemory}&interval=${cycle.interval}&type=${hostingType}`);
+        navigate(`/checkout?custom=true&memory=${customMemory}&interval=${cycle.interval}&type=${hostingType}`);
     };
 
     const scrollToPricing = () => {
@@ -296,7 +296,7 @@ const HostingContainer = () => {
                 <h3 className='text-xl font-bold text-white mb-3 uppercase tracking-wide'>{title}</h3>
                 <p className='text-neutral-400 text-sm leading-relaxed mb-6 flex-grow'>{desc}</p>
                 <Link
-                    to={`/hosting/services/${slug}`}
+                    to={`/services/${slug}`}
                     className='flex items-center text-xs font-bold text-brand opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300'
                 >
                     SERVICE DETAILS <ArrowRight width={12} height={12} className='ml-1' />

@@ -93,7 +93,7 @@ export const DashboardMobileMenu = ({ isVisible, onClose }: DashboardMobileMenuP
 
     return (
         <MobileFullScreenMenu isVisible={isVisible} onClose={onClose}>
-            <NavigationItem to='/' icon={House} end>
+            <NavigationItem to='/dashboard' icon={House} end>
                 Servers
             </NavigationItem>
             <NavigationItem to='/account/api' icon={AbbrApi} end>

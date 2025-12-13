@@ -61,7 +61,7 @@ const VpsContainer = () => {
                     <div className='text-center py-12'>
                         <p className='text-zinc-400 text-lg mb-4'>You don't have any VPS servers yet.</p>
                         <p className='text-zinc-500 text-sm'>
-                            <a href='/hosting' className='text-brand hover:text-brand/80 transition-colors'>
+                            <a href='/' className='text-brand hover:text-brand/80 transition-colors'>
                                 Create your first VPS server
                             </a>
                         </p>

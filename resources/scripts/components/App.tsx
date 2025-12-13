@@ -123,7 +123,7 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/hosting'
+                                    path='/'
                                     element={
                                         <Spinner.Suspense>
                                             <HostingContainer />
@@ -132,7 +132,7 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/hosting/services/:slug'
+                                    path='/services/:slug'
                                     element={
                                         <Spinner.Suspense>
                                             <ServiceDetails />
@@ -141,7 +141,7 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/hosting/server-creation-disabled'
+                                    path='/server-creation-disabled'
                                     element={
                                         <Spinner.Suspense>
                                             <ServerCreationDisabled />
@@ -150,7 +150,7 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/hosting/configure'
+                                    path='/configure'
                                     element={
                                         <AuthenticatedRoute>
                                             <Spinner.Suspense>
@@ -161,7 +161,7 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/hosting/checkout'
+                                    path='/checkout'
                                     element={
                                         <AuthenticatedRoute>
                                             <Spinner.Suspense>
@@ -172,7 +172,7 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/hosting/verifying'
+                                    path='/verifying'
                                     element={
                                         <AuthenticatedRoute>
                                             <Spinner.Suspense>
@@ -183,18 +183,7 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/hosting/verifying'
-                                    element={
-                                        <AuthenticatedRoute>
-                                            <Spinner.Suspense>
-                                                <HostingPaymentVerifyingContainer />
-                                            </Spinner.Suspense>
-                                        </AuthenticatedRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path='/*'
+                                    path='/dashboard/*'
                                     element={
                                         <AuthenticatedRoute>
                                             <Spinner.Suspense>
