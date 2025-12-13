@@ -1,24 +1,21 @@
 import {
     AntennaSignal,
     ArrowLeft,
-    ArrowUpToLine,
     ChevronRight,
     CircleCheck,
     Cpu,
-    Database,
     Globe,
     LayoutHeader,
     LifeRing,
     Lock,
-    Magnifier,
     Power,
     Server,
     Shield,
     Stopwatch,
     Terminal,
 } from '@gravity-ui/icons';
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import Navbar from '@/components/Navbar';
@@ -27,7 +24,7 @@ import Navbar from '@/components/Navbar';
 interface ServiceFeature {
     title: string;
     desc: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ width?: number; height?: number; className?: string }>;
 }
 
 interface GameSupport {
@@ -178,7 +175,41 @@ const SERVICE_DATA: Record<string, ServiceData> = {
 
 // --- SUB-COMPONENTS ---
 
-const SpecCard = ({ label, value, icon: Icon }: { label: string; value: string; icon: any }) => (
+const ShimmerButton = ({ text, onClick }: { text: string; onClick?: () => void }) => (
+    <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={onClick}
+        className='relative overflow-hidden bg-transparent hover:border-brand hover:border-[1.5px] px-8 py-4 font-bold text-white group'
+        style={{
+            borderRadius: 'var(--button-border-radius, 0.5rem)',
+            boxShadow: '0 0 20px color-mix(in srgb, var(--color-brand) 40%, transparent)',
+        }}
+    >
+        {/* Brand color overlay that sweeps from right to left on hover */}
+        <div
+            className='absolute inset-y-0 right-0 bg-brand transition-all duration-300 ease-in-out w-full group-hover:w-0'
+            style={{
+                borderRadius: 'var(--button-border-radius, 0.5rem)',
+            }}
+        />
+
+        <span className='relative z-10 flex items-center gap-2'>
+            {text} <ChevronRight width={16} height={16} />
+        </span>
+        <div className='absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0' />
+    </motion.button>
+);
+
+const SpecCard = ({
+    label,
+    value,
+    icon: Icon,
+}: {
+    label: string;
+    value: string;
+    icon: React.ComponentType<{ width?: number; height?: number; className?: string }>;
+}) => (
     <div className='bg-neutral-900/50 border border-neutral-800 p-4 rounded-lg flex items-center gap-4 hover:border-brand/50 transition-colors'>
         <div className='p-2 bg-brand/10 rounded text-brand'>
             <Icon width={20} height={20} />
@@ -190,26 +221,53 @@ const SpecCard = ({ label, value, icon: Icon }: { label: string; value: string; 
     </div>
 );
 
-const FeatureCard = ({ item, index }: { item: ServiceFeature; index: number }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.1 }}
-        viewport={{ once: true }}
-        className='p-6 bg-neutral-950 border border-neutral-800 hover:border-brand transition-colors group rounded-xl'
-    >
-        <div className='w-12 h-12 bg-neutral-900 rounded-lg flex items-center justify-center mb-4 text-white group-hover:text-brand group-hover:bg-brand/10 transition-colors'>
-            <item.icon width={24} height={24} />
-        </div>
-        <h3 className='text-lg font-bold text-white mb-2'>{item.title}</h3>
-        <p className='text-neutral-400 text-sm leading-relaxed'>{item.desc}</p>
-    </motion.div>
+const FeatureCard = ({ item, index }: { item: ServiceFeature; index: number }) => {
+    const Icon = item.icon;
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            viewport={{ once: true }}
+            className='p-6 bg-neutral-950 border border-neutral-800 hover:border-brand transition-colors group rounded-xl'
+        >
+            <div className='w-12 h-12 bg-neutral-900 rounded-lg flex items-center justify-center mb-4 text-white group-hover:text-brand group-hover:bg-brand/10 transition-colors'>
+                <Icon width={24} height={24} />
+            </div>
+            <h3 className='text-lg font-bold text-white mb-2'>{item.title}</h3>
+            <p className='text-neutral-400 text-sm leading-relaxed'>{item.desc}</p>
+        </motion.div>
+    );
+};
+
+const InfiniteMarquee = React.memo(
+    ({
+        children,
+        direction = 'right',
+        speed = 20,
+    }: {
+        children: React.ReactNode;
+        direction?: 'left' | 'right';
+        speed?: number;
+    }) => {
+        return (
+            <div className='w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]'>
+                <motion.div
+                    className='flex items-center gap-4 md:gap-6 py-4'
+                    animate={{ x: direction === 'right' ? ['0%', '-50%'] : ['-50%', '0%'] }}
+                    initial={{ x: direction === 'right' ? '0%' : '-50%' }}
+                    transition={{ ease: 'linear', duration: speed, repeat: Infinity, repeatType: 'loop' }}
+                >
+                    {children} {children}
+                </motion.div>
+            </div>
+        );
+    },
 );
 
-const GameLibrary = ({ games }: { games: GameSupport[] }) => {
-    const [search, setSearch] = useState('');
-    const filteredGames = games.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()));
+InfiniteMarquee.displayName = 'InfiniteMarquee';
 
+const GameLibrary = ({ games }: { games: GameSupport[] }) => {
     return (
         <section className='py-24 px-6 max-w-7xl mx-auto'>
             <div className='text-center mb-12'>
@@ -217,57 +275,32 @@ const GameLibrary = ({ games }: { games: GameSupport[] }) => {
                 <p className='text-neutral-400 mb-8'>
                     Instantly deploy any of these titles with our 1-Click Installer.
                 </p>
-
-                <div className='max-w-md mx-auto relative'>
-                    <input
-                        type='text'
-                        placeholder='Search for your favorite game...'
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className='w-full bg-neutral-900 border border-neutral-700 text-white pl-12 pr-4 py-3 rounded-full focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all'
-                    />
-                    <div className='absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500'>
-                        <Magnifier width={18} height={18} />
-                    </div>
-                </div>
             </div>
 
-            <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 min-h-[300px]'>
-                <AnimatePresence>
-                    {filteredGames.length > 0 ? (
-                        filteredGames.map((game) => (
-                            <motion.div
-                                key={game.name}
-                                layout
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className='group relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer'
-                            >
-                                <img
-                                    src={game.image}
-                                    alt={game.name}
-                                    className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
-                                />
-                                <div className='absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity' />
-                                <div className='absolute bottom-0 left-0 p-4 w-full'>
-                                    <span className='inline-block px-2 py-1 bg-brand/90 backdrop-blur-sm text-[10px] font-bold uppercase rounded mb-2 text-white'>
-                                        {game.tag}
-                                    </span>
-                                    <h3 className='text-white font-bold leading-tight group-hover:text-brand transition-colors'>
-                                        {game.name}
-                                    </h3>
-                                </div>
-                            </motion.div>
-                        ))
-                    ) : (
-                        <div className='col-span-full text-center py-10 text-neutral-500'>
-                            No games found matching "{search}".
-                            <br />
-                            <span className='text-xs'>But you can likely host it via our Custom Docker container!</span>
+            <div className='overflow-hidden'>
+                <InfiniteMarquee speed={30} direction='right'>
+                    {games.map((game) => (
+                        <div
+                            key={game.name}
+                            className='group relative w-[280px] shrink-0 aspect-[4/3] rounded-xl overflow-hidden cursor-pointer'
+                        >
+                            <img
+                                src={game.image}
+                                alt={game.name}
+                                className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
+                            />
+                            <div className='absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity' />
+                            <div className='absolute bottom-0 left-0 p-4 w-full'>
+                                <span className='inline-block px-2 py-1 bg-brand/90 backdrop-blur-sm text-[10px] font-bold uppercase rounded mb-2 text-white'>
+                                    {game.tag}
+                                </span>
+                                <h3 className='text-white font-bold leading-tight group-hover:text-brand transition-colors'>
+                                    {game.name}
+                                </h3>
+                            </div>
                         </div>
-                    )}
-                </AnimatePresence>
+                    ))}
+                </InfiniteMarquee>
             </div>
         </section>
     );
@@ -277,7 +310,7 @@ const GameLibrary = ({ games }: { games: GameSupport[] }) => {
 
 export default function ServiceDetails() {
     const { slug } = useParams<{ slug: string }>();
-    const data = slug && SERVICE_DATA[slug] ? SERVICE_DATA[slug] : SERVICE_DATA['game-hosting'];
+    const data = (slug && SERVICE_DATA[slug] ? SERVICE_DATA[slug] : SERVICE_DATA['game-hosting']) as ServiceData;
     const isGameHosting = slug === 'game-hosting' || !slug;
 
     useEffect(() => {
@@ -313,7 +346,8 @@ export default function ServiceDetails() {
                 <div className='relative z-10 max-w-7xl mx-auto'>
                     <Link
                         to='/hosting'
-                        className='inline-flex items-center gap-2 text-neutral-400 hover:text-white mb-8 text-sm font-bold uppercase tracking-wider transition-colors bg-black/50 backdrop-blur-md px-4 py-2 rounded-full border border-white/10'
+                        className='inline-flex items-center gap-2 text-neutral-400 hover:text-white mb-8 text-sm font-bold uppercase tracking-wider transition-colors bg-black/50 backdrop-blur-md px-4 py-2 border border-white/10'
+                        style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
                     >
                         <ArrowLeft width={16} height={16} /> Back to Services
                     </Link>
@@ -340,12 +374,7 @@ export default function ServiceDetails() {
                                 >
                                     Deploy Now <ChevronRight width={16} height={16} />
                                 </Link>
-                                <button
-                                    className='px-8 py-4 border border-neutral-600 bg-black/40 backdrop-blur font-bold hover:bg-neutral-800 transition-colors'
-                                    style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                                >
-                                    Docs & API
-                                </button>
+                                <ShimmerButton text='Docs & API' />
                             </div>
                         </div>
                     </motion.div>
@@ -444,8 +473,8 @@ export default function ServiceDetails() {
                     <div>
                         <h2 className='text-3xl font-bold mb-4'>The Oasis Standard</h2>
                         <p className='text-neutral-400 max-w-lg'>
-                            We don't charge extra for the essentials. Every deployment includes our enterprise standard
-                            suite.
+                            We don&apos;t charge extra for the essentials. Every deployment includes our enterprise
+                            standard suite.
                         </p>
                     </div>
                 </div>
@@ -492,8 +521,8 @@ export default function ServiceDetails() {
                                     <LifeRing className='text-brand' /> 24/7 Expert Support
                                 </h3>
                                 <p className='text-neutral-400'>
-                                    Stuck? Our team of engineers is available 24/7 via Discord and Ticket. We don't use
-                                    bots; you get real humans who know code.
+                                    Stuck? Our team of engineers is available 24/7 via Discord and Ticket. We don&apos;t
+                                    use bots; you get real humans who know code.
                                 </p>
                             </div>
                         </div>
@@ -541,12 +570,29 @@ export default function ServiceDetails() {
                     <p className='text-neutral-400 mb-10 text-lg'>
                         Start your journey with Oasis Cloud today. Your server is just 60 seconds away.
                     </p>
-                    <Link
-                        to='/hosting'
-                        className='inline-block bg-brand hover:bg-brand/90 text-white text-lg font-bold px-12 py-5 transition-all transform hover:scale-105 shadow-[0_0_40px_rgba(var(--color-brand-rgb),0.3)]'
-                        style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                    >
-                        Create Server Now
+                    <Link to='/hosting' className='inline-block'>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className='relative overflow-hidden bg-transparent hover:border-brand hover:border-[1.5px] px-12 py-5 font-bold text-lg text-white group'
+                            style={{
+                                borderRadius: 'var(--button-border-radius, 0.5rem)',
+                                boxShadow: '0 0 20px color-mix(in srgb, var(--color-brand) 40%, transparent)',
+                            }}
+                        >
+                            {/* Brand color overlay that sweeps from right to left on hover */}
+                            <div
+                                className='absolute inset-y-0 right-0 bg-brand transition-all duration-300 ease-in-out w-full group-hover:w-0'
+                                style={{
+                                    borderRadius: 'var(--button-border-radius, 0.5rem)',
+                                }}
+                            />
+
+                            <span className='relative z-10 flex items-center gap-2'>
+                                Create Server Now <ChevronRight width={16} height={16} />
+                            </span>
+                            <div className='absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0' />
+                        </motion.button>
                     </Link>
                 </div>
             </section>
