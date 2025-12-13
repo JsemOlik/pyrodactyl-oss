@@ -1,6 +1,10 @@
+import { Shield } from '@gravity-ui/icons';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { GravatarStyle, getGravatarUrl } from '@/lib/gravatar';
+
+import getAccountData from '@/api/account/getAccountData';
 import { type TicketReply, createReply, deleteTicket, getTicket, resolveTicket } from '@/api/tickets';
 import { Ticket } from '@/api/tickets/getTickets';
 
@@ -16,11 +20,23 @@ const TicketDetailContainer = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [replies, setReplies] = useState<any[]>([]);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+    const [currentUserGravatarStyle, setCurrentUserGravatarStyle] = useState<GravatarStyle>('identicon');
+    const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
     useEffect(() => {
         if (id) {
             loadTicket();
         }
+
+        // Load current user's account data for gravatar
+        getAccountData()
+            .then((data) => {
+                setCurrentUserEmail(data.email);
+                setCurrentUserGravatarStyle((data.gravatar_style || 'identicon') as GravatarStyle);
+            })
+            .catch(() => {
+                // Silently fail - gravatar will use defaults
+            });
     }, [id]);
 
     const loadTicket = async () => {
@@ -196,9 +212,14 @@ const TicketDetailContainer = () => {
 
             // Add user relationship if available
             if (currentUserId) {
+                // Include user data with email for gravatar
                 replyRelationships.user = {
                     data: { id: currentUserId, type: 'user' },
-                    attributes: userData,
+                    attributes: {
+                        ...userData,
+                        email: currentUserEmail || userData.email,
+                        root_admin: false, // Current user replying is not admin (they're a customer)
+                    },
                 };
             }
 
@@ -386,7 +407,16 @@ const TicketDetailContainer = () => {
                             }
 
                             const username = userData.username || userData.email || 'User';
-                            const initials = username
+                            const userEmail = userData.email || null;
+                            const isAdmin = userData.root_admin === true || userData.root_admin === 1;
+                            const displayName = isAdmin ? 'Admin' : username;
+
+                            // Get gravatar style - use current user's style if it's their message, otherwise default
+                            const gravatarStyle = isCurrentUser ? currentUserGravatarStyle : 'identicon';
+                            const avatarUrl =
+                                userEmail && !isAdmin ? getGravatarUrl(userEmail, 40, gravatarStyle) : null;
+
+                            const initials = displayName
                                 .split(' ')
                                 .map((n: string) => n[0])
                                 .join('')
@@ -400,11 +430,32 @@ const TicketDetailContainer = () => {
                                 >
                                     {/* Avatar */}
                                     <div
-                                        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
-                                            isCurrentUser ? 'bg-blue-500 text-white' : 'bg-zinc-700 text-zinc-200'
+                                        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden ${
+                                            isAdmin
+                                                ? 'text-white'
+                                                : isCurrentUser
+                                                  ? 'bg-blue-500 text-white'
+                                                  : 'bg-zinc-700 text-zinc-200'
                                         }`}
+                                        style={
+                                            isAdmin
+                                                ? {
+                                                      backgroundColor: 'var(--color-brand)',
+                                                  }
+                                                : undefined
+                                        }
                                     >
-                                        {initials}
+                                        {isAdmin ? (
+                                            <Shield className='w-5 h-5' />
+                                        ) : avatarUrl ? (
+                                            <img
+                                                src={avatarUrl}
+                                                alt={displayName}
+                                                className='w-full h-full object-cover'
+                                            />
+                                        ) : (
+                                            initials
+                                        )}
                                     </div>
 
                                     {/* Message */}
@@ -419,7 +470,10 @@ const TicketDetailContainer = () => {
                                             }`}
                                         >
                                             {!isCurrentUser && (
-                                                <div className='text-xs font-semibold mb-1 opacity-80'>{username}</div>
+                                                <div className='text-xs font-semibold mb-1 opacity-80 flex items-center gap-1'>
+                                                    {isAdmin && <Shield className='w-3 h-3' />}
+                                                    {displayName}
+                                                </div>
                                             )}
                                             <p className='whitespace-pre-wrap text-sm leading-relaxed'>
                                                 {replyData.message}
