@@ -434,23 +434,83 @@ const HostingContainer = () => {
                 <section className='py-10 border-y border-white/5 bg-neutral-950/65'>
                     <InfiniteMarquee speed={30}>
                         {[
-                            'MICROSOFT',
-                            'NVIDIA',
-                            'RIOT GAMES',
-                            'SPOTIFY',
-                            'DISCORD',
-                            'NASA',
-                            'VALVE',
-                            'EPIC GAMES',
-                            'UNITY',
-                            'AMD',
-                        ].map((logo, i) => (
-                            <span
-                                key={i}
-                                className='text-2xl font-black text-neutral-700 uppercase tracking-tighter hover:text-brand transition-colors cursor-default'
-                            >
-                                {logo}
-                            </span>
+                            {
+                                name: 'Microsoft',
+                                logo: 'https://img.icons8.com/color/480/microsoft.png',
+                            },
+                            {
+                                name: 'NVIDIA',
+                                logo: 'https://img.icons8.com/color/480/nvidia.png',
+                            },
+                            {
+                                name: 'Riot Games',
+                                logo: 'https://img.icons8.com/color/480/riot-games.png',
+                            },
+                            {
+                                name: 'Spotify',
+                                logo: 'https://img.icons8.com/color/480/spotify.png',
+                            },
+                            {
+                                name: 'Discord',
+                                logo: 'https://img.icons8.com/color/480/discord-logo.png',
+                            },
+                            {
+                                name: 'NASA',
+                                logo: 'https://img.icons8.com/color/480/nasa.png',
+                            },
+                            {
+                                name: 'Valve',
+                                logo: 'https://img.icons8.com/color/480/valve.png',
+                            },
+                            {
+                                name: 'Epic Games',
+                                logo: 'https://img.icons8.com/color/480/epic-games.png',
+                            },
+                            {
+                                name: 'Unity',
+                                logo: 'https://img.icons8.com/color/480/unity.png',
+                            },
+                            {
+                                name: 'AMD',
+                                logo: 'https://img.icons8.com/color/480/amd.png',
+                            },
+                            {
+                                name: '4CAMPS',
+                                logo: 'https://www.4camps.cz/assets/images/logo.svg',
+                            },
+                            {
+                                name: 'ZR GAMES',
+                                logo: 'https://www.zrgames.cz/images/logo.svg',
+                            },
+                            {
+                                name: 'QPvP.pro',
+                                logo: 'https://cdn.discordapp.com/attachments/1352390864730718339/1424045724278198302/image.png?ex=693e25ae&is=693cd42e&hm=803fb74b37e8b20076e0756b1532e7a44a25693a903f2514b9d8dcc7b7ace858&',
+                            },
+                            {
+                                name: 'BunnyCraft',
+                                logo: '/assets/logos/bunnycraft.png',
+                            },
+                            {
+                                name: 'SSPŠ',
+                                logo: '/assets/logos/ssps.png',
+                            },
+                        ].map((company, i) => (
+                            <div key={i} className='flex items-center justify-center h-16 px-8 shrink-0 group'>
+                                <img
+                                    src={company.logo}
+                                    alt={company.name}
+                                    className='h-20 w-auto max-w-[220px] object-contain opacity-60 group-hover:opacity-100 transition-all duration-300'
+                                    onError={(e) => {
+                                        // Fallback to text if image fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                            parent.innerHTML = `<span class="text-2xl font-black text-neutral-700 uppercase tracking-tighter">${company.name}</span>`;
+                                        }
+                                    }}
+                                />
+                            </div>
                         ))}
                     </InfiniteMarquee>
                 </section>
