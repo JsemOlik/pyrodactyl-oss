@@ -488,11 +488,11 @@ const HostingContainer = () => {
                             },
                             {
                                 name: 'BunnyCraft',
-                                logo: '/assets/logos/bunnycraft.png',
+                                logo: '/logos/bunnycraft.png',
                             },
                             {
                                 name: 'SSPŠ',
-                                logo: '/assets/logos/ssps.png',
+                                logo: '/logos/ssps.png',
                             },
                         ].map((company, i) => (
                             <div key={i} className='flex items-center justify-center h-16 px-8 shrink-0 group'>
