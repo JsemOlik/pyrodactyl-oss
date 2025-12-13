@@ -8,14 +8,15 @@ import {
     LayoutHeader,
     LifeRing,
     Lock,
+    Magnifier,
     Power,
     Server,
     Shield,
     Stopwatch,
     Terminal,
 } from '@gravity-ui/icons';
-import { motion } from 'framer-motion';
-import React, { useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import Navbar from '@/components/Navbar';
@@ -268,6 +269,28 @@ const InfiniteMarquee = React.memo(
 InfiniteMarquee.displayName = 'InfiniteMarquee';
 
 const GameLibrary = ({ games }: { games: GameSupport[] }) => {
+    const [search, setSearch] = useState('');
+    const filteredGames = games.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()));
+
+    const GameCard = ({ game }: { game: GameSupport }) => (
+        <div className='group relative w-[280px] shrink-0 aspect-[4/3] rounded-xl overflow-hidden cursor-pointer'>
+            <img
+                src={game.image}
+                alt={game.name}
+                className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
+            />
+            <div className='absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity' />
+            <div className='absolute bottom-0 left-0 p-4 w-full'>
+                <span className='inline-block px-2 py-1 bg-brand/90 backdrop-blur-sm text-[10px] font-bold uppercase rounded mb-2 text-white'>
+                    {game.tag}
+                </span>
+                <h3 className='text-white font-bold leading-tight group-hover:text-brand transition-colors'>
+                    {game.name}
+                </h3>
+            </div>
+        </div>
+    );
+
     return (
         <section className='py-24 px-6 max-w-7xl mx-auto'>
             <div className='text-center mb-12'>
@@ -275,32 +298,61 @@ const GameLibrary = ({ games }: { games: GameSupport[] }) => {
                 <p className='text-neutral-400 mb-8'>
                     Instantly deploy any of these titles with our 1-Click Installer.
                 </p>
+
+                <div className='max-w-md mx-auto relative'>
+                    <input
+                        type='text'
+                        placeholder='Search for your favorite game...'
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className='w-full bg-neutral-900 border border-neutral-700 text-white pl-12 pr-4 py-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all'
+                        style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                    />
+                    <div className='absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500'>
+                        <Magnifier width={18} height={18} />
+                    </div>
+                </div>
             </div>
 
-            <div className='overflow-hidden'>
-                <InfiniteMarquee speed={30} direction='right'>
-                    {games.map((game) => (
-                        <div
-                            key={game.name}
-                            className='group relative w-[280px] shrink-0 aspect-[4/3] rounded-xl overflow-hidden cursor-pointer'
+            <div className='overflow-hidden min-h-[300px]'>
+                <AnimatePresence mode='wait'>
+                    {filteredGames.length === 0 ? (
+                        <motion.div
+                            key='no-results'
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className='text-center py-10 text-neutral-500'
                         >
-                            <img
-                                src={game.image}
-                                alt={game.name}
-                                className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
-                            />
-                            <div className='absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity' />
-                            <div className='absolute bottom-0 left-0 p-4 w-full'>
-                                <span className='inline-block px-2 py-1 bg-brand/90 backdrop-blur-sm text-[10px] font-bold uppercase rounded mb-2 text-white'>
-                                    {game.tag}
-                                </span>
-                                <h3 className='text-white font-bold leading-tight group-hover:text-brand transition-colors'>
-                                    {game.name}
-                                </h3>
-                            </div>
-                        </div>
-                    ))}
-                </InfiniteMarquee>
+                            No games found matching &quot;{search}&quot;.
+                            <br />
+                            <span className='text-xs'>But you can likely host it via our Custom Docker container!</span>
+                        </motion.div>
+                    ) : filteredGames.length === 1 && filteredGames[0] ? (
+                        <motion.div
+                            key='single-game'
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className='flex justify-center'
+                        >
+                            <GameCard game={filteredGames[0]} />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key='multiple-games'
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            <InfiniteMarquee speed={30} direction='right'>
+                                {filteredGames.map((game) => (
+                                    <GameCard key={game.name} game={game} />
+                                ))}
+                            </InfiniteMarquee>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </section>
     );

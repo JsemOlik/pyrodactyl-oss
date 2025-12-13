@@ -21,9 +21,9 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-    { label: 'Game Hosting', href: '/hosting' },
-    { label: 'VPS', href: '/hosting' },
-    { label: 'About Us', href: '/' },
+    { label: 'Game Hosting', href: '/hosting/services/game-hosting' },
+    { label: 'VPS', href: '/hosting/services/vps' },
+    { label: 'About Us', href: '/hosting' },
 ];
 
 export default function Navbar() {
