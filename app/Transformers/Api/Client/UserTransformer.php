@@ -27,8 +27,6 @@ class UserTransformer extends BaseClientTransformer
             'email' => $model->email,
             'image' => 'https://gravatar.com/avatar/' . md5(Str::lower($model->email)),
             '2fa_enabled' => $model->use_totp,
-            'root_admin' => $model->root_admin,
-            'gravatar_style' => $model->gravatar_style ?? 'identicon',
             'created_at' => $model->created_at->toAtomString(),
         ];
     }

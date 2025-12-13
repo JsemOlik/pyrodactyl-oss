@@ -398,68 +398,23 @@ const TicketDetailContainer = () => {
                             // Determine if this is the current user's message
                             const isCurrentUser = currentUserId !== null && replyUserId === currentUserId;
 
-                            // Extract user data for display - check multiple locations
+                            // Extract user data for display
                             let userData: any = {};
-
-                            // First check relationships in the reply object
                             if (reply.relationships?.user?.attributes) {
                                 userData = reply.relationships.user.attributes;
                             } else if (replyData.user?.attributes) {
                                 userData = replyData.user.attributes;
                             }
 
-                            // If no user data found, try to get from included array
-                            if ((!userData.email && !userData.username) || Object.keys(userData).length === 0) {
-                                const mainData = (ticket as any)?.data || (ticket as any);
-                                const included = (ticket as any)?.included || [];
-
-                                // Try to find user by ID from relationships
-                                if (reply.relationships?.user?.data) {
-                                    const userId = String(reply.relationships.user.data.id);
-                                    const userFromIncluded = included.find(
-                                        (item: any) => item.type === 'user' && String(item.id) === userId,
-                                    );
-                                    if (userFromIncluded?.attributes) {
-                                        userData = userFromIncluded.attributes;
-                                    }
-                                }
-
-                                // Also check if user_id is in replyData
-                                if (!userData.email && !userData.username && replyData.user_id) {
-                                    const userId = String(replyData.user_id);
-                                    const userFromIncluded = included.find(
-                                        (item: any) => item.type === 'user' && String(item.id) === userId,
-                                    );
-                                    if (userFromIncluded?.attributes) {
-                                        userData = userFromIncluded.attributes;
-                                    }
-                                }
-                            }
-
                             const username = userData.username || userData.email || 'User';
                             const userEmail = userData.email || null;
-                            const isAdmin =
-                                userData.root_admin === true ||
-                                userData.root_admin === 1 ||
-                                userData.root_admin === '1';
+                            const isAdmin = userData.root_admin === true || userData.root_admin === 1;
                             const displayName = isAdmin ? 'Admin' : username;
 
-                            // Get gravatar style - use user's style if available, otherwise current user's style, otherwise default
-                            const userGravatarStyle =
-                                (userData.gravatar_style as GravatarStyle) ||
-                                (isCurrentUser ? currentUserGravatarStyle : 'identicon');
+                            // Get gravatar style - use current user's style if it's their message, otherwise default
+                            const gravatarStyle = isCurrentUser ? currentUserGravatarStyle : 'identicon';
                             const avatarUrl =
-                                userEmail && !isAdmin ? getGravatarUrl(userEmail, 40, userGravatarStyle) : null;
-
-                            // Debug logging
-                            if (!userEmail || !userData.username) {
-                                console.log('Missing user data for reply:', {
-                                    replyId: reply.id || replyData.id,
-                                    userData,
-                                    replyRelationships: reply.relationships,
-                                    replyData,
-                                });
-                            }
+                                userEmail && !isAdmin ? getGravatarUrl(userEmail, 40, gravatarStyle) : null;
 
                             const initials = displayName
                                 .split(' ')
@@ -496,16 +451,7 @@ const TicketDetailContainer = () => {
                                             <img
                                                 src={avatarUrl}
                                                 alt={displayName}
-                                                className='w-full h-full object-cover rounded-full'
-                                                onError={(e) => {
-                                                    // Fallback to initials if image fails to load
-                                                    const target = e.target as HTMLImageElement;
-                                                    target.style.display = 'none';
-                                                    const parent = target.parentElement;
-                                                    if (parent) {
-                                                        parent.textContent = initials;
-                                                    }
-                                                }}
+                                                className='w-full h-full object-cover'
                                             />
                                         ) : (
                                             initials
