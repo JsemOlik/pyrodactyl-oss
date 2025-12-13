@@ -123,11 +123,23 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/'
+                                    path='/dashboard'
                                     element={
-                                        <Spinner.Suspense>
-                                            <HostingContainer />
-                                        </Spinner.Suspense>
+                                        <AuthenticatedRoute>
+                                            <Spinner.Suspense>
+                                                <DashboardRouter />
+                                            </Spinner.Suspense>
+                                        </AuthenticatedRoute>
+                                    }
+                                />
+                                <Route
+                                    path='/dashboard/*'
+                                    element={
+                                        <AuthenticatedRoute>
+                                            <Spinner.Suspense>
+                                                <DashboardRouter />
+                                            </Spinner.Suspense>
+                                        </AuthenticatedRoute>
                                     }
                                 />
 
@@ -183,13 +195,11 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/dashboard/*'
+                                    path='/'
                                     element={
-                                        <AuthenticatedRoute>
-                                            <Spinner.Suspense>
-                                                <DashboardRouter />
-                                            </Spinner.Suspense>
-                                        </AuthenticatedRoute>
+                                        <Spinner.Suspense>
+                                            <HostingContainer />
+                                        </Spinner.Suspense>
                                     }
                                 />
 

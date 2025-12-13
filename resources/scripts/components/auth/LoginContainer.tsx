@@ -26,7 +26,7 @@ function LoginContainer() {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
     const location = useLocation();
-    const intendedUrl = (location.state as { from?: string })?.from || '/';
+    const intendedUrl = (location.state as { from?: string })?.from || '/dashboard';
 
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
     const [userFirstName, setUserFirstName] = useState<string | null>(null);
@@ -86,7 +86,7 @@ function LoginContainer() {
 
                     // Redirect after 2 seconds
                     redirectTimeoutRef.current = setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = intendedUrl;
                     }, 2000);
                     return;
                 }
