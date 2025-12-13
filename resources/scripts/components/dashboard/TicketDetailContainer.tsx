@@ -132,9 +132,18 @@ const TicketDetailContainer = () => {
     const ticketAttributes = mainData.attributes;
     const included = ticketData.included || [];
 
+    // Debug: Log the full response to see what we're getting
+    console.log('Full ticket response:', ticketData);
+    console.log('Main data:', mainData);
+    console.log('Included array:', included);
+    console.log('Relationships:', mainData.relationships);
+
     // Get reply IDs from relationships (JSON:API format)
     const replyReferences = mainData.relationships?.replies?.data || [];
     const replyIds = replyReferences.map((ref: any) => String(ref.id));
+
+    console.log('Reply references:', replyReferences);
+    console.log('Reply IDs:', replyIds);
 
     // Match reply IDs with included items
     let allReplies: any[] = [];
@@ -157,6 +166,8 @@ const TicketDetailContainer = () => {
                 relationships: item.relationships,
             }));
     }
+
+    console.log('Parsed replies:', allReplies);
 
     // Sort replies by created_at
     allReplies.sort((a, b) => {

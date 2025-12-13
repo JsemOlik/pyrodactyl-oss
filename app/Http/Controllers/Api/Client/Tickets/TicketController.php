@@ -94,11 +94,27 @@ class TicketController extends ClientApiController
         if (!in_array('replies', $requestIncludes)) {
             $requestIncludes[] = 'replies';
         }
+        
+        // Also ensure replies.user is included if replies.user was requested
+        $hasRepliesUser = false;
+        foreach ($requestIncludes as $include) {
+            if (str_starts_with($include, 'replies.')) {
+                $hasRepliesUser = true;
+                break;
+            }
+        }
+        if (!$hasRepliesUser && in_array('replies', $requestIncludes)) {
+            $requestIncludes[] = 'replies.user';
+        }
 
         // Get includes for eager loading
-        $includes = $this->getIncludesForTransformer($transformer, ['user', 'server', 'subscription', 'replies']);
-        if (!in_array('replies', $includes)) {
-            $includes[] = 'replies';
+        $includes = $this->getIncludesForTransformer($transformer, ['user', 'server', 'subscription']);
+        
+        // For non-admin users, load publicReplies instead of replies
+        if ($user->root_admin) {
+            $includes[] = 'replies.user';
+        } else {
+            $includes[] = 'publicReplies.user';
         }
 
         $ticketModel = Ticket::where('id', $ticket)
@@ -106,7 +122,16 @@ class TicketController extends ClientApiController
             ->with($includes)
             ->firstOrFail();
 
-        // Parse includes for Fractal
+        // Ensure replies are loaded for the transformer
+        if ($user->root_admin) {
+            $ticketModel->loadMissing('replies.user');
+        } else {
+            $ticketModel->loadMissing('publicReplies.user');
+            // Set the replies relation to publicReplies so the transformer can use it
+            $ticketModel->setRelation('replies', $ticketModel->publicReplies);
+        }
+
+        // Re-parse includes for Fractal to ensure replies are included
         $this->fractal->parseIncludes($requestIncludes);
 
         return $this->fractal->item($ticketModel)
