@@ -132,15 +132,25 @@ const TicketDetailContainer = () => {
     const ticketAttributes = mainData.attributes;
     const included = ticketData.included || [];
 
-    // Get reply IDs from relationships
+    // Get reply IDs from relationships (JSON:API format)
     const replyReferences = mainData.relationships?.replies?.data || [];
     const replyIds = replyReferences.map((ref: any) => String(ref.id));
 
     // Match reply IDs with included items
     let allReplies: any[] = [];
     if (replyIds.length > 0 && included.length > 0) {
+        // JSON:API format: match reply IDs from relationships with included items
         allReplies = included
             .filter((item: any) => item.type === 'ticket_reply' && replyIds.includes(String(item.id)))
+            .map((item: any) => ({
+                id: item.id,
+                attributes: item.attributes,
+                relationships: item.relationships,
+            }));
+    } else if (included.length > 0) {
+        // Fallback: if we have included items but no relationships defined, get all ticket_reply items
+        allReplies = included
+            .filter((item: any) => item.type === 'ticket_reply')
             .map((item: any) => ({
                 id: item.id,
                 attributes: item.attributes,

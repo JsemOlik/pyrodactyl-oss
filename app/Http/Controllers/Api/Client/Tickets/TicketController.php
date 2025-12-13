@@ -89,10 +89,25 @@ class TicketController extends ClientApiController
         $user = $this->request->user();
         $transformer = $this->getTransformer(TicketTransformer::class);
 
+        // Parse includes from request and ensure replies is included
+        $requestIncludes = $this->parseIncludes();
+        if (!in_array('replies', $requestIncludes)) {
+            $requestIncludes[] = 'replies';
+        }
+
+        // Get includes for eager loading
+        $includes = $this->getIncludesForTransformer($transformer, ['user', 'server', 'subscription', 'replies']);
+        if (!in_array('replies', $includes)) {
+            $includes[] = 'replies';
+        }
+
         $ticketModel = Ticket::where('id', $ticket)
             ->where('user_id', $user->id)
-            ->with($this->getIncludesForTransformer($transformer, ['user', 'server', 'subscription', 'replies']))
+            ->with($includes)
             ->firstOrFail();
+
+        // Parse includes for Fractal
+        $this->fractal->parseIncludes($requestIncludes);
 
         return $this->fractal->item($ticketModel)
             ->transformWith($transformer)
