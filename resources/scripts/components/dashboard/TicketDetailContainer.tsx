@@ -14,6 +14,8 @@ const TicketDetailContainer = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isResolving, setIsResolving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [replies, setReplies] = useState<any[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
     useEffect(() => {
         if (id) {
@@ -28,6 +30,19 @@ const TicketDetailContainer = () => {
             const response = await getTicket(parseInt(id!));
             // Response is JSON:API format: { data: {...}, included: [...] }
             setTicket(response as any);
+
+            // Extract replies and current user ID
+            const parsedReplies = parseRepliesFromResponse(response as any);
+            setReplies(parsedReplies.replies);
+
+            // Get current user ID from ticket attributes or from the API response
+            const mainData = (response as any)?.data || (response as any);
+            const ticketAttrs = mainData.attributes || mainData;
+            if (ticketAttrs.user_id) {
+                setCurrentUserId(ticketAttrs.user_id);
+            } else if (ticketAttrs.relationships?.user?.data?.id) {
+                setCurrentUserId(parseInt(String(ticketAttrs.relationships.user.data.id)));
+            }
         } catch (err: any) {
             setError(err?.response?.data?.errors?.[0]?.detail || 'Failed to load ticket');
         } finally {
@@ -35,15 +50,168 @@ const TicketDetailContainer = () => {
         }
     };
 
+    const parseRepliesFromResponse = (response: any) => {
+        const mainData = response?.data || response;
+        const ticketAttributes = mainData.attributes;
+        const relationships = ticketAttributes.relationships || mainData.relationships || {};
+        const repliesData = relationships.replies;
+        const included = response.included || [];
+
+        let allReplies: any[] = [];
+
+        if (repliesData) {
+            if (repliesData.object === 'list' && Array.isArray(repliesData.data)) {
+                allReplies = repliesData.data.map((reply: any) => {
+                    const replyAttrs = reply.attributes || reply;
+                    const replyRels = reply.relationships || {};
+
+                    // Try to find user data in included array
+                    if (replyRels.user?.data) {
+                        const userId = String(replyRels.user.data.id);
+                        const userFromIncluded = included.find(
+                            (item: any) => item.type === 'user' && String(item.id) === userId,
+                        );
+                        if (userFromIncluded) {
+                            replyRels.user.attributes = userFromIncluded.attributes;
+                        }
+                    }
+
+                    return {
+                        id: replyAttrs.id || reply.id,
+                        attributes: replyAttrs,
+                        relationships: replyRels,
+                    };
+                });
+            } else if (Array.isArray(repliesData)) {
+                allReplies = repliesData.map((reply: any) => {
+                    const replyAttrs = reply.attributes || reply;
+                    const replyRels = reply.relationships || {};
+
+                    // Try to find user data in included array
+                    if (replyRels.user?.data) {
+                        const userId = String(replyRels.user.data.id);
+                        const userFromIncluded = included.find(
+                            (item: any) => item.type === 'user' && String(item.id) === userId,
+                        );
+                        if (userFromIncluded) {
+                            replyRels.user.attributes = userFromIncluded.attributes;
+                        }
+                    }
+
+                    return {
+                        id: replyAttrs.id || reply.id,
+                        attributes: replyAttrs,
+                        relationships: replyRels,
+                    };
+                });
+            }
+        }
+
+        // Fallback: Check for JSON:API format (included array)
+        if (allReplies.length === 0 && included.length > 0) {
+            const replyReferences = relationships.replies?.data || [];
+            const replyIds = replyReferences.map((ref: any) => String(ref.id));
+
+            if (replyIds.length > 0) {
+                allReplies = included
+                    .filter((item: any) => item.type === 'ticket_reply' && replyIds.includes(String(item.id)))
+                    .map((item: any) => {
+                        const replyRels = item.relationships || {};
+
+                        // Try to find user data in included array
+                        if (replyRels.user?.data) {
+                            const userId = String(replyRels.user.data.id);
+                            const userFromIncluded = included.find(
+                                (inc: any) => inc.type === 'user' && String(inc.id) === userId,
+                            );
+                            if (userFromIncluded) {
+                                replyRels.user.attributes = userFromIncluded.attributes;
+                            }
+                        }
+
+                        return {
+                            id: item.id,
+                            attributes: item.attributes,
+                            relationships: replyRels,
+                        };
+                    });
+            } else {
+                allReplies = included
+                    .filter((item: any) => item.type === 'ticket_reply')
+                    .map((item: any) => {
+                        const replyRels = item.relationships || {};
+
+                        // Try to find user data in included array
+                        if (replyRels.user?.data) {
+                            const userId = String(replyRels.user.data.id);
+                            const userFromIncluded = included.find(
+                                (inc: any) => inc.type === 'user' && String(inc.id) === userId,
+                            );
+                            if (userFromIncluded) {
+                                replyRels.user.attributes = userFromIncluded.attributes;
+                            }
+                        }
+
+                        return {
+                            id: item.id,
+                            attributes: item.attributes,
+                            relationships: replyRels,
+                        };
+                    });
+            }
+        }
+
+        // Sort replies by created_at
+        allReplies.sort((a, b) => {
+            const aDate = new Date(a.attributes?.created_at || a.created_at || 0);
+            const bDate = new Date(b.attributes?.created_at || b.created_at || 0);
+            return aDate.getTime() - bDate.getTime();
+        });
+
+        return { replies: allReplies, included };
+    };
+
     const handleReply = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!replyMessage.trim() || !id) return;
 
         setIsSubmitting(true);
+        const messageToSend = replyMessage.trim();
+        setReplyMessage('');
+
         try {
-            await createReply(parseInt(id), { message: replyMessage });
-            setReplyMessage('');
-            await loadTicket(); // Reload to get new reply
+            const response = await createReply(parseInt(id), { message: messageToSend });
+
+            // Parse the response to get the reply in the correct format
+            const replyData = response.attributes || response;
+            const replyRelationships = response.relationships || {};
+
+            // Extract user data from response if available
+            let userData: any = {};
+            if (replyRelationships.user?.attributes) {
+                userData = replyRelationships.user.attributes;
+            } else if (response.data?.relationships?.user?.attributes) {
+                userData = response.data.relationships.user.attributes;
+            }
+
+            // Add user relationship if available
+            if (currentUserId) {
+                replyRelationships.user = {
+                    data: { id: currentUserId, type: 'user' },
+                    attributes: userData,
+                };
+            }
+
+            // Add the new reply to the state instead of reloading
+            const newReply = {
+                id: replyData.id,
+                attributes: {
+                    ...replyData,
+                    user_id: currentUserId,
+                },
+                relationships: replyRelationships,
+            };
+            setReplies((prev) => [...prev, newReply]);
         } catch (err: any) {
             setError(err?.response?.data?.errors?.[0]?.detail || 'Failed to add reply');
         } finally {
@@ -131,81 +299,6 @@ const TicketDetailContainer = () => {
 
     const ticketAttributes = mainData.attributes;
 
-    // PterodactylSerializer format: relationships are in attributes.relationships
-    // Check both locations: attributes.relationships and top-level relationships
-    const relationships = ticketAttributes.relationships || mainData.relationships || {};
-    const repliesData = relationships.replies;
-
-    console.log('Relationships object:', relationships);
-    console.log('Replies data:', repliesData);
-
-    // PterodactylSerializer format: replies can be:
-    // 1. A collection object with 'object: "list"' and 'data' array
-    // 2. Direct array of reply objects
-    let allReplies: any[] = [];
-
-    if (repliesData) {
-        if (repliesData.object === 'list' && Array.isArray(repliesData.data)) {
-            // Collection format: { object: "list", data: [...] }
-            allReplies = repliesData.data.map((reply: any) => ({
-                id: reply.attributes?.id || reply.id,
-                attributes: reply.attributes || reply,
-                relationships: reply.relationships || {},
-            }));
-        } else if (Array.isArray(repliesData)) {
-            // Direct array format
-            allReplies = repliesData.map((reply: any) => ({
-                id: reply.attributes?.id || reply.id,
-                attributes: reply.attributes || reply,
-                relationships: reply.relationships || {},
-            }));
-        } else if (repliesData.attributes) {
-            // Single item (shouldn't happen for replies, but handle it)
-            allReplies = [
-                {
-                    id: repliesData.attributes.id || repliesData.id,
-                    attributes: repliesData.attributes || repliesData,
-                    relationships: repliesData.relationships || {},
-                },
-            ];
-        }
-    }
-
-    // Fallback: Check for JSON:API format (included array)
-    const included = ticketData.included || [];
-    if (allReplies.length === 0 && included.length > 0) {
-        const replyReferences = relationships.replies?.data || [];
-        const replyIds = replyReferences.map((ref: any) => String(ref.id));
-
-        if (replyIds.length > 0) {
-            allReplies = included
-                .filter((item: any) => item.type === 'ticket_reply' && replyIds.includes(String(item.id)))
-                .map((item: any) => ({
-                    id: item.id,
-                    attributes: item.attributes,
-                    relationships: item.relationships,
-                }));
-        } else {
-            // Get all ticket_reply items from included
-            allReplies = included
-                .filter((item: any) => item.type === 'ticket_reply')
-                .map((item: any) => ({
-                    id: item.id,
-                    attributes: item.attributes,
-                    relationships: item.relationships,
-                }));
-        }
-    }
-
-    console.log('Parsed replies:', allReplies);
-
-    // Sort replies by created_at
-    allReplies.sort((a, b) => {
-        const aDate = new Date(a.attributes?.created_at || a.created_at || 0);
-        const bDate = new Date(b.attributes?.created_at || b.created_at || 0);
-        return aDate.getTime() - bDate.getTime();
-    });
-
     return (
         <div
             className='m-15 transform-gpu skeleton-anim-2'
@@ -263,50 +356,82 @@ const TicketDetailContainer = () => {
                 </div>
             </div>
 
-            {/* Replies */}
+            {/* Replies - Chatbox Style */}
             <div className='mb-6 rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-6'>
-                <h3 className='text-lg font-bold text-white mb-4'>Replies</h3>
-                {allReplies.length === 0 ? (
-                    <p className='text-zinc-400'>No replies yet.</p>
+                <h3 className='text-lg font-bold text-white mb-4'>Conversation</h3>
+                {replies.length === 0 ? (
+                    <p className='text-zinc-400 text-center py-8'>No replies yet. Start the conversation!</p>
                 ) : (
-                    <div className='space-y-4'>
-                        {allReplies.map((reply: any, index: number) => {
+                    <div className='space-y-4 max-h-[600px] overflow-y-auto'>
+                        {replies.map((reply: any, index: number) => {
                             const replyData = reply.attributes || reply;
 
-                            // Extract user data from included array
-                            let userData: any = {};
-
+                            // Get user ID from reply
+                            let replyUserId: number | null = null;
                             if (reply.relationships?.user?.data) {
-                                const userId = String(reply.relationships.user.data.id);
-                                const userFromIncluded = included.find(
-                                    (item: any) => item.type === 'user' && String(item.id) === userId,
-                                );
-                                userData = userFromIncluded?.attributes || {};
+                                replyUserId = parseInt(String(reply.relationships.user.data.id));
+                            } else if (replyData.user_id) {
+                                replyUserId = replyData.user_id;
+                            }
+
+                            // Determine if this is the current user's message
+                            const isCurrentUser = currentUserId !== null && replyUserId === currentUserId;
+
+                            // Extract user data for display
+                            let userData: any = {};
+                            if (reply.relationships?.user?.attributes) {
+                                userData = reply.relationships.user.attributes;
                             } else if (replyData.user?.attributes) {
                                 userData = replyData.user.attributes;
-                            } else if (replyData.user) {
-                                // User might be directly in attributes
-                                const userId = String(replyData.user);
-                                const userFromIncluded = included.find(
-                                    (item: any) => item.type === 'user' && String(item.id) === userId,
-                                );
-                                userData = userFromIncluded?.attributes || {};
                             }
+
+                            const username = userData.username || userData.email || 'User';
+                            const initials = username
+                                .split(' ')
+                                .map((n: string) => n[0])
+                                .join('')
+                                .toUpperCase()
+                                .slice(0, 2);
 
                             return (
                                 <div
                                     key={reply.id || replyData.id || index}
-                                    className='border border-white/10 rounded-lg p-4 bg-white/5'
+                                    className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}
                                 >
-                                    <div className='flex items-center justify-between mb-2'>
-                                        <span className='text-white font-medium'>
-                                            {userData.username || userData.email || 'User'}
-                                        </span>
-                                        <span className='text-sm text-zinc-400'>
-                                            {new Date(replyData.created_at).toLocaleString()}
+                                    {/* Avatar */}
+                                    <div
+                                        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
+                                            isCurrentUser ? 'bg-blue-500 text-white' : 'bg-zinc-700 text-zinc-200'
+                                        }`}
+                                    >
+                                        {initials}
+                                    </div>
+
+                                    {/* Message */}
+                                    <div
+                                        className={`flex-1 ${isCurrentUser ? 'items-end' : 'items-start'} flex flex-col gap-1`}
+                                    >
+                                        <div
+                                            className={`rounded-2xl px-4 py-2 max-w-[80%] ${
+                                                isCurrentUser
+                                                    ? 'bg-blue-500 text-white rounded-br-sm'
+                                                    : 'bg-white/10 text-zinc-200 rounded-bl-sm'
+                                            }`}
+                                        >
+                                            {!isCurrentUser && (
+                                                <div className='text-xs font-semibold mb-1 opacity-80'>{username}</div>
+                                            )}
+                                            <p className='whitespace-pre-wrap text-sm leading-relaxed'>
+                                                {replyData.message}
+                                            </p>
+                                        </div>
+                                        <span className='text-xs text-zinc-500 px-2'>
+                                            {new Date(replyData.created_at).toLocaleTimeString([], {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}
                                         </span>
                                     </div>
-                                    <p className='text-zinc-300 whitespace-pre-wrap'>{replyData.message}</p>
                                 </div>
                             );
                         })}
