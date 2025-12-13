@@ -110,6 +110,21 @@
                                 <p class="text-muted small">A description of this Egg that will be displayed throughout the Panel as needed.</p>
                             </div>
                             <div class="form-group">
+                                <label for="pDashboardType" class="control-label">Dashboard Type</label>
+                                @php
+                                    $currentDashboardType = $egg->getAttributes()['dashboard_type'] ?? null;
+                                @endphp
+                                <select name="dashboard_type" id="pDashboardType" class="form-control">
+                                    <option value="">Inherit from Nest ({{ $egg->nest->dashboard_type ?? 'game-server' }})</option>
+                                    <option value="game-server" {{ $currentDashboardType === 'game-server' ? 'selected' : '' }}>Game Server</option>
+                                    <option value="database" {{ $currentDashboardType === 'database' ? 'selected' : '' }}>Database</option>
+                                    <option value="website" {{ $currentDashboardType === 'website' ? 'selected' : '' }}>Website</option>
+                                    <option value="s3-storage" {{ $currentDashboardType === 's3-storage' ? 'selected' : '' }}>S3 Storage</option>
+                                    <option value="vps" {{ $currentDashboardType === 'vps' ? 'selected' : '' }}>VPS</option>
+                                </select>
+                                <p class="text-muted small">Determines which dashboard interface will be shown for servers using this egg. If left empty, inherits from the nest's dashboard type.</p>
+                            </div>
+                            <div class="form-group">
                                 <label for="pStartup" class="control-label">Startup Command <span class="field-required"></span></label>
                                 <textarea id="pStartup" name="startup" class="form-control" rows="8">{{ $egg->startup }}</textarea>
                                 <p class="text-muted small">The default startup command that should be used for new servers using this Egg.</p>

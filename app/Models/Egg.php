@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property string $author
  * @property string $name
  * @property string|null $description
+ * @property string|null $dashboard_type
+ * @property string $effective_dashboard_type
  * @property array|null $features
  * @property string $docker_image -- deprecated, use $docker_images
  * @property array<string, string> $docker_images
@@ -85,6 +87,7 @@ class Egg extends Model
     protected $fillable = [
         'name',
         'description',
+        'dashboard_type',
         'features',
         'docker_images',
         'force_outgoing_ip',
@@ -121,6 +124,7 @@ class Egg extends Model
         'uuid' => 'required|string|size:36',
         'name' => 'required|string|max:191',
         'description' => 'string|nullable',
+        'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage,vps',
         'features' => 'array|nullable',
         'author' => 'required|string|email',
         'file_denylist' => 'array|nullable',
@@ -258,6 +262,35 @@ class Egg extends Model
         }
 
         return $this->configFrom->file_denylist;
+    }
+
+    /**
+     * Get the effective dashboard type for this egg.
+     * If the egg has a dashboard_type set, use it.
+     * Otherwise, inherit from the nest's dashboard_type.
+     * Defaults to 'game-server' if neither is set.
+     */
+    public function getEffectiveDashboardTypeAttribute(): string
+    {
+        // Check raw attribute first to avoid infinite recursion
+        $eggDashboardType = $this->attributes['dashboard_type'] ?? null;
+        
+        // If egg has its own dashboard_type, use it
+        if (!is_null($eggDashboardType) && $eggDashboardType !== '') {
+            return $eggDashboardType;
+        }
+
+        // Otherwise, inherit from nest
+        if (!$this->relationLoaded('nest')) {
+            $this->load('nest');
+        }
+        
+        if (!$this->nest) {
+            return 'game-server';
+        }
+
+        // Get nest's dashboard_type (using accessor which handles defaults)
+        return $this->nest->dashboard_type;
     }
 
     /**

@@ -28,6 +28,7 @@ class NestCreationService
             'author' => $author ?? $this->config->get('pterodactyl.service.author'),
             'name' => array_get($data, 'name'),
             'description' => array_get($data, 'description'),
+            'dashboard_type' => array_get($data, 'dashboard_type', 'game-server'),
         ], true, true);
     }
 }

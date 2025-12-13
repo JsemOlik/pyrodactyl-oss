@@ -121,6 +121,27 @@ Route::group([
         Route::delete('/{database}', [Client\Servers\DatabaseController::class, 'delete']);
     });
 
+    Route::group(['prefix' => '/database'], function () {
+        Route::get('/connection', [Client\Servers\DatabaseController::class, 'getConnectionInfo']);
+        Route::get('/metrics', [Client\Servers\DatabaseController::class, 'getMetrics']);
+        Route::post('/connection/test', [Client\Servers\DatabaseController::class, 'testConnection']);
+        Route::get('/databases', [Client\Servers\DatabaseController::class, 'listDatabases']);
+        Route::post('/databases', [Client\Servers\DatabaseController::class, 'createDatabase']);
+        Route::delete('/databases', [Client\Servers\DatabaseController::class, 'deleteDatabase']);
+        Route::get('/tables', [Client\Servers\DatabaseController::class, 'listTables']);
+        Route::get('/tables/structure', [Client\Servers\DatabaseController::class, 'getTableStructure']);
+        Route::post('/tables', [Client\Servers\DatabaseController::class, 'createTable']);
+        Route::delete('/tables', [Client\Servers\DatabaseController::class, 'deleteTable']);
+        Route::get('/tables/data', [Client\Servers\DatabaseController::class, 'getTableData']);
+        Route::post('/tables/data', [Client\Servers\DatabaseController::class, 'insertRow']);
+        Route::put('/tables/data', [Client\Servers\DatabaseController::class, 'updateRow']);
+        Route::delete('/tables/data', [Client\Servers\DatabaseController::class, 'deleteRow']);
+        Route::post('/query', [Client\Servers\DatabaseController::class, 'executeQuery']);
+        Route::get('/logs', [Client\Servers\DatabaseController::class, 'getLogs']);
+        Route::get('/settings', [Client\Servers\DatabaseController::class, 'getSettings']);
+        Route::put('/settings', [Client\Servers\DatabaseController::class, 'updateSettings']);
+    });
+
     Route::group(['prefix' => '/files'], function () {
         Route::get('/list', [Client\Servers\FileController::class, 'directory']);
         Route::get('/contents', [Client\Servers\FileController::class, 'contents']);

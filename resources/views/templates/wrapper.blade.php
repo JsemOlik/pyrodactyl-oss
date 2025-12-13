@@ -50,10 +50,13 @@
         (function() {
             const primaryColor = '{{ config('theme.primary_color', '#fa4e49') }}';
             const buttonBorderRadius = '{{ config('theme.button_border_radius', '0.5rem') }}';
+            // Store border radius in data attribute for hosting page to use
+            document.documentElement.setAttribute('data-hosting-button-radius', buttonBorderRadius);
             function applyThemeColor() {
                 const root = document.documentElement;
                 root.style.setProperty('--color-brand', primaryColor);
-                root.style.setProperty('--button-border-radius', buttonBorderRadius);
+                // Don't set border radius globally - only for hosting page
+                // root.style.setProperty('--button-border-radius', buttonBorderRadius);
                 // Update brand gradient to use the new color
                 const rgb = hexToRgb(primaryColor);
                 if (rgb) {

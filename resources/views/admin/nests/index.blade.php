@@ -37,6 +37,7 @@
                         <th>ID</th>
                         <th>Name</th>
                         <th>Description</th>
+                        <th class="text-center">Dashboard Type</th>
                         <th class="text-center">Eggs</th>
                         <th class="text-center">Servers</th>
                     </tr>
@@ -45,6 +46,27 @@
                             <td class="middle"><code>{{ $nest->id }}</code></td>
                             <td class="middle"><a href="{{ route('admin.nests.view', $nest->id) }}" data-toggle="tooltip" data-placement="right" title="{{ $nest->author }}">{{ $nest->name }}</a></td>
                             <td class="col-xs-6 middle">{{ $nest->description }}</td>
+                            <td class="text-center middle">
+                                @php
+                                    $dashboardType = $nest->dashboard_type ?? 'game-server';
+                                    $badgeClass = match($dashboardType) {
+                                        'database' => 'label-info',
+                                        'website' => 'label-success',
+                                        's3-storage' => 'label-warning',
+                                        'vps' => 'label-primary',
+                                        default => 'label-default',
+                                    };
+                                    $displayName = match($dashboardType) {
+                                        'game-server' => 'Game Server',
+                                        'database' => 'Database',
+                                        'website' => 'Website',
+                                        's3-storage' => 'S3 Storage',
+                                        'vps' => 'VPS',
+                                        default => ucfirst(str_replace('-', ' ', $dashboardType)),
+                                    };
+                                @endphp
+                                <span class="label {{ $badgeClass }}">{{ $displayName }}</span>
+                            </td>
                             <td class="text-center middle">{{ $nest->eggs_count }}</td>
                             <td class="text-center middle">{{ $nest->servers_count }}</td>
                         </tr>

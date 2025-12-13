@@ -21,9 +21,9 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-    { label: 'Game Hosting', href: '/hosting' },
-    { label: 'VPS', href: '/hosting' },
-    { label: 'About Us', href: '/' },
+    { label: 'Game Hosting', href: '/hosting/services/game-hosting' },
+    { label: 'VPS', href: '/hosting/services/vps' },
+    { label: 'About Us', href: '/hosting' },
 ];
 
 export default function Navbar() {
@@ -69,7 +69,7 @@ export default function Navbar() {
                     {/* Left: Logo */}
                     <Link to='/' className='flex items-center gap-2 rounded-lg px-2 py-1'>
                         <Logo className='h-5 w-5' />
-                        <span className='font-yaro tracking-tight'>OSphere</span>
+                        <span className='font-yaro tracking-tight'>Oasis Cloud</span>
                     </Link>
 
                     {/* Center: Links */}
@@ -95,7 +95,7 @@ export default function Navbar() {
                                         Dashboard
                                     </ActionButton>
 
-                                    {user.rootAdmin && (
+                                    {/* {user.rootAdmin && (
                                         <ActionButton
                                             variant='secondary'
                                             size='sm'
@@ -106,7 +106,7 @@ export default function Navbar() {
                                         >
                                             Admin
                                         </ActionButton>
-                                    )}
+                                    )} */}
 
                                     {/* Avatar dropdown */}
                                     <DropdownMenu>

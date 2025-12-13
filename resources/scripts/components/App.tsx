@@ -22,6 +22,7 @@ import { VpsContext } from '@/state/vps';
 import PyrodactylProvider from './PyrodactylProvider';
 
 const DashboardRouter = lazy(() => import('@/routers/DashboardRouter'));
+const DashboardRouterFactory = lazy(() => import('@/routers/DashboardRouterFactory'));
 const ServerRouter = lazy(() => import('@/routers/ServerRouter'));
 const VpsRouter = lazy(() => import('@/routers/VpsRouter'));
 const AuthenticationRouter = lazy(() => import('@/routers/AuthenticationRouter'));
@@ -30,6 +31,7 @@ const HostingConfigureContainer = lazy(() => import('@/components/hosting/Hostin
 const HostingCheckoutContainer = lazy(() => import('@/components/hosting/HostingCheckoutContainer'));
 const HostingPaymentVerifyingContainer = lazy(() => import('@/components/hosting/HostingPaymentVerifyingContainer'));
 const ServerCreationDisabled = lazy(() => import('@/components/hosting/ServerCreationDisabled'));
+const ServiceDetails = lazy(() => import('@/components/hosting/ServiceDetails'));
 
 interface ExtendedWindow extends Window {
     SiteConfiguration?: SiteSettings;
@@ -100,7 +102,7 @@ const App = () => {
                                         <AuthenticatedRoute>
                                             <Spinner.Suspense>
                                                 <ServerContext.Provider>
-                                                    <ServerRouter />
+                                                    <DashboardRouterFactory />
                                                 </ServerContext.Provider>
                                             </Spinner.Suspense>
                                         </AuthenticatedRoute>
@@ -125,6 +127,15 @@ const App = () => {
                                     element={
                                         <Spinner.Suspense>
                                             <HostingContainer />
+                                        </Spinner.Suspense>
+                                    }
+                                />
+
+                                <Route
+                                    path='/hosting/services/:slug'
+                                    element={
+                                        <Spinner.Suspense>
+                                            <ServiceDetails />
                                         </Spinner.Suspense>
                                     }
                                 />

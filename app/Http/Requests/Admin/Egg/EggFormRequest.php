@@ -11,6 +11,7 @@ class EggFormRequest extends AdminFormRequest
         $rules = [
             'name' => 'required|string|max:191',
             'description' => 'nullable|string',
+            'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage,vps',
             'docker_images' => ['required', 'string', 'regex:/^[\w#\.\/\- ]*\|?~?[\w\.\/\-:@ ]*$/im'],
             'force_outgoing_ip' => 'sometimes|boolean',
             'file_denylist' => 'array',
@@ -40,6 +41,11 @@ class EggFormRequest extends AdminFormRequest
     public function validated($key = null, $default = null): array
     {
         $data = parent::validated();
+
+        // Convert empty dashboard_type to null so it inherits from nest
+        if (isset($data['dashboard_type']) && $data['dashboard_type'] === '') {
+            $data['dashboard_type'] = null;
+        }
 
         return array_merge($data, [
             'force_outgoing_ip' => array_get($data, 'force_outgoing_ip', false),

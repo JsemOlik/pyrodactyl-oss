@@ -59,6 +59,7 @@ use Pterodactyl\Models\ServerSubdomain;
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Database[] $databases
  * @property int|null $databases_count
  * @property Egg|null $egg
+ * @property string $dashboard_type
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Mount[] $mounts
  * @property int|null $mounts_count
  * @property Nest $nest
@@ -434,6 +435,73 @@ class Server extends Model
     public function allowsAllocations(): bool
     {
         return is_null($this->allocation_limit) || $this->allocation_limit > 0;
+    }
+
+    /**
+     * Get the dashboard type for this server.
+     * Inherits from the egg's effective dashboard type.
+     * 
+     * This is a computed attribute (not stored in the servers table).
+     */
+    public function getDashboardTypeAttribute(): string
+    {
+        try {
+            // Ensure egg and nest relationships are loaded
+            if (!$this->relationLoaded('egg')) {
+                $this->load('egg');
+            }
+            
+            if (!$this->egg) {
+                \Log::warning('Server dashboard_type: No egg found', ['server_id' => $this->id]);
+                return 'game-server';
+            }
+            
+            // Check if egg has its own dashboard_type set (use raw attribute to avoid accessor)
+            $eggAttributes = $this->egg->getAttributes();
+            $eggDashboardType = $eggAttributes['dashboard_type'] ?? null;
+            if (!is_null($eggDashboardType) && $eggDashboardType !== '') {
+                \Log::info('Server dashboard_type: Using egg dashboard_type', [
+                    'server_id' => $this->id,
+                    'egg_id' => $this->egg->id,
+                    'dashboard_type' => $eggDashboardType,
+                ]);
+                return $eggDashboardType;
+            }
+            
+            // Otherwise, inherit from nest
+            if (!$this->egg->relationLoaded('nest')) {
+                $this->egg->load('nest');
+            }
+            
+            if (!$this->egg->nest) {
+                \Log::warning('Server dashboard_type: No nest found', [
+                    'server_id' => $this->id,
+                    'egg_id' => $this->egg->id,
+                ]);
+                return 'game-server';
+            }
+
+            // Get nest's dashboard_type from raw attributes (avoid accessor to get actual DB value)
+            $nestAttributes = $this->egg->nest->getAttributes();
+            $nestDashboardType = $nestAttributes['dashboard_type'] ?? null;
+            
+            \Log::info('Server dashboard_type: Using nest dashboard_type', [
+                'server_id' => $this->id,
+                'egg_id' => $this->egg->id,
+                'nest_id' => $this->egg->nest->id,
+                'nest_dashboard_type' => $nestDashboardType,
+            ]);
+            
+            // Return the nest's dashboard_type or default to 'game-server'
+            return $nestDashboardType ?? 'game-server';
+        } catch (\Exception $e) {
+            \Log::error('Server dashboard_type: Exception in accessor', [
+                'server_id' => $this->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return 'game-server';
+        }
     }
 
     /**
