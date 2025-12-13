@@ -4,7 +4,6 @@ namespace Pterodactyl\Http\ViewComposers;
 
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Pterodactyl\Services\Helpers\AssetHashService;
 use Pterodactyl\Services\Captcha\CaptchaManager;
 use Pterodactyl\Contracts\Repository\SettingsRepositoryInterface;
@@ -25,10 +24,18 @@ class AssetComposer
    */
   public function compose(View $view): void
   {
-    $logoPath = config('theme.logo_path');
+    // Get logo path from settings (stored by ThemeController)
+    $logoPath = $this->settings->get('settings::theme:logo_path');
     $logoUrl = null;
-    if ($logoPath && Storage::disk('public')->exists($logoPath)) {
-      $logoUrl = Storage::disk('public')->url($logoPath);
+    
+    if ($logoPath) {
+      // If it's already a full URL, use it as is
+      if (filter_var($logoPath, FILTER_VALIDATE_URL)) {
+        $logoUrl = $logoPath;
+      } else {
+        // Otherwise, assume it's a filename in public/themes/logo/
+        $logoUrl = '/themes/logo/' . basename($logoPath);
+      }
     }
     
     $view->with('siteConfiguration', [
