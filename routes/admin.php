@@ -306,9 +306,12 @@ Route::group(['prefix' => 'nests'], function () {
 |
 */
 Route::group(['prefix' => 'tickets'], function () {
-    Route::get('/', function () {
-        return view('admin.tickets.index');
-    })->name('admin.tickets');
+    Route::get('/', [Admin\TicketController::class, 'index'])->name('admin.tickets');
+    Route::get('/view/{ticket}', [Admin\TicketController::class, 'show'])->name('admin.tickets.view');
+    Route::patch('/view/{ticket}', [Admin\TicketController::class, 'update'])->name('admin.tickets.update');
+    Route::post('/view/{ticket}/assign', [Admin\TicketController::class, 'assign'])->name('admin.tickets.assign');
+    Route::post('/view/{ticket}/resolve', [Admin\TicketController::class, 'resolve'])->name('admin.tickets.resolve');
+    Route::delete('/view/{ticket}', [Admin\TicketController::class, 'destroy'])->name('admin.tickets.delete');
 });
 
 /*
