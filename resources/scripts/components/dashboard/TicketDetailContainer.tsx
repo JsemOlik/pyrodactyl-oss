@@ -130,41 +130,71 @@ const TicketDetailContainer = () => {
     }
 
     const ticketAttributes = mainData.attributes;
-    const included = ticketData.included || [];
 
-    // Debug: Log the full response to see what we're getting
-    console.log('Full ticket response:', ticketData);
-    console.log('Main data:', mainData);
-    console.log('Included array:', included);
-    console.log('Relationships:', mainData.relationships);
+    // PterodactylSerializer format: relationships are in attributes.relationships
+    // Check both locations: attributes.relationships and top-level relationships
+    const relationships = ticketAttributes.relationships || mainData.relationships || {};
+    const repliesData = relationships.replies;
 
-    // Get reply IDs from relationships (JSON:API format)
-    const replyReferences = mainData.relationships?.replies?.data || [];
-    const replyIds = replyReferences.map((ref: any) => String(ref.id));
+    console.log('Relationships object:', relationships);
+    console.log('Replies data:', repliesData);
 
-    console.log('Reply references:', replyReferences);
-    console.log('Reply IDs:', replyIds);
-
-    // Match reply IDs with included items
+    // PterodactylSerializer format: replies can be:
+    // 1. A collection object with 'object: "list"' and 'data' array
+    // 2. Direct array of reply objects
     let allReplies: any[] = [];
-    if (replyIds.length > 0 && included.length > 0) {
-        // JSON:API format: match reply IDs from relationships with included items
-        allReplies = included
-            .filter((item: any) => item.type === 'ticket_reply' && replyIds.includes(String(item.id)))
-            .map((item: any) => ({
-                id: item.id,
-                attributes: item.attributes,
-                relationships: item.relationships,
+
+    if (repliesData) {
+        if (repliesData.object === 'list' && Array.isArray(repliesData.data)) {
+            // Collection format: { object: "list", data: [...] }
+            allReplies = repliesData.data.map((reply: any) => ({
+                id: reply.attributes?.id || reply.id,
+                attributes: reply.attributes || reply,
+                relationships: reply.relationships || {},
             }));
-    } else if (included.length > 0) {
-        // Fallback: if we have included items but no relationships defined, get all ticket_reply items
-        allReplies = included
-            .filter((item: any) => item.type === 'ticket_reply')
-            .map((item: any) => ({
-                id: item.id,
-                attributes: item.attributes,
-                relationships: item.relationships,
+        } else if (Array.isArray(repliesData)) {
+            // Direct array format
+            allReplies = repliesData.map((reply: any) => ({
+                id: reply.attributes?.id || reply.id,
+                attributes: reply.attributes || reply,
+                relationships: reply.relationships || {},
             }));
+        } else if (repliesData.attributes) {
+            // Single item (shouldn't happen for replies, but handle it)
+            allReplies = [
+                {
+                    id: repliesData.attributes.id || repliesData.id,
+                    attributes: repliesData.attributes || repliesData,
+                    relationships: repliesData.relationships || {},
+                },
+            ];
+        }
+    }
+
+    // Fallback: Check for JSON:API format (included array)
+    const included = ticketData.included || [];
+    if (allReplies.length === 0 && included.length > 0) {
+        const replyReferences = relationships.replies?.data || [];
+        const replyIds = replyReferences.map((ref: any) => String(ref.id));
+
+        if (replyIds.length > 0) {
+            allReplies = included
+                .filter((item: any) => item.type === 'ticket_reply' && replyIds.includes(String(item.id)))
+                .map((item: any) => ({
+                    id: item.id,
+                    attributes: item.attributes,
+                    relationships: item.relationships,
+                }));
+        } else {
+            // Get all ticket_reply items from included
+            allReplies = included
+                .filter((item: any) => item.type === 'ticket_reply')
+                .map((item: any) => ({
+                    id: item.id,
+                    attributes: item.attributes,
+                    relationships: item.relationships,
+                }));
+        }
     }
 
     console.log('Parsed replies:', allReplies);

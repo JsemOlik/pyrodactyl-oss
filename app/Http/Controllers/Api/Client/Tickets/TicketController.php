@@ -95,17 +95,13 @@ class TicketController extends ClientApiController
             $requestIncludes[] = 'replies';
         }
         
-        // Also ensure replies.user is included if replies.user was requested
-        $hasRepliesUser = false;
-        foreach ($requestIncludes as $include) {
-            if (str_starts_with($include, 'replies.')) {
-                $hasRepliesUser = true;
-                break;
-            }
-        }
-        if (!$hasRepliesUser && in_array('replies', $requestIncludes)) {
+        // Also ensure replies.user is included
+        if (!in_array('replies.user', $requestIncludes)) {
             $requestIncludes[] = 'replies.user';
         }
+        
+        // Log for debugging (remove in production)
+        \Log::debug('Ticket show - Request includes:', $requestIncludes);
 
         // Get includes for eager loading
         $includes = $this->getIncludesForTransformer($transformer, ['user', 'server', 'subscription']);
@@ -132,11 +128,24 @@ class TicketController extends ClientApiController
         }
 
         // Re-parse includes for Fractal to ensure replies are included
+        // This must be called before creating the fractal item
         $this->fractal->parseIncludes($requestIncludes);
+        
+        // Log for debugging (remove in production)
+        \Log::debug('Ticket show - Replies count:', ['count' => $ticketModel->replies->count() ?? 0]);
+        \Log::debug('Ticket show - Replies loaded:', $ticketModel->replies->toArray() ?? []);
 
-        return $this->fractal->item($ticketModel)
+        $response = $this->fractal->item($ticketModel)
             ->transformWith($transformer)
             ->toArray();
+            
+        // Log response structure for debugging (remove in production)
+        \Log::debug('Ticket show - Response structure:', [
+            'has_relationships' => isset($response['attributes']['relationships']),
+            'relationships_keys' => isset($response['attributes']['relationships']) ? array_keys($response['attributes']['relationships']) : [],
+        ]);
+
+        return $response;
     }
 
     /**

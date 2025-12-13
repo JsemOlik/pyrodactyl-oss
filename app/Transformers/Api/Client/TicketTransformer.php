@@ -104,12 +104,19 @@ class TicketTransformer extends BaseClientTransformer
     {
         $user = $this->getUser();
         
-        // Load replies - if user is not admin, only show public replies
-        if ($user->root_admin) {
-            $model->loadMissing('replies');
-        } else {
-            $model->loadMissing('publicReplies');
-            $model->setRelation('replies', $model->publicReplies);
+        // Use already-loaded relationship if available, otherwise load it
+        if (!$model->relationLoaded('replies')) {
+            if ($user->root_admin) {
+                $model->loadMissing('replies');
+            } else {
+                $model->loadMissing('publicReplies');
+                $model->setRelation('replies', $model->publicReplies);
+            }
+        }
+
+        // Ensure we have replies to transform
+        if (!$model->replies || $model->replies->isEmpty()) {
+            return $this->collection(collect([]), $this->makeTransformer(TicketReplyTransformer::class));
         }
 
         return $this->collection($model->replies, $this->makeTransformer(TicketReplyTransformer::class));
