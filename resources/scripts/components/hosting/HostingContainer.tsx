@@ -12,7 +12,7 @@ import {
 } from '@gravity-ui/icons';
 import { motion } from 'framer-motion';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 
 import Navbar from '@/components/Navbar';
@@ -268,12 +268,14 @@ const HostingContainer = () => {
         desc,
         colSpan = 'col-span-1',
         accent = false,
+        slug,
     }: {
         icon: React.ComponentType<{ width?: number; height?: number; className?: string }>;
         title: string;
         desc: string;
         colSpan?: string;
         accent?: boolean;
+        slug: string;
     }) => (
         <motion.div
             variants={itemVar}
@@ -293,9 +295,12 @@ const HostingContainer = () => {
                 </div>
                 <h3 className='text-xl font-bold text-white mb-3 uppercase tracking-wide'>{title}</h3>
                 <p className='text-neutral-400 text-sm leading-relaxed mb-6 flex-grow'>{desc}</p>
-                <div className='flex items-center text-xs font-bold text-brand opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300'>
+                <Link
+                    to={`/hosting/services/${slug}`}
+                    className='flex items-center text-xs font-bold text-brand opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300'
+                >
                     SERVICE DETAILS <ArrowRight width={12} height={12} className='ml-1' />
-                </div>
+                </Link>
             </div>
         </motion.div>
     );
@@ -569,6 +574,7 @@ const HostingContainer = () => {
                                 icon={Server}
                                 title='Game Hosting'
                                 desc='We offer an array of services for high-performance gaming. Rust, Minecraft, CS2. 128-tick reliable networks.'
+                                slug='game-hosting'
                                 // accent={true}
                             />
                             <ServiceCard
@@ -576,24 +582,28 @@ const HostingContainer = () => {
                                 icon={Server}
                                 title='NVMe VPS'
                                 desc='Root access. Linux or Windows. Deploy in seconds with our automated hypervisor orchestration.'
+                                slug='vps'
                             />
                             <ServiceCard
                                 colSpan='md:col-span-1'
                                 icon={Database}
                                 title='Object Storage'
                                 desc='S3-Compatible buckets for your assets. Simply put, infinite storage that scales with your business.'
+                                slug='object-storage'
                             />
                             <ServiceCard
                                 colSpan='md:col-span-2'
                                 icon={LinkIcon}
                                 title='Web & Database Clusters'
                                 desc='We not only build your site, we host it. Automated Redis and Postgres clusters with daily backups and point-in-time recovery.'
+                                slug='web-database'
                             />
                             <ServiceCard
                                 colSpan='md:col-span-1'
                                 icon={Shield}
                                 title='Dedicated Metal'
                                 desc='Oasis offers top-tier bare metal hardware. No sharing resources. 100% of the CPU is yours.'
+                                slug='dedicated-metal'
                             />
                         </motion.div>
                     </div>
