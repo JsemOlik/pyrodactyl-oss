@@ -25,8 +25,9 @@ const TicketDetailContainer = () => {
         setLoading(true);
         setError(null);
         try {
-            const data = await getTicket(parseInt(id!));
-            setTicket(data);
+            const response = await getTicket(parseInt(id!));
+            // Response is JSON:API format: { data: {...}, included: [...] }
+            setTicket(response as any);
         } catch (err: any) {
             setError(err?.response?.data?.errors?.[0]?.detail || 'Failed to load ticket');
         } finally {
@@ -112,7 +113,12 @@ const TicketDetailContainer = () => {
         return <div className='m-15 rounded-xl border border-red-500/50 bg-red-500/20 p-6 text-red-300'>{error}</div>;
     }
 
-    if (!ticket) {
+    // Extract ticket data and replies from API response
+    // JSON:API format: { data: { type, id, attributes, relationships }, included: [...] }
+    const ticketData = ticket as any;
+    const mainData = ticketData?.data || ticketData;
+
+    if (!mainData || !mainData.attributes) {
         return (
             <div className='m-15 rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-12 text-center'>
                 <p className='text-zinc-400'>Ticket not found.</p>
@@ -123,22 +129,23 @@ const TicketDetailContainer = () => {
         );
     }
 
-    // Extract replies from included data
-    const ticketData = ticket as any;
+    const ticketAttributes = mainData.attributes;
+    const included = ticketData.included || [];
+
+    // Get reply IDs from relationships
+    const replyReferences = mainData.relationships?.replies?.data || [];
+    const replyIds = replyReferences.map((ref: any) => String(ref.id));
+
+    // Match reply IDs with included items
     let allReplies: any[] = [];
-
-    // Check included array first (JSON:API format)
-    if (ticketData.included) {
-        allReplies = ticketData.included.filter((item: any) => item.type === 'ticket_reply');
-    }
-
-    // Also check relationships (if replies are in relationships)
-    if (ticketData.relationships?.replies?.data) {
-        const replyIds = ticketData.relationships.replies.data.map((r: any) => r.id);
-        const repliesFromIncluded =
-            ticketData.included?.filter((item: any) => item.type === 'ticket_reply' && replyIds.includes(item.id)) ||
-            [];
-        allReplies = repliesFromIncluded.length > 0 ? repliesFromIncluded : allReplies;
+    if (replyIds.length > 0 && included.length > 0) {
+        allReplies = included
+            .filter((item: any) => item.type === 'ticket_reply' && replyIds.includes(String(item.id)))
+            .map((item: any) => ({
+                id: item.id,
+                attributes: item.attributes,
+                relationships: item.relationships,
+            }));
     }
 
     // Sort replies by created_at
@@ -164,7 +171,7 @@ const TicketDetailContainer = () => {
                     </svg>
                 </Link>
                 <h1 className='text-2xl sm:text-3xl font-extrabold leading-[98%] tracking-[-0.02em] sm:tracking-[-0.06em] break-words'>
-                    Ticket #{ticket.attributes.id}
+                    Ticket #{ticketAttributes.id}
                 </h1>
             </div>
 
@@ -175,32 +182,32 @@ const TicketDetailContainer = () => {
             {/* Ticket Header */}
             <div className='mb-6 rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-6'>
                 <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4'>
-                    <h2 className='text-xl font-bold text-white'>{ticket.attributes.subject}</h2>
+                    <h2 className='text-xl font-bold text-white'>{ticketAttributes.subject}</h2>
                     <div className='flex flex-wrap items-center gap-2'>
                         <span
                             className={`px-3 py-1 rounded text-sm font-medium border ${getStatusBadge(
-                                ticket.attributes.status,
+                                ticketAttributes.status,
                             )}`}
                         >
-                            {ticket.attributes.status.replace('_', ' ').toUpperCase()}
+                            {ticketAttributes.status.replace('_', ' ').toUpperCase()}
                         </span>
                         <span
                             className={`px-3 py-1 rounded text-sm font-medium border ${getPriorityBadge(
-                                ticket.attributes.priority,
+                                ticketAttributes.priority,
                             )}`}
                         >
-                            {ticket.attributes.priority.toUpperCase()}
+                            {ticketAttributes.priority.toUpperCase()}
                         </span>
                     </div>
                 </div>
                 <div className='mb-4'>
-                    <p className='text-zinc-300 whitespace-pre-wrap'>{ticket.attributes.description}</p>
+                    <p className='text-zinc-300 whitespace-pre-wrap'>{ticketAttributes.description}</p>
                 </div>
                 <div className='flex flex-wrap items-center gap-4 text-sm text-zinc-400'>
-                    <span>Category: {ticket.attributes.category}</span>
-                    <span>Created: {new Date(ticket.attributes.created_at).toLocaleString()}</span>
-                    {ticket.attributes.resolved_at && (
-                        <span>Resolved: {new Date(ticket.attributes.resolved_at).toLocaleString()}</span>
+                    <span>Category: {ticketAttributes.category}</span>
+                    <span>Created: {new Date(ticketAttributes.created_at).toLocaleString()}</span>
+                    {ticketAttributes.resolved_at && (
+                        <span>Resolved: {new Date(ticketAttributes.resolved_at).toLocaleString()}</span>
                     )}
                 </div>
             </div>
@@ -215,14 +222,22 @@ const TicketDetailContainer = () => {
                         {allReplies.map((reply: any, index: number) => {
                             const replyData = reply.attributes || reply;
 
-                            // Extract user data from included or relationships
+                            // Extract user data from included array
                             let userData: any = {};
-                            if (replyData.user?.attributes) {
+
+                            if (reply.relationships?.user?.data) {
+                                const userId = String(reply.relationships.user.data.id);
+                                const userFromIncluded = included.find(
+                                    (item: any) => item.type === 'user' && String(item.id) === userId,
+                                );
+                                userData = userFromIncluded?.attributes || {};
+                            } else if (replyData.user?.attributes) {
                                 userData = replyData.user.attributes;
-                            } else if (reply.relationships?.user?.data) {
-                                const userId = reply.relationships.user.data.id;
-                                const userFromIncluded = ticketData.included?.find(
-                                    (item: any) => item.type === 'user' && item.id === userId,
+                            } else if (replyData.user) {
+                                // User might be directly in attributes
+                                const userId = String(replyData.user);
+                                const userFromIncluded = included.find(
+                                    (item: any) => item.type === 'user' && String(item.id) === userId,
                                 );
                                 userData = userFromIncluded?.attributes || {};
                             }
@@ -249,7 +264,7 @@ const TicketDetailContainer = () => {
             </div>
 
             {/* Reply Form */}
-            {ticket.attributes.status !== 'resolved' && ticket.attributes.status !== 'closed' && (
+            {ticketAttributes.status !== 'resolved' && ticketAttributes.status !== 'closed' && (
                 <div className='mb-6 rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-6'>
                     <h3 className='text-lg font-bold text-white mb-4'>Add Reply</h3>
                     <form onSubmit={handleReply}>
@@ -275,7 +290,7 @@ const TicketDetailContainer = () => {
 
             {/* Actions */}
             <div className='flex flex-wrap gap-4'>
-                {!ticket.attributes.resolved_at && (
+                {!ticketAttributes.resolved_at && (
                     <button
                         onClick={handleResolve}
                         disabled={isResolving}

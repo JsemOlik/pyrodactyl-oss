@@ -9,7 +9,7 @@ import getSubscriptions from '@/api/billing/getSubscriptions';
 import { Subscription } from '@/api/billing/getSubscriptions';
 import getServers from '@/api/getServers';
 import { Server } from '@/api/server/getServer';
-import { type CreateTicketData, createTicket } from '@/api/tickets';
+import { type CreateTicketData, type Ticket, createTicket, getTickets } from '@/api/tickets';
 
 type Faq = {
     q: string;
@@ -81,6 +81,8 @@ const SupportContainer = () => {
     const [showTicketForm, setShowTicketForm] = useState(false);
     const [servers, setServers] = useState<Server[]>([]);
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+    const [tickets, setTickets] = useState<Ticket[]>([]);
+    const [ticketsLoading, setTicketsLoading] = useState(true);
     const [formData, setFormData] = useState<CreateTicketData>({
         subject: '',
         description: '',
@@ -103,7 +105,22 @@ const SupportContainer = () => {
             .catch((error) => {
                 console.error('Failed to load servers/subscriptions:', error);
             });
+
+        // Load tickets
+        loadTickets();
     }, []);
+
+    const loadTickets = async () => {
+        setTicketsLoading(true);
+        try {
+            const data = await getTickets({ per_page: 10 });
+            setTickets(data.data);
+        } catch (error) {
+            console.error('Failed to load tickets:', error);
+        } finally {
+            setTicketsLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -141,6 +158,9 @@ const SupportContainer = () => {
             });
             setShowTicketForm(false);
 
+            // Reload tickets to show the new one
+            await loadTickets();
+
             // Reset success message after 3 seconds
             setTimeout(() => setSubmitSuccess(false), 3000);
         } catch (error: any) {
@@ -161,25 +181,6 @@ const SupportContainer = () => {
                     'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
             }}
         >
-            {/* View Tickets Link */}
-            <div className='mb-6 flex justify-end'>
-                <Link
-                    to='/support/tickets'
-                    className='inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-100'
-                    style={{ backgroundColor: 'var(--color-brand)' }}
-                >
-                    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                            strokeWidth={2}
-                            d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
-                        />
-                    </svg>
-                    <span>View My Tickets</span>
-                </Link>
-            </div>
-
             {/* Create Ticket Section */}
             <div
                 className='mb-12 transform-gpu skeleton-anim-2'
@@ -383,6 +384,128 @@ const SupportContainer = () => {
                     )}
                 </div>
             </div>
+
+            {/* My Tickets Section */}
+            <div
+                className='mb-12 transform-gpu skeleton-anim-2'
+                style={{
+                    animationDelay: '75ms',
+                    animationTimingFunction:
+                        'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                }}
+            >
+                <h2 className='text-2xl sm:text-3xl font-extrabold leading-[98%] tracking-[-0.02em] sm:tracking-[-0.06em] break-words mb-6'>
+                    My Tickets
+                </h2>
+                {ticketsLoading ? (
+                    <div className='text-center py-12'>
+                        <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white'></div>
+                        <p className='mt-4 text-zinc-400'>Loading tickets...</p>
+                    </div>
+                ) : tickets.length === 0 ? (
+                    <div className='rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-12 text-center'>
+                        <p className='text-zinc-400'>You haven't created any tickets yet.</p>
+                    </div>
+                ) : (
+                    <div className='space-y-4'>
+                        {tickets.map((ticket) => {
+                            const getStatusBadge = (status: string) => {
+                                const styles = {
+                                    open: 'bg-green-500/20 text-green-300 border-green-500/50',
+                                    in_progress: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50',
+                                    resolved: 'bg-blue-500/20 text-blue-300 border-blue-500/50',
+                                    closed: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/50',
+                                };
+                                return styles[status as keyof typeof styles] || styles.closed;
+                            };
+
+                            const getPriorityBadge = (priority: string) => {
+                                const styles = {
+                                    urgent: 'bg-red-500/20 text-red-300 border-red-500/50',
+                                    high: 'bg-orange-500/20 text-orange-300 border-orange-500/50',
+                                    medium: 'bg-blue-500/20 text-blue-300 border-blue-500/50',
+                                    low: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/50',
+                                };
+                                return styles[priority as keyof typeof styles] || styles.medium;
+                            };
+
+                            return (
+                                <Link
+                                    key={ticket.attributes.id}
+                                    to={`/support/tickets/${ticket.attributes.id}`}
+                                    className='block rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-6 hover:border-white/20 transition-all duration-200'
+                                >
+                                    <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+                                        <div className='flex-1'>
+                                            <div className='flex items-center gap-3 mb-2'>
+                                                <h3 className='text-lg font-bold text-white'>
+                                                    #{ticket.attributes.id}
+                                                </h3>
+                                                <h3 className='text-lg font-bold text-white'>
+                                                    {ticket.attributes.subject}
+                                                </h3>
+                                            </div>
+                                            <p className='text-sm text-zinc-400 mb-3 line-clamp-2'>
+                                                {ticket.attributes.description}
+                                            </p>
+                                            <div className='flex flex-wrap items-center gap-2'>
+                                                <span
+                                                    className={`px-2 py-1 rounded text-xs font-medium border ${getStatusBadge(
+                                                        ticket.attributes.status,
+                                                    )}`}
+                                                >
+                                                    {ticket.attributes.status.replace('_', ' ').toUpperCase()}
+                                                </span>
+                                                <span
+                                                    className={`px-2 py-1 rounded text-xs font-medium border ${getPriorityBadge(
+                                                        ticket.attributes.priority,
+                                                    )}`}
+                                                >
+                                                    {ticket.attributes.priority.toUpperCase()}
+                                                </span>
+                                                <span className='px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/50'>
+                                                    {ticket.attributes.category.charAt(0).toUpperCase() +
+                                                        ticket.attributes.category.slice(1)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className='text-right'>
+                                            <p className='text-sm text-zinc-400'>
+                                                {new Date(ticket.attributes.created_at).toLocaleDateString()}
+                                            </p>
+                                            <svg
+                                                className='w-5 h-5 text-zinc-400 mt-2 ml-auto'
+                                                fill='none'
+                                                stroke='currentColor'
+                                                viewBox='0 0 24 24'
+                                            >
+                                                <path
+                                                    strokeLinecap='round'
+                                                    strokeLinejoin='round'
+                                                    strokeWidth={2}
+                                                    d='M9 5l7 7-7 7'
+                                                />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </Link>
+                            );
+                        })}
+                        {tickets.length >= 10 && (
+                            <div className='text-center mt-6'>
+                                <Link
+                                    to='/support/tickets'
+                                    className='inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105'
+                                    style={{ backgroundColor: 'var(--color-brand)' }}
+                                >
+                                    View All Tickets
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
             {/* Discord Support Section */}
             <div
                 className='mb-12 transform-gpu skeleton-anim-2'
