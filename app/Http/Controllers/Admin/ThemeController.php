@@ -4,7 +4,7 @@ namespace Pterodactyl\Http\Controllers\Admin;
 
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Prologue\Alerts\AlertsMessageBag;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\View\Factory as ViewFactory;
@@ -30,10 +30,22 @@ class ThemeController extends Controller
         $buttonBorderRadius = $this->settings->get('settings::theme:button_border_radius', '0.5rem');
         $logoPath = $this->settings->get('settings::theme:logo_path');
         
+        // Generate URL for logo - if it's a relative path, prepend with /themes/logo/
+        $logoUrl = null;
+        if ($logoPath) {
+            // If it's already a full URL, use it as is
+            if (filter_var($logoPath, FILTER_VALIDATE_URL)) {
+                $logoUrl = $logoPath;
+            } else {
+                // Otherwise, assume it's a filename in public/themes/logo/
+                $logoUrl = '/themes/logo/' . basename($logoPath);
+            }
+        }
+        
         return $this->view->make('admin.themes.index', [
             'primaryColor' => $primaryColor ?: '#fa4e49',
             'buttonBorderRadius' => $buttonBorderRadius ?: '0.5rem',
-            'logoPath' => $logoPath ? Storage::disk('public')->url($logoPath) : null,
+            'logoPath' => $logoUrl,
         ]);
     }
 
@@ -49,22 +61,43 @@ class ThemeController extends Controller
         
         // Handle logo upload
         if ($request->hasFile('logo')) {
-            // Delete old logo if it exists
-            $existingLogo = $this->settings->get('settings::theme:logo_path');
-            if ($existingLogo && Storage::disk('public')->exists($existingLogo)) {
-                Storage::disk('public')->delete($existingLogo);
+            $file = $request->file('logo');
+            
+            // Ensure the directory exists
+            $logoDir = public_path('themes/logo');
+            if (!File::isDirectory($logoDir)) {
+                File::makeDirectory($logoDir, 0755, true);
             }
             
-            $file = $request->file('logo');
-            $path = $file->store('themes/logo', 'public');
-            $this->settings->set('settings::theme:logo_path', $path);
+            // Delete old logo if it exists
+            $existingLogo = $this->settings->get('settings::theme:logo_path');
+            if ($existingLogo) {
+                $oldLogoPath = public_path('themes/logo/' . basename($existingLogo));
+                if (File::exists($oldLogoPath)) {
+                    File::delete($oldLogoPath);
+                }
+            }
+            
+            // Generate a unique filename to avoid conflicts
+            $extension = $file->getClientOriginalExtension();
+            $filename = 'logo_' . time() . '_' . uniqid() . '.' . $extension;
+            $destinationPath = public_path('themes/logo');
+            
+            // Move the file to public/themes/logo/
+            $file->move($destinationPath, $filename);
+            
+            // Store just the filename (relative path)
+            $this->settings->set('settings::theme:logo_path', $filename);
         }
         
         // Handle logo removal
         if ($request->input('remove_logo') == '1' || $request->input('remove_logo') === true) {
             $existingLogo = $this->settings->get('settings::theme:logo_path');
-            if ($existingLogo && Storage::disk('public')->exists($existingLogo)) {
-                Storage::disk('public')->delete($existingLogo);
+            if ($existingLogo) {
+                $logoPath = public_path('themes/logo/' . basename($existingLogo));
+                if (File::exists($logoPath)) {
+                    File::delete($logoPath);
+                }
             }
             $this->settings->forget('settings::theme:logo_path');
         }
