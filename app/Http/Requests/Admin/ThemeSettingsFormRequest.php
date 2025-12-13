@@ -11,7 +11,7 @@ class ThemeSettingsFormRequest extends AdminFormRequest
         return [
             'theme:primary_color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'theme:button_border_radius' => ['nullable', 'string', 'regex:#^\d+(\.\d+)?(px|rem|em)$#'],
-            'logo' => 'nullable|file|mimes:svg|max:2048',
+            'logo' => 'nullable|file|mimes:svg,png,jpg,jpeg,webp,gif,bmp|max:5120',
             'remove_logo' => 'nullable|in:1,0,true,false',
         ];
     }

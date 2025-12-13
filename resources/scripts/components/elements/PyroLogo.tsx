@@ -47,21 +47,37 @@ const Logo = ({ className, uniqueId }: { className?: string; uniqueId?: string }
 
     // If custom logo is available, use it
     if (customLogoUrl) {
-        return (
-            <object
-                data={customLogoUrl}
-                type='image/svg+xml'
-                className={className || 'flex h-full w-full shrink-0'}
-                style={{ maxHeight: '61px', width: 'auto', height: 'auto' }}
-            >
+        // Check if it's an SVG by file extension or URL
+        const isSvg = customLogoUrl.toLowerCase().endsWith('.svg') || customLogoUrl.includes('image/svg+xml');
+        
+        if (isSvg) {
+            // Use object tag for SVG to allow CSS styling
+            return (
+                <object
+                    data={customLogoUrl}
+                    type='image/svg+xml'
+                    className={className || 'flex h-full w-full shrink-0'}
+                    style={{ maxHeight: '61px', width: 'auto', height: 'auto' }}
+                >
+                    <img
+                        src={customLogoUrl}
+                        alt='Logo'
+                        className={className || 'flex h-full w-full shrink-0'}
+                        style={{ maxHeight: '61px', objectFit: 'contain' }}
+                    />
+                </object>
+            );
+        } else {
+            // Use img tag for raster images (PNG, JPG, WebP, etc.)
+            return (
                 <img
                     src={customLogoUrl}
                     alt='Logo'
                     className={className || 'flex h-full w-full shrink-0'}
-                    style={{ maxHeight: '61px', objectFit: 'contain' }}
+                    style={{ maxHeight: '61px', width: 'auto', height: 'auto', objectFit: 'contain' }}
                 />
-            </object>
-        );
+            );
+        }
     }
 
     const gradientId = uniqueId

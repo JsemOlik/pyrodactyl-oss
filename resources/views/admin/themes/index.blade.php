@@ -106,10 +106,10 @@
           <div class="box-body">
             <div class="row">
               <div class="form-group col-md-6">
-                <label class="control-label">Upload Custom SVG Logo</label>
+                <label class="control-label">Upload Custom Logo</label>
                 <div>
-                  <input type="file" class="form-control" name="logo" id="logo-upload" accept=".svg" />
-                  <p class="text-muted"><small>Upload a custom SVG logo to replace the default Pyrodactyl logo. Maximum file size: 2MB.</small></p>
+                  <input type="file" class="form-control" name="logo" id="logo-upload" accept="image/*" />
+                  <p class="text-muted"><small>Upload a custom logo (SVG, PNG, JPG, WebP, etc.) to replace the default Pyrodactyl logo. Maximum file size: 5MB.</small></p>
                 </div>
               </div>
               <div class="form-group col-md-6">
@@ -225,7 +225,14 @@
       if (logoUpload && logoPreviewContainer) {
         logoUpload.addEventListener('change', function(e) {
           const file = e.target.files[0];
-          if (file && (file.type === 'image/svg+xml' || file.name.endsWith('.svg'))) {
+          if (file && file.type.startsWith('image/')) {
+            // Validate file size (5MB = 5242880 bytes)
+            if (file.size > 5242880) {
+              alert('File size exceeds 5MB. Please choose a smaller file.');
+              e.target.value = '';
+              return;
+            }
+            
             const reader = new FileReader();
             reader.onload = function(e) {
               const logoPreview = document.getElementById('logo-preview');
@@ -253,13 +260,20 @@
                 img.id = 'logo-preview';
                 img.src = e.target.result;
                 img.alt = 'Logo Preview';
-                img.style.cssText = 'max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff; display: block;';
+                img.style.cssText = 'max-width: 200px; max-height: 61px; border: 1px solid #ddd; padding: 5px; background: #fff; display: block; object-fit: contain;';
                 
                 wrapper.appendChild(img);
                 logoPreviewContainer.appendChild(wrapper);
               }
             };
+            reader.onerror = function() {
+              alert('Error reading file. Please try again.');
+              e.target.value = '';
+            };
             reader.readAsDataURL(file);
+          } else {
+            alert('Please select a valid image file.');
+            e.target.value = '';
           }
         });
       }
