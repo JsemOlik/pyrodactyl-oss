@@ -123,27 +123,6 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/dashboard'
-                                    element={
-                                        <AuthenticatedRoute>
-                                            <Spinner.Suspense>
-                                                <DashboardRouter />
-                                            </Spinner.Suspense>
-                                        </AuthenticatedRoute>
-                                    }
-                                />
-                                <Route
-                                    path='/dashboard/*'
-                                    element={
-                                        <AuthenticatedRoute>
-                                            <Spinner.Suspense>
-                                                <DashboardRouter />
-                                            </Spinner.Suspense>
-                                        </AuthenticatedRoute>
-                                    }
-                                />
-
-                                <Route
                                     path='/hosting'
                                     element={
                                         <Spinner.Suspense>
@@ -204,7 +183,28 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path='/'
+                                    path='/dashboard'
+                                    element={
+                                        <AuthenticatedRoute>
+                                            <Spinner.Suspense>
+                                                <DashboardRouter />
+                                            </Spinner.Suspense>
+                                        </AuthenticatedRoute>
+                                    }
+                                />
+                                <Route
+                                    path='/dashboard/*'
+                                    element={
+                                        <AuthenticatedRoute>
+                                            <Spinner.Suspense>
+                                                <DashboardRouter />
+                                            </Spinner.Suspense>
+                                        </AuthenticatedRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path='/*'
                                     element={
                                         <AuthenticatedRoute>
                                             <Spinner.Suspense>
