@@ -103,7 +103,7 @@ const HostingCheckoutContainer = () => {
         // Validate plan selection
         if (!planId && !isCustom) {
             toast.error('Invalid checkout configuration. Please start over.');
-            navigate('/');
+            navigate('/hosting');
             return;
         }
 
@@ -384,7 +384,7 @@ const HostingCheckoutContainer = () => {
     };
 
     const handleBack = () => {
-        navigate('/');
+        navigate('/hosting');
     };
 
     // Validation checks

@@ -75,7 +75,7 @@ const HostingConfigureContainer = () => {
             });
         } else {
             // No plan selected, redirect back
-            navigate('/');
+            navigate('/hosting');
         }
     }, [searchParams, navigate]);
 
@@ -130,7 +130,7 @@ const HostingConfigureContainer = () => {
             setCurrentStep('select-nest');
             setSelectedEgg(null);
         } else {
-            navigate('/');
+            navigate('/hosting');
         }
     };
 

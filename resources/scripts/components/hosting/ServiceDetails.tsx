@@ -397,7 +397,7 @@ export default function ServiceDetails() {
 
                 <div className='relative z-10 max-w-7xl mx-auto'>
                     <Link
-                        to='/'
+                        to='/hosting'
                         className='inline-flex items-center gap-2 text-neutral-400 hover:text-white mb-8 text-sm font-bold uppercase tracking-wider transition-colors bg-black/50 backdrop-blur-md px-4 py-2 border border-white/10'
                         style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
                     >
@@ -420,7 +420,7 @@ export default function ServiceDetails() {
 
                             <div className='flex flex-wrap gap-4'>
                                 <Link
-                                    to='/'
+                                    to='/hosting'
                                     className='bg-brand text-white px-8 py-4 font-bold hover:bg-white hover:text-black transition-all shadow-[0_0_30px_rgba(var(--color-brand-rgb),0.4)] flex items-center gap-2'
                                     style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
                                 >
@@ -622,7 +622,7 @@ export default function ServiceDetails() {
                     <p className='text-neutral-400 mb-10 text-lg'>
                         Start your journey with Oasis Cloud today. Your server is just 60 seconds away.
                     </p>
-                    <Link to='/' className='inline-block'>
+                    <Link to='/hosting' className='inline-block'>
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}

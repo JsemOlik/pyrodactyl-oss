@@ -590,7 +590,7 @@ const DashboardContainer = () => {
                                                         <ActionButton
                                                             variant='primary'
                                                             size='lg'
-                                                            onClick={() => navigate('/')}
+                                                            onClick={() => navigate('/hosting')}
                                                             className='bg-brand/90 hover:bg-brand'
                                                         >
                                                             Purchase your first server
@@ -682,7 +682,7 @@ const DashboardContainer = () => {
                                                         <ActionButton
                                                             variant='primary'
                                                             size='lg'
-                                                            onClick={() => navigate('/')}
+                                                            onClick={() => navigate('/hosting')}
                                                         >
                                                             Purchase your first server
                                                         </ActionButton>

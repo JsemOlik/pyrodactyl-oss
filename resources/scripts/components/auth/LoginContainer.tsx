@@ -26,7 +26,7 @@ function LoginContainer() {
     const { clearFlashes, clearAndAddHttpError } = useFlash();
     const navigate = useNavigate();
     const location = useLocation();
-    const intendedUrl = (location.state as { from?: string })?.from || '/dashboard';
+    const intendedUrl = (location.state as { from?: string })?.from || '/';
 
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
     const [userFirstName, setUserFirstName] = useState<string | null>(null);

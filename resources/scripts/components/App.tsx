@@ -144,6 +144,15 @@ const App = () => {
                                 />
 
                                 <Route
+                                    path='/hosting'
+                                    element={
+                                        <Spinner.Suspense>
+                                            <HostingContainer />
+                                        </Spinner.Suspense>
+                                    }
+                                />
+
+                                <Route
                                     path='/services/:slug'
                                     element={
                                         <Spinner.Suspense>
@@ -197,9 +206,11 @@ const App = () => {
                                 <Route
                                     path='/'
                                     element={
-                                        <Spinner.Suspense>
-                                            <HostingContainer />
-                                        </Spinner.Suspense>
+                                        <AuthenticatedRoute>
+                                            <Spinner.Suspense>
+                                                <DashboardRouter />
+                                            </Spinner.Suspense>
+                                        </AuthenticatedRoute>
                                     }
                                 />
 

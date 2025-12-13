@@ -67,7 +67,7 @@ export default function Navbar() {
                     }`}
                 >
                     {/* Left: Logo */}
-                    <Link to='/dashboard' className='flex items-center gap-2 rounded-lg px-2 py-1'>
+                    <Link to='/' className='flex items-center gap-2 rounded-lg px-2 py-1'>
                         <Logo className='h-5 w-5' />
                         <span className='font-yaro tracking-tight'>Oasis Cloud</span>
                     </Link>
@@ -89,7 +89,7 @@ export default function Navbar() {
                                     <ActionButton
                                         variant='secondary'
                                         size='sm'
-                                        onClick={() => navigate('/dashboard')}
+                                        onClick={() => navigate('/')}
                                         className='h-8 rounded-lg border-brand/30 bg-brand/10 px-3 text-brand hover:bg-brand/30 hover:text-white hover:border-brand/80'
                                     >
                                         Dashboard
@@ -189,7 +189,7 @@ export default function Navbar() {
                             {user ? (
                                 <>
                                     <Link
-                                        to='/dashboard'
+                                        to='/'
                                         onClick={() => setOpen(false)}
                                         className='rounded-xl bg-brand/10 px-3 py-2 text-center hover:bg-brand/30 hover:text-white text-brand border border-brand/30 hover:border-brand/80'
                                     >

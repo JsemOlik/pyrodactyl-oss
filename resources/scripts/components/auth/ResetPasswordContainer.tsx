@@ -106,7 +106,7 @@ function ResetPasswordContainer() {
             >
                 {({ isSubmitting }) => (
                     <LoginFormContainer className={`w-full flex`}>
-                        <Link to='/dashboard'>
+                        <Link to='/'>
                             <div className='flex h-12 mb-4 items-center w-full'>
                                 <Logo />
                             </div>
