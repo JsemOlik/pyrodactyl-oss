@@ -238,7 +238,7 @@ const HostingContainer = () => {
 
     const ShimmerButton = ({ text, onClick }: { text: string; onClick?: () => void }) => (
         <motion.button
-            whileHover={{ scale: 1 }}
+            // whileHover={{ scale: 1 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClick}
             className='relative overflow-hidden bg-transparent hover:border-brand hover:border-[1.5px] px-8 py-4 font-bold text-white group'
