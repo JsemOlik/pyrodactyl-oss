@@ -609,77 +609,6 @@ const HostingContainer = () => {
                     </div>
                 </section>
 
-                {/* TESTIMONIALS (Infinite Scroll Right-to-Left) */}
-                {useMemo(
-                    () => (
-                        <section className='py-8 overflow-hidden bg-neutral-900 border-b border-neutral-800'>
-                            <div className='max-w-7xl mx-auto px-6 mb-6'>
-                                <h2 className='text-2xl font-bold'>Trusted by Developers</h2>
-                            </div>
-
-                            <InfiniteMarquee speed={40} direction='right'>
-                                {testimonialsContent.map((item, i) => (
-                                    <div
-                                        key={i}
-                                        className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
-                                    >
-                                        <div className='flex gap-1 text-brand mb-4'>
-                                            {[1, 2, 3, 4, 5].map((j) => (
-                                                <StarIcon key={j} filled={true} size={14} />
-                                            ))}
-                                        </div>
-                                        <p className='text-neutral-400 text-sm italic mb-6 leading-relaxed'>
-                                            &quot;{item.t}&quot;
-                                        </p>
-                                        <div className='flex items-center gap-3'>
-                                            <div className='w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center font-bold text-white'>
-                                                {item.n[0]}
-                                            </div>
-                                            <div>
-                                                <div className='text-white font-bold text-sm'>{item.n}</div>
-                                                <div className='text-neutral-600 text-xs uppercase tracking-wider'>
-                                                    {item.r}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </InfiniteMarquee>
-
-                            <InfiniteMarquee speed={40} direction='left'>
-                                {testimonialsContent.map((item, i) => (
-                                    <div
-                                        key={`reverse-${i}`}
-                                        className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
-                                    >
-                                        <div className='flex gap-1 text-brand mb-4'>
-                                            {[1, 2, 3, 4, 5].map((j) => (
-                                                <StarIcon key={j} filled={true} size={14} />
-                                            ))}
-                                        </div>
-                                        <p className='text-neutral-400 text-sm italic mb-6 leading-relaxed'>
-                                            &quot;{item.t}&quot;
-                                        </p>
-                                        <div className='flex items-center gap-3'>
-                                            <div className='w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center font-bold text-white'>
-                                                {item.n[0]}
-                                            </div>
-                                            <div>
-                                                <div className='text-white font-bold text-sm'>{item.n}</div>
-                                                <div className='text-neutral-600 text-xs uppercase tracking-wider'>
-                                                    {item.r}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </InfiniteMarquee>
-                        </section>
-                    ),
-                    // eslint-disable-next-line react-hooks/exhaustive-deps
-                    [],
-                )}
-
                 {/* PRICING ENGINE */}
                 <section id='pricing' className='py-32 px-6 max-w-7xl mx-auto'>
                     <div className='text-center mb-20'>
@@ -907,6 +836,77 @@ const HostingContainer = () => {
                         </div> */}
                     </div>
                 </section>
+
+                {/* TESTIMONIALS (Infinite Scroll Right-to-Left) */}
+                {useMemo(
+                    () => (
+                        <section className='py-8 overflow-hidden bg-neutral-900 border-b border-neutral-800'>
+                            <div className='max-w-7xl mx-auto px-6 mb-6'>
+                                <h2 className='text-2xl font-bold'>Trusted by Developers</h2>
+                            </div>
+
+                            <InfiniteMarquee speed={40} direction='right'>
+                                {testimonialsContent.map((item, i) => (
+                                    <div
+                                        key={i}
+                                        className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
+                                    >
+                                        <div className='flex gap-1 text-brand mb-4'>
+                                            {[1, 2, 3, 4, 5].map((j) => (
+                                                <StarIcon key={j} filled={true} size={14} />
+                                            ))}
+                                        </div>
+                                        <p className='text-neutral-400 text-sm italic mb-6 leading-relaxed'>
+                                            &quot;{item.t}&quot;
+                                        </p>
+                                        <div className='flex items-center gap-3'>
+                                            <div className='w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center font-bold text-white'>
+                                                {item.n[0]}
+                                            </div>
+                                            <div>
+                                                <div className='text-white font-bold text-sm'>{item.n}</div>
+                                                <div className='text-neutral-600 text-xs uppercase tracking-wider'>
+                                                    {item.r}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </InfiniteMarquee>
+
+                            <InfiniteMarquee speed={40} direction='left'>
+                                {testimonialsContent.map((item, i) => (
+                                    <div
+                                        key={`reverse-${i}`}
+                                        className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
+                                    >
+                                        <div className='flex gap-1 text-brand mb-4'>
+                                            {[1, 2, 3, 4, 5].map((j) => (
+                                                <StarIcon key={j} filled={true} size={14} />
+                                            ))}
+                                        </div>
+                                        <p className='text-neutral-400 text-sm italic mb-6 leading-relaxed'>
+                                            &quot;{item.t}&quot;
+                                        </p>
+                                        <div className='flex items-center gap-3'>
+                                            <div className='w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center font-bold text-white'>
+                                                {item.n[0]}
+                                            </div>
+                                            <div>
+                                                <div className='text-white font-bold text-sm'>{item.n}</div>
+                                                <div className='text-neutral-600 text-xs uppercase tracking-wider'>
+                                                    {item.r}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </InfiniteMarquee>
+                        </section>
+                    ),
+                    // eslint-disable-next-line react-hooks/exhaustive-deps
+                    [],
+                )}
 
                 {/* PROCESS SECTION (With Rotated Hover) */}
                 <section className='py-32 px-6 max-w-7xl mx-auto border-t border-neutral-900'>
