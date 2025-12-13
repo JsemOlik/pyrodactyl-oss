@@ -55,6 +55,16 @@ Route::prefix('/billing')->group(function () {
     Route::get('/credits/transactions', [Client\Billing\CreditsController::class, 'transactions']);
 });
 
+Route::prefix('/tickets')->group(function () {
+    Route::get('/', [Client\Tickets\TicketController::class, 'index']);
+    Route::post('/', [Client\Tickets\TicketController::class, 'store']);
+    Route::get('/{ticket}', [Client\Tickets\TicketController::class, 'show']);
+    Route::patch('/{ticket}', [Client\Tickets\TicketController::class, 'update']);
+    Route::delete('/{ticket}', [Client\Tickets\TicketController::class, 'destroy']);
+    Route::post('/{ticket}/resolve', [Client\Tickets\TicketController::class, 'resolve']);
+    Route::post('/{ticket}/replies', [Client\Tickets\TicketReplyController::class, 'store']);
+});
+
 Route::prefix('/vps-servers')->group(function () {
     Route::get('/', [Client\Vps\VpsController::class, 'index']);
     Route::get('/{vps}', [Client\Vps\VpsController::class, 'view']);

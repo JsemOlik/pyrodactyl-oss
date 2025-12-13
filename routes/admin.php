@@ -299,6 +299,20 @@ Route::group(['prefix' => 'nests'], function () {
 
 /*
 |--------------------------------------------------------------------------
+| Tickets Controller Routes
+|--------------------------------------------------------------------------
+|
+| Endpoint: /admin/tickets
+|
+*/
+Route::group(['prefix' => 'tickets'], function () {
+    Route::get('/', function () {
+        return view('admin.tickets.index');
+    })->name('admin.tickets');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Announcements Controller Routes
 |--------------------------------------------------------------------------
 |

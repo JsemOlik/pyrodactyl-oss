@@ -236,6 +236,12 @@
                             <i class="bi bi-egg-fill"></i> <span>Nests</span>
                         </a>
                     </li>
+                    <li class="header">SUPPORT</li>
+                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.tickets') ?: 'active' }}">
+                        <a href="{{ route('admin.tickets') }}">
+                            <i class="bi bi-ticket-perforated"></i> <span>Tickets</span>
+                        </a>
+                    </li>
                 </ul>
             </section>
         </aside>

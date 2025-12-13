@@ -1,6 +1,14 @@
+import { useEffect, useState } from 'react';
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/elements/Accordion';
 
 import { cn } from '@/lib/utils';
+
+import getSubscriptions from '@/api/billing/getSubscriptions';
+import { Subscription } from '@/api/billing/getSubscriptions';
+import getServers from '@/api/getServers';
+import { Server } from '@/api/server/getServer';
+import { type CreateTicketData, createTicket } from '@/api/tickets';
 
 type Faq = {
     q: string;
@@ -68,6 +76,81 @@ const tutorials: Tutorial[] = [
 ];
 
 const SupportContainer = () => {
+    const [isCreatingTicket, setIsCreatingTicket] = useState(false);
+    const [showTicketForm, setShowTicketForm] = useState(false);
+    const [servers, setServers] = useState<Server[]>([]);
+    const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+    const [formData, setFormData] = useState<CreateTicketData>({
+        subject: '',
+        description: '',
+        category: 'general',
+        priority: 'medium',
+        server_id: null,
+        subscription_id: null,
+    });
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+
+    useEffect(() => {
+        // Fetch servers and subscriptions for the form
+        Promise.all([getServers({}), getSubscriptions()])
+            .then(([serversData, subscriptionsData]) => {
+                setServers(serversData.items);
+                setSubscriptions(subscriptionsData);
+            })
+            .catch((error) => {
+                console.error('Failed to load servers/subscriptions:', error);
+            });
+    }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setFormErrors({});
+        setSubmitError(null);
+        setSubmitSuccess(false);
+
+        // Basic validation
+        if (!formData.subject.trim()) {
+            setFormErrors({ subject: 'Subject is required' });
+            return;
+        }
+        if (!formData.description.trim()) {
+            setFormErrors({ description: 'Description is required' });
+            return;
+        }
+
+        setIsCreatingTicket(true);
+
+        try {
+            await createTicket({
+                ...formData,
+                server_id: formData.server_id || undefined,
+                subscription_id: formData.subscription_id || undefined,
+            });
+
+            setSubmitSuccess(true);
+            setFormData({
+                subject: '',
+                description: '',
+                category: 'general',
+                priority: 'medium',
+                server_id: null,
+                subscription_id: null,
+            });
+            setShowTicketForm(false);
+
+            // Reset success message after 3 seconds
+            setTimeout(() => setSubmitSuccess(false), 3000);
+        } catch (error: any) {
+            const errorMessage =
+                error?.response?.data?.errors?.[0]?.detail || 'Failed to create ticket. Please try again.';
+            setSubmitError(errorMessage);
+        } finally {
+            setIsCreatingTicket(false);
+        }
+    };
+
     return (
         <div
             className='m-15 transform-gpu skeleton-anim-2'
@@ -77,6 +160,209 @@ const SupportContainer = () => {
                     'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
             }}
         >
+            {/* Create Ticket Section */}
+            <div
+                className='mb-12 transform-gpu skeleton-anim-2'
+                style={{
+                    animationDelay: '25ms',
+                    animationTimingFunction:
+                        'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                }}
+            >
+                <div className='rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-6 sm:p-8'>
+                    <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-6'>
+                        <div className='flex-1'>
+                            <h2 className='text-xl sm:text-2xl font-bold text-white mb-2'>Create Support Ticket</h2>
+                            <p className='text-sm sm:text-base text-zinc-300 leading-relaxed'>
+                                Need help? Create a support ticket and our team will assist you. You can link your
+                                ticket to a specific server or subscription.
+                            </p>
+                        </div>
+                        {!showTicketForm && (
+                            <button
+                                onClick={() => setShowTicketForm(true)}
+                                className='inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-100'
+                                style={{ backgroundColor: 'var(--color-brand)' }}
+                            >
+                                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                                    <path
+                                        strokeLinecap='round'
+                                        strokeLinejoin='round'
+                                        strokeWidth={2}
+                                        d='M12 4v16m8-8H4'
+                                    />
+                                </svg>
+                                <span>Create Ticket</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {showTicketForm && (
+                        <form onSubmit={handleSubmit} className='space-y-4'>
+                            {submitSuccess && (
+                                <div className='rounded-lg bg-green-500/20 border border-green-500/50 p-4 text-green-300 text-sm'>
+                                    Ticket created successfully! Our team will respond soon.
+                                </div>
+                            )}
+
+                            {submitError && (
+                                <div className='rounded-lg bg-red-500/20 border border-red-500/50 p-4 text-red-300 text-sm'>
+                                    {submitError}
+                                </div>
+                            )}
+
+                            <div>
+                                <label htmlFor='subject' className='block text-sm font-medium text-white mb-2'>
+                                    Subject <span className='text-red-400'>*</span>
+                                </label>
+                                <input
+                                    type='text'
+                                    id='subject'
+                                    value={formData.subject}
+                                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                    className='w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                    placeholder='Brief description of your issue'
+                                    required
+                                />
+                                {formErrors.subject && (
+                                    <p className='mt-1 text-sm text-red-400'>{formErrors.subject}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label htmlFor='description' className='block text-sm font-medium text-white mb-2'>
+                                    Description <span className='text-red-400'>*</span>
+                                </label>
+                                <textarea
+                                    id='description'
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    rows={5}
+                                    className='w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent resize-none'
+                                    placeholder='Please provide detailed information about your issue...'
+                                    required
+                                />
+                                {formErrors.description && (
+                                    <p className='mt-1 text-sm text-red-400'>{formErrors.description}</p>
+                                )}
+                            </div>
+
+                            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                                <div>
+                                    <label htmlFor='category' className='block text-sm font-medium text-white mb-2'>
+                                        Category <span className='text-red-400'>*</span>
+                                    </label>
+                                    <select
+                                        id='category'
+                                        value={formData.category}
+                                        onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                                        className='w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                        required
+                                    >
+                                        <option value='billing'>Billing</option>
+                                        <option value='technical'>Technical</option>
+                                        <option value='general'>General</option>
+                                        <option value='other'>Other</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor='priority' className='block text-sm font-medium text-white mb-2'>
+                                        Priority
+                                    </label>
+                                    <select
+                                        id='priority'
+                                        value={formData.priority}
+                                        onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                                        className='w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                    >
+                                        <option value='low'>Low</option>
+                                        <option value='medium'>Medium</option>
+                                        <option value='high'>High</option>
+                                        <option value='urgent'>Urgent</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                                <div>
+                                    <label htmlFor='server_id' className='block text-sm font-medium text-white mb-2'>
+                                        Related Server (Optional)
+                                    </label>
+                                    <select
+                                        id='server_id'
+                                        value={formData.server_id || ''}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                server_id: e.target.value ? parseInt(e.target.value) : null,
+                                            })
+                                        }
+                                        className='w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                    >
+                                        <option value=''>None</option>
+                                        {servers.map((server) => (
+                                            <option key={server.uuid} value={server.internalId}>
+                                                {server.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label
+                                        htmlFor='subscription_id'
+                                        className='block text-sm font-medium text-white mb-2'
+                                    >
+                                        Related Subscription (Optional)
+                                    </label>
+                                    <select
+                                        id='subscription_id'
+                                        value={formData.subscription_id || ''}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                subscription_id: e.target.value ? parseInt(e.target.value) : null,
+                                            })
+                                        }
+                                        className='w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
+                                    >
+                                        <option value=''>None</option>
+                                        {subscriptions.map((sub) => (
+                                            <option key={sub.attributes.id} value={sub.attributes.id}>
+                                                {sub.attributes.plan_name} - {sub.attributes.server_name || 'No Server'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className='flex gap-4'>
+                                <button
+                                    type='submit'
+                                    disabled={isCreatingTicket}
+                                    className='inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed'
+                                    style={{ backgroundColor: 'var(--color-brand)' }}
+                                >
+                                    {isCreatingTicket ? 'Creating...' : 'Create Ticket'}
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={() => {
+                                        setShowTicketForm(false);
+                                        setFormErrors({});
+                                        setSubmitError(null);
+                                        setSubmitSuccess(false);
+                                    }}
+                                    className='inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-zinc-300 bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-200'
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </div>
+            </div>
             {/* Discord Support Section */}
             <div
                 className='mb-12 transform-gpu skeleton-anim-2'
