@@ -81,6 +81,17 @@ const HostingContainer = () => {
 
     useEffect(() => {
         document.title = 'Oasis Cloud - Complete I.T. Solutions';
+
+        // Apply border radius CSS variable only for hosting page
+        // Read from data attribute set by wrapper, or use default
+        const hostingButtonRadius = document.documentElement.getAttribute('data-hosting-button-radius') || '0.5rem';
+        const root = document.documentElement;
+        root.style.setProperty('--button-border-radius', hostingButtonRadius);
+
+        return () => {
+            // Reset to default when component unmounts (don't set anything, let it use default)
+            root.style.removeProperty('--button-border-radius');
+        };
     }, []);
 
     // Sync category with hosting type
@@ -230,7 +241,7 @@ const HostingContainer = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClick}
-            className='relative overflow-hidden bg-transparent hover:border-brand hover:border-1 px-8 py-4 font-bold text-white group'
+            className='relative overflow-hidden bg-transparent hover:border-brand hover:border-[1.5px] px-8 py-4 font-bold text-white group'
             style={{
                 borderRadius: 'var(--button-border-radius, 0.5rem)',
                 boxShadow: '0 0 20px color-mix(in srgb, var(--color-brand) 40%, transparent)',
@@ -334,7 +345,7 @@ const HostingContainer = () => {
             return (
                 <div className='w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]'>
                     <motion.div
-                        className='flex items-center gap-8 md:gap-16 py-4'
+                        className='flex items-center gap-4 md:gap-6 py-4'
                         animate={{ x: direction === 'right' ? ['0%', '-50%'] : ['-50%', '0%'] }}
                         initial={{ x: direction === 'right' ? '0%' : '-50%' }}
                         transition={{ ease: 'linear', duration: speed, repeat: Infinity, repeatType: 'loop' }}
@@ -366,8 +377,8 @@ const HostingContainer = () => {
         <div className='min-h-screen bg-black text-white font-sans overflow-x-hidden'>
             {/* Background Ambience */}
             <div className='fixed inset-0 z-0 pointer-events-none'>
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-50 mix-blend-overlay" />
-                <div className='absolute inset-0 bg-gradient-to-b from-black/40 via-black/70 to-black' />
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay" />
+                <div className='absolute inset-0 bg-gradient-to-b from-black/50 via-black/70 to-black' />
             </div>
 
             <Navbar />
@@ -415,7 +426,7 @@ const HostingContainer = () => {
                 </section>
 
                 {/* USED BY (Infinite Scroll) */}
-                <section className='py-10 border-y border-white/5 bg-neutral-950/65 backdrop-blur-md'>
+                <section className='py-10 border-y border-white/5 bg-neutral-950/65'>
                     <InfiniteMarquee speed={30}>
                         {[
                             'MICROSOFT',
@@ -591,8 +602,8 @@ const HostingContainer = () => {
                 {/* TESTIMONIALS (Infinite Scroll Right-to-Left) */}
                 {useMemo(
                     () => (
-                        <section className='py-24 overflow-hidden bg-neutral-900 border-b border-neutral-800'>
-                            <div className='max-w-7xl mx-auto px-6 mb-12'>
+                        <section className='py-8 overflow-hidden bg-neutral-900 border-b border-neutral-800'>
+                            <div className='max-w-7xl mx-auto px-6 mb-6'>
                                 <h2 className='text-2xl font-bold'>Trusted by Developers</h2>
                             </div>
 
@@ -600,6 +611,35 @@ const HostingContainer = () => {
                                 {testimonialsContent.map((item, i) => (
                                     <div
                                         key={i}
+                                        className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
+                                    >
+                                        <div className='flex gap-1 text-brand mb-4'>
+                                            {[1, 2, 3, 4, 5].map((j) => (
+                                                <StarIcon key={j} filled={true} size={14} />
+                                            ))}
+                                        </div>
+                                        <p className='text-neutral-400 text-sm italic mb-6 leading-relaxed'>
+                                            &quot;{item.t}&quot;
+                                        </p>
+                                        <div className='flex items-center gap-3'>
+                                            <div className='w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center font-bold text-white'>
+                                                {item.n[0]}
+                                            </div>
+                                            <div>
+                                                <div className='text-white font-bold text-sm'>{item.n}</div>
+                                                <div className='text-neutral-600 text-xs uppercase tracking-wider'>
+                                                    {item.r}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </InfiniteMarquee>
+
+                            <InfiniteMarquee speed={40} direction='left'>
+                                {testimonialsContent.map((item, i) => (
+                                    <div
+                                        key={`reverse-${i}`}
                                         className='w-[350px] shrink-0 bg-neutral-950 border-l-2 border-neutral-700 p-6 relative group hover:border-brand transition-colors'
                                     >
                                         <div className='flex gap-1 text-brand mb-4'>
@@ -702,12 +742,7 @@ const HostingContainer = () => {
                             >
                                 {plans
                                     .slice()
-                                    .sort((a, b) => {
-                                        // Sort most popular first, then by sort_order
-                                        if (a.attributes.is_most_popular && !b.attributes.is_most_popular) return -1;
-                                        if (!a.attributes.is_most_popular && b.attributes.is_most_popular) return 1;
-                                        return a.attributes.sort_order - b.attributes.sort_order;
-                                    })
+                                    .sort((a, b) => a.attributes.sort_order - b.attributes.sort_order)
                                     .slice(0, 4)
                                     .map((plan) => {
                                         const planPrice = getPlanPrice(plan);
