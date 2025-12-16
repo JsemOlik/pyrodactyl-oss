@@ -291,6 +291,13 @@ const HostingContainer = () => {
         }
     };
 
+    const scrollToServices = () => {
+        const servicesSection = document.getElementById('services');
+        if (servicesSection) {
+            servicesSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     // --- COMPONENTS ---
 
     const ShimmerButton = ({ text, onClick }: { text: string; onClick?: () => void }) => (
@@ -478,6 +485,7 @@ const HostingContainer = () => {
                         <div className='flex gap-4'>
                             <ShimmerButton text='GET STARTED' onClick={scrollToPricing} />
                             <button
+                                onClick={scrollToServices}
                                 className='px-8 py-4 border border-white/20 hover:bg-white hover:text-black font-bold uppercase text-sm tracking-widest transition-all flex items-center gap-2'
                                 style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
                             >
@@ -662,7 +670,7 @@ const HostingContainer = () => {
                 </section>
 
                 {/* SERVICES (BENTO GRID) */}
-                <section className='py-24 bg-neutral-950'>
+                <section id='services' className='py-24 bg-neutral-950'>
                     <div className='max-w-7xl mx-auto px-6'>
                         <div className='flex flex-col md:flex-row justify-between items-end mb-16'>
                             <div>
