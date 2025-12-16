@@ -32,7 +32,7 @@ import http, { httpErrorToHuman } from '@/api/http';
 
 import { useStoreState } from '@/state/hooks';
 
-type HostingType = 'game-server' | 'vps';
+type HostingType = string;
 
 // --- ANIMATION VARIANTS ---
 const containerVar = {
@@ -56,14 +56,29 @@ const BILLING_CYCLES = [
     { label: 'Yearly', discount: 0.2, interval: 'year' },
 ];
 
-const CATEGORIES = ['Game', 'VPS'];
-
 const HostingContainer = () => {
     const navigate = useNavigate();
     const [hostingType, setHostingType] = useState<HostingType>('game-server');
     const [activeCategory, setActiveCategory] = useState('Game');
     const [billingIndex, setBillingIndex] = useState(0);
     const [customRam, _setCustomRam] = useState(16);
+
+    // Fetch categories dynamically
+    const { data: categoriesData } = useSWR<{ name: string; slug: string }[]>(
+        '/api/client/hosting/categories',
+        async (url: string) => {
+            const response = await http.get(url);
+            return response.data.data || [
+                { name: 'Game', slug: 'game-server' },
+                { name: 'VPS', slug: 'vps' },
+            ];
+        },
+    );
+
+    const categories = categoriesData || [
+        { name: 'Game', slug: 'game-server' },
+        { name: 'VPS', slug: 'vps' },
+    ];
 
     const {
         data: plans,
@@ -100,14 +115,20 @@ const HostingContainer = () => {
         };
     }, []);
 
+    // Set initial category when categories load
+    useEffect(() => {
+        if (categories.length > 0 && !categories.find((cat) => cat.name === activeCategory)) {
+            setActiveCategory(categories[0].name);
+        }
+    }, [categories]);
+
     // Sync category with hosting type
     useEffect(() => {
-        if (activeCategory === 'Game') {
-            setHostingType('game-server');
-        } else if (activeCategory === 'VPS') {
-            setHostingType('vps');
+        const category = categories.find((cat) => cat.name === activeCategory);
+        if (category) {
+            setHostingType(category.slug);
         }
-    }, [activeCategory]);
+    }, [activeCategory, categories]);
 
     // Sync custom RAM slider with custom memory
     useEffect(() => {
@@ -490,7 +511,7 @@ const HostingContainer = () => {
                             },
                             {
                                 name: 'QPvP.pro',
-                                logo: 'https://cdn.discordapp.com/attachments/1352390864730718339/1424045724278198302/image.png?ex=693e25ae&is=693cd42e&hm=803fb74b37e8b20076e0756b1532e7a44a25693a903f2514b9d8dcc7b7ace858&',
+                                logo: '/logos/qpvp.png',
                             },
                             {
                                 name: 'BunnyCraft',
@@ -690,18 +711,21 @@ const HostingContainer = () => {
                         <div className='flex justify-center mb-16'>
                             <div className='flex flex-col gap-0'>
                                 {/* 1. Category Switcher */}
-                                <div className='grid grid-cols-2 gap-0 bg-black border border-neutral-800 rounded-none overflow-hidden'>
-                                    {CATEGORIES.map((cat) => (
+                                <div
+                                    className='grid gap-0 bg-black border border-neutral-800 rounded-none overflow-hidden'
+                                    style={{ gridTemplateColumns: `repeat(${categories.length}, 1fr)` }}
+                                >
+                                    {categories.map((cat) => (
                                         <button
-                                            key={cat}
-                                            onClick={() => setActiveCategory(cat)}
+                                            key={cat.slug}
+                                            onClick={() => setActiveCategory(cat.name)}
                                             className={`px-4 py-3 text-xs uppercase tracking-wider font-bold transition-colors border-r border-neutral-800 last:border-0 ${
-                                                activeCategory === cat
+                                                activeCategory === cat.name
                                                     ? 'bg-white text-black'
                                                     : 'text-neutral-500 hover:text-white'
                                             }`}
                                         >
-                                            {cat}
+                                            {cat.name}
                                         </button>
                                     ))}
                                 </div>

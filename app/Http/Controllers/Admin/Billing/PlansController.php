@@ -8,13 +8,15 @@ use Illuminate\View\View;
 use Illuminate\View\Factory as ViewFactory;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Models\Plan;
+use Pterodactyl\Contracts\Repository\SettingsRepositoryInterface;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class PlansController extends Controller
 {
     public function __construct(
-        private ViewFactory $view
+        private ViewFactory $view,
+        private SettingsRepositoryInterface $settings
     ) {
     }
 
@@ -82,7 +84,7 @@ class PlansController extends Controller
             'first_month_sales_percentage' => 'nullable|numeric|min:0|max:100',
             'currency' => 'required|string|size:3',
             'interval' => 'required|string|in:month,quarter,half-year,year',
-            'type' => 'required|string|in:game-server,vps',
+            'type' => 'required|string|max:50',
             'memory' => 'nullable|integer|min:0',
             'disk' => 'nullable|integer|min:0',
             'cpu' => 'nullable|integer|min:0',
@@ -268,6 +270,71 @@ class PlansController extends Controller
 
             return response()->json([
                 'errors' => ['Failed to delete plan: ' . $e->getMessage()],
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all plan categories.
+     */
+    public function getCategories(): JsonResponse
+    {
+        $categories = $this->settings->get('settings::billing:plan_categories', json_encode([
+            ['name' => 'Game', 'slug' => 'game-server'],
+            ['name' => 'VPS', 'slug' => 'vps'],
+        ]));
+        
+        $decoded = json_decode($categories, true);
+        if (!is_array($decoded)) {
+            $decoded = [
+                ['name' => 'Game', 'slug' => 'game-server'],
+                ['name' => 'VPS', 'slug' => 'vps'],
+            ];
+        }
+        
+        return response()->json([
+            'object' => 'list',
+            'data' => $decoded,
+        ]);
+    }
+
+    /**
+     * Create or update plan categories.
+     */
+    public function updateCategories(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'categories' => 'required|array',
+            'categories.*.name' => 'required|string|max:50',
+            'categories.*.slug' => 'required|string|max:50|regex:/^[a-z0-9-]+$/',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()->all(),
+            ], 422);
+        }
+
+        try {
+            $categories = $request->input('categories');
+            $this->settings->set('settings::billing:plan_categories', json_encode($categories));
+
+            Log::info('Admin updated plan categories', [
+                'admin_id' => auth()->id(),
+                'categories' => $categories,
+            ]);
+
+            return response()->json([
+                'object' => 'list',
+                'data' => $categories,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update categories', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'errors' => ['Failed to update categories: ' . $e->getMessage()],
             ], 500);
         }
     }

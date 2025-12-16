@@ -19,10 +19,12 @@
         <div class="box-header with-border">
           <h3 class="box-title">Subscription Plans</h3>
           <div class="box-tools pull-right">
-            <div class="btn-group" style="margin-right: 10px;">
-              <button type="button" class="btn btn-sm btn-default" id="gameServerType" data-type="game-server">Game Servers</button>
-              <button type="button" class="btn btn-sm btn-default" id="vpsType" data-type="vps">VPS</button>
+            <div class="btn-group" style="margin-right: 10px;" id="categoryButtons">
+              <!-- Categories will be loaded dynamically -->
             </div>
+            <button type="button" class="btn btn-sm btn-info" id="manageCategoriesButton" style="margin-right: 10px;">
+              <i class="fa fa-tags"></i> Manage Categories
+            </button>
             <button type="button" class="btn btn-sm btn-success" id="createPlanButton">
               <i class="fa fa-plus"></i> Create Plan
             </button>
@@ -110,8 +112,7 @@
               <div class="form-group col-md-4">
                 <label>Type <span class="text-red">*</span></label>
                 <select id="createPlanType" class="form-control" required>
-                  <option value="game-server">Game Server</option>
-                  <option value="vps">VPS</option>
+                  <!-- Options will be populated dynamically -->
                 </select>
               </div>
             </div>
@@ -328,18 +329,71 @@
       });
     }
 
-    $(document).ready(function() {
-      // Load initial plans
-      loadPlans(currentType);
-
-      // Type switching
-      $('#gameServerType, #vpsType').on('click', function() {
-        currentType = $(this).data('type');
-        $('#gameServerType, #vpsType').removeClass('btn-primary').addClass('btn-default');
-        $(this).removeClass('btn-default').addClass('btn-primary');
-        loadPlans(currentType);
+    let categories = [];
+    
+    // Populate type dropdown
+    function populateTypeDropdown() {
+      let html = '';
+      categories.forEach(function(cat) {
+        html += '<option value="' + cat.slug + '">' + cat.name + '</option>';
       });
-      $('#gameServerType').addClass('btn-primary').removeClass('btn-default');
+      $('#createPlanType').html(html);
+      $('#createPlanType').val(currentType);
+    }
+
+    function loadCategories() {
+      $.ajax({
+        url: '/admin/billing/plans/categories',
+        method: 'GET',
+        success: function(response) {
+          categories = response.data || [];
+          renderCategoryButtons();
+          renderCategoriesList();
+        },
+        error: function() {
+          // Default categories
+          categories = [
+            { name: 'Game', slug: 'game-server' },
+            { name: 'VPS', slug: 'vps' }
+          ];
+          renderCategoryButtons();
+          renderCategoriesList();
+        }
+      });
+    }
+
+    function renderCategoryButtons() {
+      let html = '';
+      categories.forEach(function(cat, index) {
+        const isActive = index === 0 ? 'btn-primary' : 'btn-default';
+        html += '<button type="button" class="btn btn-sm ' + isActive + ' category-btn" data-type="' + cat.slug + '">' + cat.name + '</button>';
+      });
+      $('#categoryButtons').html(html);
+      
+      // Set first category as active
+      if (categories.length > 0) {
+        currentType = categories[0].slug;
+        loadPlans(currentType);
+        populateTypeDropdown();
+      }
+    }
+
+    function renderCategoriesList() {
+      let html = '';
+      categories.forEach(function(cat, index) {
+        html += '<div class="category-item" data-index="' + index + '" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">';
+        html += '<div class="row">';
+        html += '<div class="col-md-5"><label>Display Name</label><input type="text" class="form-control category-name" value="' + (cat.name || '') + '" /></div>';
+        html += '<div class="col-md-5"><label>Slug</label><input type="text" class="form-control category-slug" value="' + (cat.slug || '') + '" /></div>';
+        html += '<div class="col-md-2"><label>&nbsp;</label><br /><button type="button" class="btn btn-sm btn-danger remove-category"><i class="fa fa-trash"></i></button></div>';
+        html += '</div></div>';
+      });
+      $('#categoriesList').html(html);
+    }
+
+    $(document).ready(function() {
+      // Load categories first, which will then load plans
+      loadCategories();
 
       // Open create plan modal
       $('#createPlanButton').on('click', function() {
@@ -347,7 +401,7 @@
         $('#createPlanForm')[0].reset();
         $('#createPlanCurrency').val('USD');
         $('#createPlanInterval').val('month');
-        $('#createPlanType').val(currentType);
+        populateTypeDropdown();
         $('#createPlanSortOrder').val('0');
         $('#createPlanIsActive').prop('checked', true);
         $('#createPlanModal').modal('show');
@@ -543,6 +597,135 @@
                 swal('Error', errorMsg, 'error');
               }
             });
+          }
+        });
+      });
+    });
+  </script>
+
+  <!-- Manage Categories Modal -->
+  <div class="modal fade" id="manageCategoriesModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title">Manage Plan Categories</h4>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted">Create and manage categories for your hosting plans. Each category needs a display name and a unique slug (e.g., "web" for "Web Hosting").</p>
+          <div id="categoriesList">
+            <!-- Categories will be loaded here -->
+          </div>
+          <button type="button" class="btn btn-sm btn-success" id="addCategoryButton" style="margin-top: 10px;">
+            <i class="fa fa-plus"></i> Add Category
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveCategoriesButton">Save Categories</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let categoryTemplate = '<div class="category-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
+      '<div class="row">' +
+      '<div class="col-md-5">' +
+      '<label>Display Name</label>' +
+      '<input type="text" class="form-control category-name" placeholder="e.g., Game, VPS, Web" />' +
+      '</div>' +
+      '<div class="col-md-5">' +
+      '<label>Slug</label>' +
+      '<input type="text" class="form-control category-slug" placeholder="e.g., game-server, vps, web" />' +
+      '</div>' +
+      '<div class="col-md-2">' +
+      '<label>&nbsp;</label><br />' +
+      '<button type="button" class="btn btn-sm btn-danger remove-category"><i class="fa fa-trash"></i></button>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+
+    $(document).ready(function() {
+      // Category button switching
+      $(document).on('click', '.category-btn', function() {
+        currentType = $(this).data('type');
+        $('.category-btn').removeClass('btn-primary').addClass('btn-default');
+        $(this).removeClass('btn-default').addClass('btn-primary');
+        loadPlans(currentType);
+      });
+
+      // Open manage categories modal
+      $('#manageCategoriesButton').on('click', function() {
+        renderCategoriesList();
+        $('#manageCategoriesModal').modal('show');
+      });
+
+      // Add new category
+      $('#addCategoryButton').on('click', function() {
+        $('#categoriesList').append(categoryTemplate);
+      });
+
+      // Remove category
+      $(document).on('click', '.remove-category', function() {
+        if (categories.length <= 1) {
+          swal('Error', 'You must have at least one category.', 'error');
+          return;
+        }
+        $(this).closest('.category-item').remove();
+      });
+
+      // Save categories
+      $('#saveCategoriesButton').on('click', function() {
+        const newCategories = [];
+        $('.category-item').each(function() {
+          const name = $(this).find('.category-name').val().trim();
+          const slug = $(this).find('.category-slug').val().trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+          
+          if (name && slug) {
+            newCategories.push({ name: name, slug: slug });
+          }
+        });
+
+        if (newCategories.length === 0) {
+          swal('Error', 'You must have at least one category.', 'error');
+          return;
+        }
+
+        // Check for duplicate slugs
+        const slugs = newCategories.map(c => c.slug);
+        if (new Set(slugs).size !== slugs.length) {
+          swal('Error', 'Each category must have a unique slug.', 'error');
+          return;
+        }
+
+        $('#saveCategoriesButton').prop('disabled', true).text('Saving...');
+
+        $.ajax({
+          url: '/admin/billing/plans/categories',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ categories: newCategories }),
+          headers: {
+            'X-CSRF-Token': $('meta[name="_token"]').attr('content')
+          },
+          success: function(response) {
+            categories = response.data;
+            renderCategoryButtons();
+            $('#manageCategoriesModal').modal('hide');
+            swal('Success', 'Categories updated successfully.', 'success');
+          },
+          error: function(xhr) {
+            let errorMsg = 'Failed to save categories.';
+            if (xhr.responseJSON && xhr.responseJSON.errors) {
+              errorMsg = xhr.responseJSON.errors.join(' ');
+            }
+            swal('Error', errorMsg, 'error');
+          },
+          complete: function() {
+            $('#saveCategoriesButton').prop('disabled', false).text('Save Categories');
           }
         });
       });

@@ -5,16 +5,19 @@ namespace Pterodactyl\Http\Controllers\Api\Client\Hosting;
 use Illuminate\Http\Request;
 use Pterodactyl\Models\Plan;
 use Pterodactyl\Http\Controllers\Controller;
+use Pterodactyl\Contracts\Repository\SettingsRepositoryInterface;
 use Illuminate\Container\Container;
 use Pterodactyl\Extensions\Spatie\Fractalistic\Fractal;
 
 class HostingPlanController extends Controller
 {
     protected Fractal $fractal;
+    protected SettingsRepositoryInterface $settings;
 
-    public function __construct()
+    public function __construct(SettingsRepositoryInterface $settings)
     {
         Container::getInstance()->call([$this, 'loadDependencies']);
+        $this->settings = $settings;
     }
 
     public function loadDependencies(Fractal $fractal)
@@ -143,6 +146,30 @@ class HostingPlanController extends Controller
                 'show_status_page_button' => $showStatusButton,
                 'show_logo' => $showLogo,
             ],
+        ];
+    }
+
+    /**
+     * Get all plan categories.
+     */
+    public function getCategories(): array
+    {
+        $categories = $this->settings->get('settings::billing:plan_categories', json_encode([
+            ['name' => 'Game', 'slug' => 'game-server'],
+            ['name' => 'VPS', 'slug' => 'vps'],
+        ]));
+        
+        $decoded = json_decode($categories, true);
+        if (!is_array($decoded)) {
+            $decoded = [
+                ['name' => 'Game', 'slug' => 'game-server'],
+                ['name' => 'VPS', 'slug' => 'vps'],
+            ];
+        }
+        
+        return [
+            'object' => 'list',
+            'data' => $decoded,
         ];
     }
 }

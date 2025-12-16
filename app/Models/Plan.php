@@ -98,7 +98,7 @@ class Plan extends Model
         'is_custom' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer|min:0',
-        'type' => 'required|string|in:game-server,vps',
+        'type' => 'required|string|max:50',
     ];
 
     /**

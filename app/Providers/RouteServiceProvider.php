@@ -52,6 +52,7 @@ class RouteServiceProvider extends ServiceProvider
                 Route::prefix('/api/client/hosting')
                     ->group(function () {
                         Route::get('/plans', [\Pterodactyl\Http\Controllers\Api\Client\Hosting\HostingPlanController::class, 'index']);
+                        Route::get('/categories', [\Pterodactyl\Http\Controllers\Api\Client\Hosting\HostingPlanController::class, 'getCategories']);
                         Route::post('/calculate-custom-plan', [\Pterodactyl\Http\Controllers\Api\Client\Hosting\HostingPlanController::class, 'calculateCustomPlan']);
                         Route::get('/server-creation-status', [\Pterodactyl\Http\Controllers\Api\Client\Hosting\HostingPlanController::class, 'serverCreationStatus']);
                     });
