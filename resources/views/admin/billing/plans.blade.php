@@ -25,6 +25,9 @@
             <button type="button" class="btn btn-sm btn-info" id="manageCategoriesButton" style="margin-right: 10px;">
               <i class="fa fa-tags"></i> Manage Categories
             </button>
+            <button type="button" class="btn btn-sm btn-warning" id="manageBillingDiscountsButton" style="margin-right: 10px;">
+              <i class="fa fa-percent"></i> Billing Discounts
+            </button>
             <button type="button" class="btn btn-sm btn-success" id="createPlanButton">
               <i class="fa fa-plus"></i> Create Plan
             </button>
@@ -726,6 +729,120 @@
           },
           complete: function() {
             $('#saveCategoriesButton').prop('disabled', false).text('Save Categories');
+          }
+        });
+      });
+    });
+  </script>
+
+  <!-- Manage Billing Discounts Modal -->
+  <div class="modal fade" id="manageBillingDiscountsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title">Manage Billing Period Discounts</h4>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted">Set discount percentages for each billing period per category. These discounts apply when users select different billing cycles.</p>
+          <div id="billingDiscountsList">
+            <!-- Discounts will be loaded here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveBillingDiscountsButton">Save Discounts</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function loadBillingDiscounts() {
+      $.ajax({
+        url: '/admin/billing/plans/billing-discounts',
+        method: 'GET',
+        success: function(response) {
+          const discounts = response.data || {};
+          renderBillingDiscounts(discounts);
+        },
+        error: function() {
+          // Default discounts
+          const defaultDiscounts = {};
+          categories.forEach(function(cat) {
+            defaultDiscounts[cat.slug] = {
+              month: 0,
+              quarter: 5,
+              'half-year': 10,
+              year: 20
+            };
+          });
+          renderBillingDiscounts(defaultDiscounts);
+        }
+      });
+    }
+
+    function renderBillingDiscounts(discounts) {
+      let html = '';
+      categories.forEach(function(cat) {
+        const catDiscounts = discounts[cat.slug] || { month: 0, quarter: 5, 'half-year': 10, year: 20 };
+        html += '<div class="category-discounts" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">';
+        html += '<h4 style="margin-top: 0;">' + cat.name + ' Category</h4>';
+        html += '<div class="row">';
+        html += '<div class="col-md-3"><label>Monthly</label><input type="number" step="0.01" min="0" max="100" class="form-control discount-month" data-category="' + cat.slug + '" value="' + (catDiscounts.month || 0) + '" placeholder="0" /></div>';
+        html += '<div class="col-md-3"><label>Quarterly</label><input type="number" step="0.01" min="0" max="100" class="form-control discount-quarter" data-category="' + cat.slug + '" value="' + (catDiscounts.quarter || 0) + '" placeholder="5" /></div>';
+        html += '<div class="col-md-3"><label>Bi-Annual</label><input type="number" step="0.01" min="0" max="100" class="form-control discount-half-year" data-category="' + cat.slug + '" value="' + (catDiscounts['half-year'] || 0) + '" placeholder="10" /></div>';
+        html += '<div class="col-md-3"><label>Yearly</label><input type="number" step="0.01" min="0" max="100" class="form-control discount-year" data-category="' + cat.slug + '" value="' + (catDiscounts.year || 0) + '" placeholder="20" /></div>';
+        html += '</div>';
+        html += '</div>';
+      });
+      $('#billingDiscountsList').html(html);
+    }
+
+    $(document).ready(function() {
+      // Open manage billing discounts modal
+      $('#manageBillingDiscountsButton').on('click', function() {
+        loadBillingDiscounts();
+        $('#manageBillingDiscountsModal').modal('show');
+      });
+
+      // Save billing discounts
+      $('#saveBillingDiscountsButton').on('click', function() {
+        const discounts = {};
+        categories.forEach(function(cat) {
+          discounts[cat.slug] = {
+            month: parseFloat($('.discount-month[data-category="' + cat.slug + '"]').val() || 0),
+            quarter: parseFloat($('.discount-quarter[data-category="' + cat.slug + '"]').val() || 0),
+            'half-year': parseFloat($('.discount-half-year[data-category="' + cat.slug + '"]').val() || 0),
+            year: parseFloat($('.discount-year[data-category="' + cat.slug + '"]').val() || 0)
+          };
+        });
+
+        $('#saveBillingDiscountsButton').prop('disabled', true).text('Saving...');
+
+        $.ajax({
+          url: '/admin/billing/plans/billing-discounts',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ discounts: discounts }),
+          headers: {
+            'X-CSRF-Token': $('meta[name="_token"]').attr('content')
+          },
+          success: function(response) {
+            $('#manageBillingDiscountsModal').modal('hide');
+            swal('Success', 'Billing discounts updated successfully.', 'success');
+          },
+          error: function(xhr) {
+            let errorMsg = 'Failed to save discounts.';
+            if (xhr.responseJSON && xhr.responseJSON.errors) {
+              errorMsg = xhr.responseJSON.errors.join(' ');
+            }
+            swal('Error', errorMsg, 'error');
+          },
+          complete: function() {
+            $('#saveBillingDiscountsButton').prop('disabled', false).text('Save Discounts');
           }
         });
       });

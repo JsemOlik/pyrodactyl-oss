@@ -172,4 +172,22 @@ class HostingPlanController extends Controller
             'data' => $decoded,
         ];
     }
+
+    /**
+     * Get billing period discounts for all categories.
+     */
+    public function getBillingDiscounts(): array
+    {
+        $discounts = $this->settings->get('settings::billing:period_discounts', json_encode([]));
+        
+        $decoded = json_decode($discounts, true);
+        if (!is_array($decoded)) {
+            $decoded = [];
+        }
+        
+        return [
+            'object' => 'discounts',
+            'data' => $decoded,
+        ];
+    }
 }

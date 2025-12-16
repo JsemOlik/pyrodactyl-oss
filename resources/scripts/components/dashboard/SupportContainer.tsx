@@ -193,12 +193,23 @@ const SupportContainer = () => {
                 <div className='rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-6 sm:p-8'>
                     <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-6'>
                         <div className='flex-1'>
-                            <h2 className='text-xl sm:text-2xl font-bold text-white mb-2'>Create Support Ticket</h2>
+                            <h2 className='text-xl sm:text-2xl font-bold text-white mb-2'>Need Help from Our Team?</h2>
                             <p className='text-sm sm:text-base text-zinc-300 leading-relaxed'>
-                                Need help? Create a support ticket and our team will assist you. You can link your
-                                ticket to a specific server or subscription.
+                                If you need support from one of our technicians or sales representatives, create a ticket, or join our
+                                Discord server. Our team is ready to assist you with any questions or issues you may
+                                have.
                             </p>
                         </div>
+                        <a
+                            href='https://discord.gg/UhuYKKK2uM'
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-[#5865F2]/20 active:scale-100'
+                            style={{ backgroundColor: '#5865F2' }}
+                        >
+                            <DiscordLogo className='w-5 h-5 flex-shrink-0' />
+                            <span>Join Discord</span>
+                        </a>
                         {!showTicketForm && (
                             <button
                                 onClick={() => setShowTicketForm(true)}
@@ -520,7 +531,7 @@ const SupportContainer = () => {
                         <div className='flex-1'>
                             <h2 className='text-xl sm:text-2xl font-bold text-white mb-2'>Need Help from Our Team?</h2>
                             <p className='text-sm sm:text-base text-zinc-300 leading-relaxed'>
-                                If you need support from one of our technicians or sales representatives, join our
+                                If you need support from one of our technicians or sales representatives, create a ticket, or join our
                                 Discord server. Our team is ready to assist you with any questions or issues you may
                                 have.
                             </p>

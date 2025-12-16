@@ -338,4 +338,65 @@ class PlansController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get billing period discounts for all categories.
+     */
+    public function getBillingDiscounts(): JsonResponse
+    {
+        $discounts = $this->settings->get('settings::billing:period_discounts', json_encode([]));
+        
+        $decoded = json_decode($discounts, true);
+        if (!is_array($decoded)) {
+            $decoded = [];
+        }
+        
+        return response()->json([
+            'object' => 'discounts',
+            'data' => $decoded,
+        ]);
+    }
+
+    /**
+     * Update billing period discounts.
+     */
+    public function updateBillingDiscounts(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'discounts' => 'required|array',
+            'discounts.*.month' => 'nullable|numeric|min:0|max:100',
+            'discounts.*.quarter' => 'nullable|numeric|min:0|max:100',
+            'discounts.*.half-year' => 'nullable|numeric|min:0|max:100',
+            'discounts.*.year' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()->all(),
+            ], 422);
+        }
+
+        try {
+            $discounts = $request->input('discounts');
+            $this->settings->set('settings::billing:period_discounts', json_encode($discounts));
+
+            Log::info('Admin updated billing period discounts', [
+                'admin_id' => auth()->id(),
+                'discounts' => $discounts,
+            ]);
+
+            return response()->json([
+                'object' => 'discounts',
+                'data' => $discounts,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update billing discounts', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'errors' => ['Failed to update billing discounts: ' . $e->getMessage()],
+            ], 500);
+        }
+    }
 }

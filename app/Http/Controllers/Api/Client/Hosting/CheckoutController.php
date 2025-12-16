@@ -17,6 +17,7 @@ use Pterodactyl\Http\Requests\Api\Client\Hosting\CheckoutRequest;
 use Pterodactyl\Services\Hosting\StripePriceService;
 use Pterodactyl\Services\Hosting\ServerProvisioningService;
 use Pterodactyl\Services\Credits\CreditTransactionService;
+use Pterodactyl\Contracts\Repository\SettingsRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
@@ -24,7 +25,8 @@ class CheckoutController extends Controller
     public function __construct(
         private StripePriceService $stripePriceService,
         private ServerProvisioningService $serverProvisioningService,
-        private CreditTransactionService $creditTransactionService
+        private CreditTransactionService $creditTransactionService,
+        private SettingsRepositoryInterface $settings
     ) {
         Stripe::setApiKey(config('cashier.secret'));
     }
@@ -57,34 +59,64 @@ class CheckoutController extends Controller
         try {
             // Determine plan and pricing
             $plan = null;
-            $interval = 'month';
+            $interval = $request->input('interval', 'month'); // Use selected interval from user
             $priceAmount = 0;
+
+            // Determine type from request or plan
+            $type = $request->input('type', $plan?->type ?? 'game-server');
+
+            // Get category-specific billing discounts
+            $billingDiscounts = json_decode($this->settings->get('settings::billing:period_discounts', json_encode([])), true);
+            if (!is_array($billingDiscounts)) {
+                $billingDiscounts = [];
+            }
+            $categoryDiscounts = $billingDiscounts[$type] ?? [
+                'month' => 0,
+                'quarter' => 5,
+                'half-year' => 10,
+                'year' => 20,
+            ];
 
             if ($request->has('plan_id')) {
                 $plan = Plan::findOrFail($request->input('plan_id'));
-                $interval = $plan->interval;
-                $priceAmount = $plan->price;
                 
-                // Apply first month discount if available
+                // Get base monthly price from plan
+                $baseMonthlyPrice = $plan->getPriceForInterval('month');
+                
+                // Calculate price for selected interval with category discount
+                $intervalMonths = match ($interval) {
+                    'month' => 1,
+                    'quarter' => 3,
+                    'half-year' => 6,
+                    'year' => 12,
+                    default => 1,
+                };
+                
+                // Calculate base price for interval
+                $basePrice = $baseMonthlyPrice * $intervalMonths;
+                
+                // Apply category-specific discount
+                $discountPercent = match ($interval) {
+                    'month' => $categoryDiscounts['month'] ?? 0,
+                    'quarter' => $categoryDiscounts['quarter'] ?? 0,
+                    'half-year' => $categoryDiscounts['half-year'] ?? 0,
+                    'year' => $categoryDiscounts['year'] ?? 0,
+                    default => 0,
+                };
+                
+                $priceAmount = round($basePrice * (1 - ($discountPercent / 100)), 2);
+                
+                // Apply first month discount if available (only for first payment)
                 if ($plan->first_month_sales_percentage && $plan->first_month_sales_percentage > 0) {
-                    $discount = $plan->first_month_sales_percentage / 100;
-                    $priceAmount = round($priceAmount * (1 - $discount), 2);
+                    $firstMonthDiscount = $plan->first_month_sales_percentage / 100;
+                    $priceAmount = round($priceAmount * (1 - $firstMonthDiscount), 2);
                 }
             } else {
                 // Custom plan - calculate price
                 $memory = $request->input('memory');
-                $interval = $request->input('interval', 'month');
                 
                 // Calculate price (same logic as HostingPlanController)
                 $pricePerMonth = ($memory / 1024) * 10; // $10 per GB per month
-                
-                $discountMonths = match ($interval) {
-                    'month' => 0,
-                    'quarter' => 1,
-                    'half-year' => 2,
-                    'year' => 3,
-                    default => 0,
-                };
                 
                 $intervalMonths = match ($interval) {
                     'month' => 1,
@@ -94,11 +126,20 @@ class CheckoutController extends Controller
                     default => 1,
                 };
                 
-                $priceAmount = round($pricePerMonth * ($intervalMonths - $discountMonths), 2);
+                // Calculate base price for interval
+                $basePrice = $pricePerMonth * $intervalMonths;
+                
+                // Apply category-specific discount
+                $discountPercent = match ($interval) {
+                    'month' => $categoryDiscounts['month'] ?? 0,
+                    'quarter' => $categoryDiscounts['quarter'] ?? 0,
+                    'half-year' => $categoryDiscounts['half-year'] ?? 0,
+                    'year' => $categoryDiscounts['year'] ?? 0,
+                    default => 0,
+                };
+                
+                $priceAmount = round($basePrice * (1 - ($discountPercent / 100)), 2);
             }
-
-            // Determine type from request or plan
-            $type = $request->input('type', $plan?->type ?? 'game-server');
 
             // If credits are enabled, process with credits instead of Stripe
             if ($creditsEnabled) {
@@ -145,7 +186,7 @@ class CheckoutController extends Controller
                     $metadata['interval'] = $interval;
                 }
 
-                // Calculate next billing date based on interval
+                // Calculate next billing date based on selected interval
                 $nextBillingAt = match($interval) {
                     'month' => now()->addMonth(),
                     'quarter' => now()->addMonths(3),
@@ -174,8 +215,8 @@ class CheckoutController extends Controller
                         'trial_ends_at' => null,
                         'ends_at' => null,
                         'next_billing_at' => $nextBillingAt,
-                        'billing_interval' => $interval,
-                        'billing_amount' => $plan ? $plan->price : $priceAmount, // Store full price for recurring billing
+                        'billing_interval' => $interval, // Store selected interval
+                        'billing_amount' => $priceAmount, // Store discounted price for recurring billing
                         'is_credits_based' => true,
                         'metadata' => !empty($subscriptionMetadata) ? $subscriptionMetadata : null,
                     ]);
@@ -290,12 +331,17 @@ class CheckoutController extends Controller
 
             $stripePriceId = null;
             if ($plan) {
-                // Get or create Stripe Price for this plan (use full price for recurring)
-                $stripePriceId = $this->stripePriceService->getOrCreatePriceForPlan($plan);
+                // Create Stripe Price with selected interval and discounted price
+                // We need to create a new price for the selected interval, not use plan's default interval
+                $stripePriceId = $this->stripePriceService->createPriceForPlanWithInterval(
+                    $plan,
+                    $interval,
+                    $priceAmount
+                );
             } else {
                 // Create Stripe Price for custom plan
                 $stripePriceId = $this->stripePriceService->createPriceForCustomPlan(
-                    $priceAmount, // Use full price for recurring
+                    $priceAmount, // Use discounted price for recurring
                     $interval,
                     $request->input('memory')
                 );

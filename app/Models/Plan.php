@@ -89,7 +89,7 @@ class Plan extends Model
         'stripe_price_id' => 'nullable|string|max:191|unique:plans,stripe_price_id',
         'price' => 'required|numeric|min:0',
         'currency' => 'required|string|size:3',
-        'interval' => 'required|string|in:month,quarter,half-year,year',
+        'interval' => 'required|string', // Allow any interval string for dynamic categories
         'memory' => 'nullable|integer|min:0',
         'disk' => 'nullable|integer|min:0',
         'cpu' => 'nullable|integer|min:0',

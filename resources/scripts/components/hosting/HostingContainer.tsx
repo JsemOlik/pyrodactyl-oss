@@ -49,11 +49,12 @@ const itemVar = {
 };
 
 // --- DATA: PRICING CONFIGURATION ---
+// Billing cycles - discounts will be loaded dynamically per category
 const BILLING_CYCLES = [
-    { label: 'Monthly', discount: 0, interval: 'month' },
-    { label: 'Quarterly', discount: 0.05, interval: 'quarter' },
-    { label: 'Bi-Annual', discount: 0.1, interval: 'half-year' },
-    { label: 'Yearly', discount: 0.2, interval: 'year' },
+    { label: 'Monthly', interval: 'month' },
+    { label: 'Quarterly', interval: 'quarter' },
+    { label: 'Bi-Annual', interval: 'half-year' },
+    { label: 'Yearly', interval: 'year' },
 ];
 
 const HostingContainer = () => {
@@ -75,10 +76,20 @@ const HostingContainer = () => {
         },
     );
 
+    // Fetch billing discounts dynamically
+    const { data: billingDiscountsData } = useSWR<{ [categorySlug: string]: { month: number; quarter: number; 'half-year': number; year: number } }>(
+        '/api/client/hosting/billing-discounts',
+        async (url: string) => {
+            const response = await http.get(url);
+            return response.data.data || {};
+        },
+    );
+
     const categories = categoriesData || [
         { name: 'Game', slug: 'game-server' },
         { name: 'VPS', slug: 'vps' },
     ];
+    const billingDiscounts = billingDiscountsData || {};
 
     const {
         data: plans,
@@ -170,12 +181,31 @@ const HostingContainer = () => {
         return Math.round(cpu / 100);
     };
 
+    // Helper to get discount for current category and billing cycle
+    const getDiscount = (): number => {
+        const cycle = BILLING_CYCLES[billingIndex];
+        if (!cycle) return 0;
+
+        // Find current category slug
+        const currentCategory = categories.find(cat => cat.name === activeCategory);
+        if (!currentCategory) return 0;
+
+        const categoryDiscounts = billingDiscounts[currentCategory.slug] || {
+            month: 0,
+            quarter: 5,
+            'half-year': 10,
+            year: 20,
+        };
+
+        return (categoryDiscounts[cycle.interval as keyof typeof categoryDiscounts] || 0) / 100;
+    };
+
     // Helper to calculate price with discount
     const getPrice = (base: number, plan?: HostingPlan): number => {
         const cycle = BILLING_CYCLES[billingIndex];
         if (!cycle) return base;
 
-        const discount = cycle.discount;
+        const discount = getDiscount();
         let price = base;
 
         // Apply first month discount if available
@@ -743,11 +773,17 @@ const HostingContainer = () => {
                                             }`}
                                         >
                                             {cycle.label}
-                                            {cycle.discount > 0 && (
-                                                <span className='block text-[9px] text-brand mt-1'>
-                                                    -{cycle.discount * 100}%
-                                                </span>
-                                            )}
+                                            {(() => {
+                                                const currentCategory = categories.find(cat => cat.name === activeCategory);
+                                                if (!currentCategory) return null;
+                                                const categoryDiscounts = billingDiscounts[currentCategory.slug] || { month: 0, quarter: 5, 'half-year': 10, year: 20 };
+                                                const discount = categoryDiscounts[cycle.interval as keyof typeof categoryDiscounts] || 0;
+                                                return discount > 0 ? (
+                                                    <span className='block text-[9px] text-brand mt-1'>
+                                                        -{discount}%
+                                                    </span>
+                                                ) : null;
+                                            })()}
                                         </button>
                                     ))}
                                 </div>

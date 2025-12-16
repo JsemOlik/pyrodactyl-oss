@@ -82,6 +82,7 @@ class StripeWebhookController extends Controller
                 Log::info('Stripe invoice payment succeeded', [
                     'invoice_id' => $event->data->object->id,
                 ]);
+                $this->handleInvoicePaymentSucceeded($event->data->object);
                 break;
 
             case 'invoice.payment_failed':
@@ -831,5 +832,66 @@ class StripeWebhookController extends Controller
         }
 
         return [];
+    }
+
+    /**
+     * Handle invoice payment succeeded event (subscription renewals).
+     */
+    private function handleInvoicePaymentSucceeded($invoice): void
+    {
+        try {
+            // Get subscription from invoice
+            $subscriptionId = $invoice->subscription ?? null;
+            if (!$subscriptionId) {
+                Log::info('Invoice payment succeeded but no subscription ID', [
+                    'invoice_id' => $invoice->id,
+                ]);
+                return;
+            }
+
+            // Find subscription in database
+            $subscriptionModel = \Pterodactyl\Models\Subscription::where('stripe_id', $subscriptionId)->first();
+            if (!$subscriptionModel) {
+                Log::warning('Invoice payment succeeded but subscription not found in database', [
+                    'invoice_id' => $invoice->id,
+                    'subscription_id' => $subscriptionId,
+                ]);
+                return;
+            }
+
+            // Skip if this is a credits-based subscription (handled by command)
+            if ($subscriptionModel->is_credits_based) {
+                return;
+            }
+
+            // Update next_billing_at based on billing_interval
+            if ($subscriptionModel->billing_interval) {
+                $nextBillingAt = match($subscriptionModel->billing_interval) {
+                    'month' => now()->addMonth(),
+                    'quarter' => now()->addMonths(3),
+                    'half-year' => now()->addMonths(6),
+                    'year' => now()->addYear(),
+                    default => now()->addMonth(),
+                };
+
+                $subscriptionModel->update([
+                    'next_billing_at' => $nextBillingAt,
+                    'stripe_status' => 'active',
+                ]);
+
+                Log::info('Subscription renewal processed - updated next_billing_at', [
+                    'subscription_id' => $subscriptionModel->id,
+                    'invoice_id' => $invoice->id,
+                    'billing_interval' => $subscriptionModel->billing_interval,
+                    'next_billing_at' => $nextBillingAt,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to handle invoice payment succeeded', [
+                'invoice_id' => $invoice->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
     }
 }

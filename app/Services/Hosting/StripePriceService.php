@@ -145,6 +145,53 @@ class StripePriceService
     }
 
     /**
+     * Create a Stripe Price for a Plan with a specific interval and price.
+     * This is used when the user selects a different billing period than the plan's default.
+     *
+     * @throws \Exception
+     */
+    public function createPriceForPlanWithInterval(Plan $plan, string $interval, float $priceAmount): string
+    {
+        $recurring = $this->getRecurringParams($interval);
+        
+        try {
+            $price = Price::create([
+                'currency' => strtolower($plan->currency),
+                'unit_amount' => (int) ($priceAmount * 100), // Convert to cents
+                'recurring' => $recurring,
+                'product_data' => [
+                    'name' => $plan->name . ' (' . ucfirst($interval) . ')',
+                    'metadata' => [
+                        'plan_id' => (string) $plan->id,
+                        'plan_description' => $plan->description ?? "Server hosting plan: {$plan->name}",
+                        'memory' => (string) ($plan->memory ?? ''),
+                        'disk' => (string) ($plan->disk ?? ''),
+                        'cpu' => (string) ($plan->cpu ?? ''),
+                        'interval' => $interval,
+                    ],
+                ],
+            ]);
+
+            Log::info('Created Stripe Price for plan with custom interval', [
+                'plan_id' => $plan->id,
+                'stripe_price_id' => $price->id,
+                'interval' => $interval,
+                'price' => $priceAmount,
+            ]);
+
+            return $price->id;
+        } catch (ApiErrorException $e) {
+            Log::error('Failed to create Stripe Price for plan with custom interval', [
+                'plan_id' => $plan->id,
+                'interval' => $interval,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new \Exception('Failed to create Stripe Price: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get recurring parameters for Stripe Price.
      */
     private function getRecurringParams(string $interval): array

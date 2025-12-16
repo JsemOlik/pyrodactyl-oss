@@ -235,6 +235,44 @@ class ServerProvisioningService
             ];
         }
         
+        // Determine billing interval from Stripe price or metadata
+        $interval = 'month';
+        $billingAmount = null;
+        
+        if (!empty($sessionMetadata['interval'])) {
+            $interval = $sessionMetadata['interval'];
+        } elseif (!empty($stripeSubscription->items->data[0]->price->recurring)) {
+            $recurring = $stripeSubscription->items->data[0]->price->recurring;
+            $stripeInterval = $recurring->interval;
+            $intervalCount = $recurring->interval_count ?? 1;
+            
+            if ($stripeInterval === 'month' && $intervalCount === 1) {
+                $interval = 'month';
+            } elseif ($stripeInterval === 'month' && $intervalCount === 3) {
+                $interval = 'quarter';
+            } elseif ($stripeInterval === 'month' && $intervalCount === 6) {
+                $interval = 'half-year';
+            } elseif ($stripeInterval === 'year' && $intervalCount === 1) {
+                $interval = 'year';
+            }
+        }
+        
+        // Calculate next billing date
+        $nextBillingAt = match($interval) {
+            'month' => now()->addMonth(),
+            'quarter' => now()->addMonths(3),
+            'half-year' => now()->addMonths(6),
+            'year' => now()->addYear(),
+            default => now()->addMonth(),
+        };
+        
+        // Get billing amount from Stripe price
+        if (!empty($stripeSubscription->items->data[0]->price->unit_amount)) {
+            $billingAmount = $stripeSubscription->items->data[0]->price->unit_amount / 100;
+        } elseif ($plan) {
+            $billingAmount = $plan->price;
+        }
+        
         // Create subscription record
         $subscription = Subscription::create([
             'user_id' => $user->id,
@@ -242,6 +280,9 @@ class ServerProvisioningService
             'stripe_id' => $subscriptionId,
             'stripe_status' => $stripeSubscription->status,
             'stripe_price' => $stripeSubscription->items->data[0]->price->id ?? null,
+            'next_billing_at' => $nextBillingAt,
+            'billing_interval' => $interval,
+            'billing_amount' => $billingAmount,
             'quantity' => $stripeSubscription->items->data[0]->quantity ?? 1,
             'metadata' => $subscriptionMetadata,
             'trial_ends_at' => $stripeSubscription->trial_end ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end) : null,
