@@ -517,39 +517,6 @@ const SupportContainer = () => {
                 )}
             </div>
 
-            {/* Discord Support Section */}
-            <div
-                className='mb-12 transform-gpu skeleton-anim-2'
-                style={{
-                    animationDelay: '75ms',
-                    animationTimingFunction:
-                        'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
-                }}
-            >
-                <div className='rounded-xl border border-white/10 bg-gradient-to-br from-[#ffffff05] to-[#ffffff02] p-6 sm:p-8'>
-                    <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6'>
-                        <div className='flex-1'>
-                            <h2 className='text-xl sm:text-2xl font-bold text-white mb-2'>Need Help from Our Team?</h2>
-                            <p className='text-sm sm:text-base text-zinc-300 leading-relaxed'>
-                                If you need support from one of our technicians or sales representatives, create a ticket, or join our
-                                Discord server. Our team is ready to assist you with any questions or issues you may
-                                have.
-                            </p>
-                        </div>
-                        <a
-                            href='https://discord.gg/UhuYKKK2uM'
-                            target='_blank'
-                            rel='noopener noreferrer'
-                            className='inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-[#5865F2]/20 active:scale-100'
-                            style={{ backgroundColor: '#5865F2' }}
-                        >
-                            <DiscordLogo className='w-5 h-5 flex-shrink-0' />
-                            <span>Join Discord</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
             {/* Tutorials Section */}
             <div
                 className='mb-12 transform-gpu skeleton-anim-2'
