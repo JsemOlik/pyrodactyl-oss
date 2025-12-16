@@ -67,56 +67,56 @@ const SERVICE_DATA: Record<string, ServiceData> = {
             uplink: '10Gbps Fiber',
         },
         showcaseImages: [
-            'https://images.unsplash.com/photo-1607677686475-ad5406cd105c?auto=format&fit=crop&q=80&w=800', // Minecraft
-            'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&q=80&w=800', // Rust/Survival
-            'https://images.unsplash.com/photo-1605901309584-818e25960b8f?auto=format&fit=crop&q=80&w=800', // GTA/Cyberpunk vibes
-            'https://images.unsplash.com/photo-1593305841991-05c29736ce37?auto=format&fit=crop&q=80&w=800', // Terraria/2D vibes
+            'https://storage.googleapis.com/spite-cz/media/images/9r7g1mq34vjrvit68d060d618236148204581.jpg', // Minecraft
+            'https://images.squarespace-cdn.com/content/v1/602d246245658135031e4b2a/3377e689-cdd2-4701-ae01-3c1ece0e0e43/1920x1080+Base.png', // Rust/Survival
+            'https://www.gta-multiplayer.cz/screenshots/original/147033.jpg', // GTA/Cyberpunk vibes
+            'https://store-images.s-microsoft.com/image/apps.15385.70406876433810089.4beffaca-3fee-4154-a21f-ecd9b3bedbb3.14eef101-5fe5-4892-bc4f-c290d9d50d7c?q=90&w=480&h=270', // Terraria/2D vibes
         ],
         supportedGames: [
             {
                 name: 'Minecraft (Java & Bedrock)',
                 tag: 'Survival',
-                image: 'https://images.unsplash.com/photo-1627856014759-2bd0131245e8?auto=format&fit=crop&q=80&w=400',
+                image: 'https://storage.googleapis.com/spite-cz/media/images/9r7g1mq34vjrvit68d060d618236148204581.jpg',
             },
             {
                 name: 'Rust',
                 tag: 'Survival FPS',
-                image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=400',
+                image: 'https://images.squarespace-cdn.com/content/v1/602d246245658135031e4b2a/3377e689-cdd2-4701-ae01-3c1ece0e0e43/1920x1080+Base.png',
             },
             {
                 name: 'Grand Theft Auto V (FiveM)',
                 tag: 'Open World',
-                image: 'https://images.unsplash.com/photo-1595878715977-2e8f8df18ea8?auto=format&fit=crop&q=80&w=400',
+                image: 'https://www.gta-multiplayer.cz/screenshots/original/147033.jpg',
             },
             {
                 name: 'Terraria',
                 tag: 'Adventure',
-                image: 'https://images.unsplash.com/photo-1592155931584-901ac15763e3?auto=format&fit=crop&q=80&w=400',
+                image: 'https://store-images.s-microsoft.com/image/apps.15385.70406876433810089.4beffaca-3fee-4154-a21f-ecd9b3bedbb3.14eef101-5fe5-4892-bc4f-c290d9d50d7c?q=90&w=480&h=270',
             },
             {
                 name: 'Counter-Strike 2',
                 tag: 'Competitive',
-                image: 'https://images.unsplash.com/photo-1605901309584-818e25960b8f?auto=format&fit=crop&q=80&w=400',
+                image: 'https://gaming-cdn.com/images/products/13664/orig/counter-strike-2-pc-game-steam-cover.jpg?v=1695885435',
             },
             {
                 name: 'Ark: Survival Evolved',
                 tag: 'Survival',
-                image: 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&q=80&w=400',
+                image: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto:best/f_auto/dpr_2.0/store/software/switch/70010000010940/9a7907ab2658ed8fe077a2f093b773bd87e76b039fcce2a29afa36a7c72cfad4',
             },
             {
                 name: 'Palworld',
                 tag: 'Survival',
-                image: 'https://images.unsplash.com/photo-1642425149556-b6f90e9568d2?auto=format&fit=crop&q=80&w=400',
+                image: 'https://image.api.playstation.com/vulcan/ap/rnd/202405/2108/d976f5d6313a7174e5341d3a5e3f21559f56f86f40a71d2f.png',
             },
             {
                 name: 'Valheim',
                 tag: 'Co-op',
-                image: 'https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?auto=format&fit=crop&q=80&w=400',
+                image: 'https://img2.storyblok.com/f/157036/1920x1080/3dacf66710/news-2.jpg',
             },
             {
                 name: 'Project Zomboid',
                 tag: 'Zombie Survival',
-                image: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&q=80&w=400',
+                image: 'https://cdn.alza.cz/Foto/ImgGalery/Image/project-zomboid-cover2.jpg',
             },
         ],
         features: [
@@ -292,67 +292,71 @@ const GameLibrary = ({ games }: { games: GameSupport[] }) => {
     );
 
     return (
-        <section className='py-24 px-6 max-w-7xl mx-auto bg-neutral-950/65 border-y border-white/5'>
-            <div className='text-center mb-12'>
-                <h2 className='text-3xl font-bold mb-4'>Supported Games</h2>
-                <p className='text-neutral-400 mb-8'>
-                    Instantly deploy any of these titles with our 1-Click Installer.
-                </p>
+        <section className='py-24 bg-neutral-950/65 border-y border-white/5'>
+            <div className='max-w-7xl mx-auto px-6'>
+                <div className='text-center mb-12'>
+                    <h2 className='text-3xl font-bold mb-4'>Supported Games</h2>
+                    <p className='text-neutral-400 mb-8'>
+                        Instantly deploy any of these titles with our 1-Click Installer.
+                    </p>
 
-                <div className='max-w-md mx-auto relative'>
-                    <input
-                        type='text'
-                        placeholder='Search for your favorite game...'
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className='w-full bg-neutral-900 border border-neutral-700 text-white pl-12 pr-4 py-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all'
-                        style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                    />
-                    <div className='absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500'>
-                        <Magnifier width={18} height={18} />
+                    <div className='max-w-md mx-auto relative'>
+                        <input
+                            type='text'
+                            placeholder='Search for your favorite game...'
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className='w-full bg-neutral-900 border border-neutral-700 text-white pl-12 pr-4 py-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all'
+                            style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                        />
+                        <div className='absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500'>
+                            <Magnifier width={18} height={18} />
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className='overflow-hidden min-h-[300px]'>
-                <AnimatePresence mode='wait'>
-                    {filteredGames.length === 0 ? (
-                        <motion.div
-                            key='no-results'
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className='text-center py-10 text-neutral-500'
-                        >
-                            No games found matching &quot;{search}&quot;.
-                            <br />
-                            <span className='text-xs'>But you can likely host it via our Custom Docker container!</span>
-                        </motion.div>
-                    ) : filteredGames.length === 1 && filteredGames[0] ? (
-                        <motion.div
-                            key='single-game'
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className='flex justify-center'
-                        >
-                            <GameCard game={filteredGames[0]} />
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key='multiple-games'
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                        >
-                            <InfiniteMarquee speed={30} direction='right'>
-                                {filteredGames.map((game) => (
-                                    <GameCard key={game.name} game={game} />
-                                ))}
-                            </InfiniteMarquee>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                <div className='overflow-hidden min-h-[300px]'>
+                    <AnimatePresence mode='wait'>
+                        {filteredGames.length === 0 ? (
+                            <motion.div
+                                key='no-results'
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className='text-center py-10 text-neutral-500'
+                            >
+                                No games found matching &quot;{search}&quot;.
+                                <br />
+                                <span className='text-xs'>
+                                    But you can likely host it via our Custom Docker container!
+                                </span>
+                            </motion.div>
+                        ) : filteredGames.length === 1 && filteredGames[0] ? (
+                            <motion.div
+                                key='single-game'
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className='flex justify-center'
+                            >
+                                <GameCard game={filteredGames[0]} />
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key='multiple-games'
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                            >
+                                <InfiniteMarquee speed={30} direction='right'>
+                                    {filteredGames.map((game) => (
+                                        <GameCard key={game.name} game={game} />
+                                    ))}
+                                </InfiniteMarquee>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
         </section>
     );
@@ -394,282 +398,289 @@ export default function ServiceDetails() {
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay" />
                 <div className='absolute inset-0 bg-gradient-to-b from-black/50 via-black/70 to-black' />
             </div>
-            
+
             <div className='relative z-10'>
                 <Navbar />
 
-            {/* HERO SECTION */}
-            <section className='relative pt-32 pb-24 px-6 border-b border-neutral-900 overflow-hidden'>
-                {/* Background Image - Slightly darkened */}
-                <div className='absolute inset-0 z-0'>
-                    <img
-                        src={data.heroImage}
-                        alt='Background'
-                        className='w-full h-full object-cover opacity-35 blur-[2px]'
-                    />
-                    {/* Gradient overlay to ensure text readability - slightly darker */}
-                    <div className='absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40' />
-                </div>
-
-                <div className='relative z-10 max-w-7xl mx-auto'>
-                    <Link
-                        to='/hosting'
-                        className='inline-flex items-center gap-2 text-neutral-400 hover:text-white mb-8 text-sm font-bold uppercase tracking-wider transition-colors bg-black/50 backdrop-blur-md px-4 py-2 border border-white/10'
-                        style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                    >
-                        <ArrowLeft width={16} height={16} /> Back to Services
-                    </Link>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className='grid lg:grid-cols-2 gap-12'
-                    >
-                        <div>
-                            <h1 className='text-5xl md:text-7xl font-black uppercase mb-6 tracking-tight'>
-                                {data.title}
-                            </h1>
-                            <p className='text-xl font-medium text-white mb-6 border-l-4 border-brand pl-6'>
-                                {data.subtitle}
-                            </p>
-                            <p className='text-neutral-400 leading-relaxed mb-8 text-lg'>{data.description}</p>
-
-                            <div className='flex flex-wrap gap-4'>
-                            <ShimmerButton text='Deploy Now' onClick={scrollToPricing} />
-                            <button
-                                onClick={scrollToServices}
-                                className='px-8 py-4 border border-white/20 hover:bg-white hover:text-black font-bold uppercase text-sm tracking-widest transition-all flex items-center gap-2'
-                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                            >
-                                Our Services <ChevronRight width={16} height={16} />
-                            </button>
-                            </div>
-                        </div>
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* TECHNICAL SPECS BAR */}
-            <section className='bg-neutral-950 border-b border-neutral-900 py-8 relative z-20 shadow-xl'>
-                <div className='max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-4'>
-                    <SpecCard label='Processor' value={data.technical.cpu} icon={Cpu} />
-                    <SpecCard label='Memory' value={data.technical.ram} icon={Server} />
-                    <SpecCard label='Storage' value={data.technical.disk} icon={CircleCheck} />
-                    <SpecCard label='Network' value={data.technical.uplink} icon={AntennaSignal} />
-                </div>
-            </section>
-
-            {/* VISUAL SHOWCASE (GAMER VIBE) - Only for Game Hosting */}
-            {isGameHosting && data.showcaseImages && (
-                <section className='py-20 overflow-hidden'>
-                    <div className='max-w-7xl mx-auto px-6 mb-10 text-center'>
-                        <h2 className='text-2xl font-bold uppercase tracking-widest mb-2'>Immersive Worlds</h2>
-                        <p className='text-neutral-400'>Powered by Oasis Cloud infrastructure.</p>
+                {/* HERO SECTION */}
+                <section className='relative pt-32 pb-24 px-6 border-b border-neutral-900 overflow-hidden'>
+                    {/* Background Image - Slightly darkened */}
+                    <div className='absolute inset-0 z-0'>
+                        <img
+                            src={data.heroImage}
+                            alt='Background'
+                            className='w-full h-full object-cover opacity-35 blur-[2px]'
+                        />
+                        {/* Gradient overlay to ensure text readability - slightly darker */}
+                        <div className='absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40' />
                     </div>
-                    {/* Masonry / Grid Collage */}
-                    <div className='max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-4 h-[400px] md:h-[500px]'>
-                        <div className='col-span-2 row-span-2 relative rounded-2xl overflow-hidden group'>
-                            <img
-                                src={data.showcaseImages[0]}
-                                alt='Minecraft'
-                                className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-105'
-                            />
-                            <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6'>
-                                <span className='text-white font-bold text-xl'>Infinite Creations</span>
+
+                    <div className='relative z-10 max-w-7xl mx-auto'>
+                        <Link
+                            to='/hosting'
+                            className='inline-flex items-center gap-2 text-neutral-400 hover:text-white mb-8 text-sm font-bold uppercase tracking-wider transition-colors bg-black/50 backdrop-blur-md px-4 py-2 border border-white/10'
+                            style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                        >
+                            <ArrowLeft width={16} height={16} /> Back to Services
+                        </Link>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className='grid lg:grid-cols-2 gap-12'
+                        >
+                            <div>
+                                <h1 className='text-5xl md:text-7xl font-black uppercase mb-6 tracking-tight'>
+                                    {data.title}
+                                </h1>
+                                <p className='text-xl font-medium text-white mb-6 border-l-4 border-brand pl-6'>
+                                    {data.subtitle}
+                                </p>
+                                <p className='text-neutral-400 leading-relaxed mb-8 text-lg'>{data.description}</p>
+
+                                <div className='flex flex-wrap gap-4'>
+                                    <ShimmerButton text='Deploy Now' onClick={scrollToPricing} />
+                                    <button
+                                        onClick={scrollToServices}
+                                        className='px-8 py-4 border border-white/20 hover:bg-white hover:text-black font-bold uppercase text-sm tracking-widest transition-all flex items-center gap-2'
+                                        style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                                    >
+                                        Our Services <ChevronRight width={16} height={16} />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div className='relative rounded-2xl overflow-hidden group'>
-                            <img
-                                src={data.showcaseImages[1]}
-                                alt='Rust'
-                                className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-105'
-                            />
-                            <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6'>
-                                <span className='text-white font-bold'>Survival</span>
-                            </div>
-                        </div>
-                        <div className='relative rounded-2xl overflow-hidden group'>
-                            <img
-                                src={data.showcaseImages[2]}
-                                alt='GTA'
-                                className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-105'
-                            />
-                            <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6'>
-                                <span className='text-white font-bold'>Roleplay</span>
-                            </div>
-                        </div>
-                        <div className='col-span-2 relative rounded-2xl overflow-hidden group'>
-                            <img
-                                src={data.showcaseImages[3]}
-                                alt='Terraria'
-                                className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-105'
-                            />
-                            <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6'>
-                                <span className='text-white font-bold'>Adventure</span>
-                            </div>
-                        </div>
+                        </motion.div>
                     </div>
                 </section>
-            )}
 
-            {/* GAME LIBRARY (SEARCHABLE) */}
-            {data.supportedGames && <GameLibrary games={data.supportedGames} />}
+                {/* TECHNICAL SPECS BAR */}
+                <section className='bg-neutral-950 border-b border-neutral-900 py-8 relative z-20 shadow-xl'>
+                    <div className='max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-4'>
+                        <SpecCard label='Processor' value={data.technical.cpu} icon={Cpu} />
+                        <SpecCard label='Memory' value={data.technical.ram} icon={Server} />
+                        <SpecCard label='Storage' value={data.technical.disk} icon={CircleCheck} />
+                        <SpecCard label='Network' value={data.technical.uplink} icon={AntennaSignal} />
+                    </div>
+                </section>
 
-            {/* USE CASES (For VPS/Non-Game) */}
-            {data.useCases && (
-                <section className='py-24 px-6 max-w-7xl mx-auto bg-neutral-900/10'>
-                    <h2 className='text-3xl font-bold mb-12 text-center'>Perfect For Your Project</h2>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-                        {data.useCases.map((uc, i) => (
-                            <div key={i} className='flex gap-6 p-6 border border-neutral-800 rounded-xl bg-neutral-950'>
-                                <div className='text-brand shrink-0'>
-                                    <Terminal width={32} height={32} />
-                                </div>
-                                <div>
-                                    <h3 className='text-xl font-bold mb-2'>{uc.title}</h3>
-                                    <p className='text-neutral-400'>{uc.desc}</p>
+                {/* VISUAL SHOWCASE (GAMER VIBE) - Only for Game Hosting */}
+                {isGameHosting && data.showcaseImages && (
+                    <section className='py-20 overflow-hidden'>
+                        <div className='max-w-7xl mx-auto px-6 mb-10 text-center'>
+                            <h2 className='text-2xl font-bold uppercase tracking-widest mb-2'>Immersive Worlds</h2>
+                            <p className='text-neutral-400'>Powered by Oasis Cloud infrastructure.</p>
+                        </div>
+                        {/* Masonry / Grid Collage */}
+                        <div className='max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-4 h-[400px] md:h-[500px]'>
+                            <div className='col-span-2 row-span-2 relative rounded-2xl overflow-hidden group'>
+                                <img
+                                    src={data.showcaseImages[0]}
+                                    alt='Minecraft'
+                                    className='w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105'
+                                    style={{ objectFit: 'cover', objectPosition: 'center' }}
+                                />
+                                <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6'>
+                                    <span className='text-white font-bold text-xl'>Infinite Creations</span>
                                 </div>
                             </div>
+                            <div className='relative rounded-2xl overflow-hidden group'>
+                                <img
+                                    src={data.showcaseImages[1]}
+                                    alt='Rust'
+                                    className='w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105'
+                                    style={{ objectFit: 'cover', objectPosition: 'center' }}
+                                />
+                                <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6'>
+                                    <span className='text-white font-bold'>Survival</span>
+                                </div>
+                            </div>
+                            <div className='relative rounded-2xl overflow-hidden group'>
+                                <img
+                                    src={data.showcaseImages[2]}
+                                    alt='GTA'
+                                    className='w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105'
+                                    style={{ objectFit: 'cover', objectPosition: 'center' }}
+                                />
+                                <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6'>
+                                    <span className='text-white font-bold'>Roleplay</span>
+                                </div>
+                            </div>
+                            <div className='col-span-2 relative rounded-2xl overflow-hidden group'>
+                                <img
+                                    src={data.showcaseImages[3]}
+                                    alt='Terraria'
+                                    className='w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105'
+                                    style={{ objectFit: 'cover', objectPosition: 'center' }}
+                                />
+                                <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6'>
+                                    <span className='text-white font-bold'>Adventure</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* GAME LIBRARY (SEARCHABLE) */}
+                {data.supportedGames && <GameLibrary games={data.supportedGames} />}
+
+                {/* USE CASES (For VPS/Non-Game) */}
+                {data.useCases && (
+                    <section className='py-24 px-6 max-w-7xl mx-auto bg-neutral-900/10'>
+                        <h2 className='text-3xl font-bold mb-12 text-center'>Perfect For Your Project</h2>
+                        <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
+                            {data.useCases.map((uc, i) => (
+                                <div
+                                    key={i}
+                                    className='flex gap-6 p-6 border border-neutral-800 rounded-xl bg-neutral-950'
+                                >
+                                    <div className='text-brand shrink-0'>
+                                        <Terminal width={32} height={32} />
+                                    </div>
+                                    <div>
+                                        <h3 className='text-xl font-bold mb-2'>{uc.title}</h3>
+                                        <p className='text-neutral-400'>{uc.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* FEATURES GRID */}
+                <section className='py-24 px-6 max-w-7xl mx-auto border-t border-neutral-900'>
+                    <div className='flex flex-col md:flex-row justify-between items-end mb-16'>
+                        <div>
+                            <h2 className='text-3xl font-bold mb-4'>The Oasis Standard</h2>
+                            <p className='text-neutral-400 max-w-lg'>
+                                We don&apos;t charge extra for the essentials. Every deployment includes our enterprise
+                                standard suite.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                        {data.features.map((feature, i) => (
+                            <FeatureCard key={i} item={feature} index={i} />
                         ))}
                     </div>
                 </section>
-            )}
 
-            {/* FEATURES GRID */}
-            <section className='py-24 px-6 max-w-7xl mx-auto border-t border-neutral-900'>
-                <div className='flex flex-col md:flex-row justify-between items-end mb-16'>
-                    <div>
-                        <h2 className='text-3xl font-bold mb-4'>The Oasis Standard</h2>
-                        <p className='text-neutral-400 max-w-lg'>
-                            We don&apos;t charge extra for the essentials. Every deployment includes our enterprise
-                            standard suite.
+                {/* SLA & INFRASTRUCTURE */}
+                <section className='py-24 bg-neutral-900/30 border-y border-neutral-900 relative overflow-hidden'>
+                    <div className='absolute top-0 right-0 w-[500px] h-[500px] bg-brand/5 blur-[120px] rounded-full pointer-events-none' />
+
+                    <div className='max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-16 items-center'>
+                        <div>
+                            <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold uppercase tracking-wider mb-6'>
+                                <div className='w-2 h-2 rounded-full bg-green-500 animate-pulse' />
+                                Systems Operational
+                            </div>
+                            <h2 className='text-4xl font-bold mb-6'>Enterprise Reliability</h2>
+                            <div className='space-y-8'>
+                                <div>
+                                    <h3 className='text-xl font-bold text-white mb-2 flex items-center gap-2'>
+                                        <Shield className='text-brand' /> Anti-DDoS Mitigation
+                                    </h3>
+                                    <p className='text-neutral-400'>
+                                        Our network is scrubbed by Path.net with a 12Tbps capacity. Attacks are detected
+                                        and mitigated in under 1 second, ensuring your players never disconnect.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h3 className='text-xl font-bold text-white mb-2 flex items-center gap-2'>
+                                        <Power className='text-brand' /> Power Redundancy
+                                    </h3>
+                                    <p className='text-neutral-400'>
+                                        N+1 redundant UPS battery backups and onsite diesel generators ensure your
+                                        server stays online even during a total datacenter power grid failure.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h3 className='text-xl font-bold text-white mb-2 flex items-center gap-2'>
+                                        <LifeRing className='text-brand' /> 24/7 Expert Support
+                                    </h3>
+                                    <p className='text-neutral-400'>
+                                        Stuck? Our team of engineers is available 24/7 via Discord and Ticket. We
+                                        don&apos;t use bots; you get real humans who know code.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* SLA STATS */}
+                        <div className='grid grid-cols-1 gap-6'>
+                            <div className='bg-black border border-neutral-800 p-8 rounded-2xl relative overflow-hidden group hover:border-brand/30 transition-colors'>
+                                <div className='absolute top-0 right-0 p-32 bg-brand/10 blur-[80px] rounded-full group-hover:bg-brand/20 transition-colors' />
+                                <div className='relative z-10'>
+                                    <div className='text-6xl font-black text-white mb-2'>99.2%</div>
+                                    <div className='text-xl font-bold text-neutral-500 uppercase tracking-widest mb-4'>
+                                        Uptime SLA
+                                    </div>
+                                    <p className='text-neutral-400 text-sm'>
+                                        We financially guarantee our network availability. If we dip below 99.9%, you
+                                        get credited automatically.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className='bg-neutral-900 border border-neutral-800 p-8 rounded-2xl flex items-center justify-between'>
+                                <div>
+                                    <div className='text-3xl font-bold text-white flex items-center gap-2'>
+                                        <Globe width={24} /> Prague, CZ
+                                    </div>
+                                    <div className='text-neutral-500 text-sm'>Primary Datacenter</div>
+                                </div>
+                                <div className='h-12 w-[1px] bg-neutral-800' />
+                                <div>
+                                    <div className='text-3xl font-bold text-white flex items-center gap-2'>
+                                        <LayoutHeader width={24} /> &lt; 15ms
+                                    </div>
+                                    <div className='text-neutral-500 text-sm'>Avg. EU Latency</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* CTA */}
+                <section className='py-24 px-6 text-center'>
+                    <div className='max-w-3xl mx-auto'>
+                        <h2 className='text-4xl font-bold mb-6'>Ready to play?</h2>
+                        <p className='text-neutral-400 mb-10 text-lg'>
+                            Start your journey with Oasis Cloud today. Your server is just 60 seconds away.
                         </p>
-                    </div>
-                </div>
-
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                    {data.features.map((feature, i) => (
-                        <FeatureCard key={i} item={feature} index={i} />
-                    ))}
-                </div>
-            </section>
-
-            {/* SLA & INFRASTRUCTURE */}
-            <section className='py-24 bg-neutral-900/30 border-y border-neutral-900 relative overflow-hidden'>
-                <div className='absolute top-0 right-0 w-[500px] h-[500px] bg-brand/5 blur-[120px] rounded-full pointer-events-none' />
-
-                <div className='max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-16 items-center'>
-                    <div>
-                        <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold uppercase tracking-wider mb-6'>
-                            <div className='w-2 h-2 rounded-full bg-green-500 animate-pulse' />
-                            Systems Operational
-                        </div>
-                        <h2 className='text-4xl font-bold mb-6'>Enterprise Reliability</h2>
-                        <div className='space-y-8'>
-                            <div>
-                                <h3 className='text-xl font-bold text-white mb-2 flex items-center gap-2'>
-                                    <Shield className='text-brand' /> Anti-DDoS Mitigation
-                                </h3>
-                                <p className='text-neutral-400'>
-                                    Our network is scrubbed by Path.net with a 12Tbps capacity. Attacks are detected and
-                                    mitigated in under 1 second, ensuring your players never disconnect.
-                                </p>
-                            </div>
-                            <div>
-                                <h3 className='text-xl font-bold text-white mb-2 flex items-center gap-2'>
-                                    <Power className='text-brand' /> Power Redundancy
-                                </h3>
-                                <p className='text-neutral-400'>
-                                    N+1 redundant UPS battery backups and onsite diesel generators ensure your server
-                                    stays online even during a total datacenter power grid failure.
-                                </p>
-                            </div>
-                            <div>
-                                <h3 className='text-xl font-bold text-white mb-2 flex items-center gap-2'>
-                                    <LifeRing className='text-brand' /> 24/7 Expert Support
-                                </h3>
-                                <p className='text-neutral-400'>
-                                    Stuck? Our team of engineers is available 24/7 via Discord and Ticket. We don&apos;t
-                                    use bots; you get real humans who know code.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* SLA STATS */}
-                    <div className='grid grid-cols-1 gap-6'>
-                        <div className='bg-black border border-neutral-800 p-8 rounded-2xl relative overflow-hidden group hover:border-brand/30 transition-colors'>
-                            <div className='absolute top-0 right-0 p-32 bg-brand/10 blur-[80px] rounded-full group-hover:bg-brand/20 transition-colors' />
-                            <div className='relative z-10'>
-                                <div className='text-6xl font-black text-white mb-2'>99.9%</div>
-                                <div className='text-xl font-bold text-neutral-500 uppercase tracking-widest mb-4'>
-                                    Uptime SLA
-                                </div>
-                                <p className='text-neutral-400 text-sm'>
-                                    We financially guarantee our network availability. If we dip below 99.9%, you get
-                                    credited automatically.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className='bg-neutral-900 border border-neutral-800 p-8 rounded-2xl flex items-center justify-between'>
-                            <div>
-                                <div className='text-3xl font-bold text-white flex items-center gap-2'>
-                                    <Globe width={24} /> Prague, CZ
-                                </div>
-                                <div className='text-neutral-500 text-sm'>Primary Datacenter</div>
-                            </div>
-                            <div className='h-12 w-[1px] bg-neutral-800' />
-                            <div>
-                                <div className='text-3xl font-bold text-white flex items-center gap-2'>
-                                    <LayoutHeader width={24} /> &lt; 15ms
-                                </div>
-                                <div className='text-neutral-500 text-sm'>Avg. EU Latency</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA */}
-            <section className='py-24 px-6 text-center'>
-                <div className='max-w-3xl mx-auto'>
-                    <h2 className='text-4xl font-bold mb-6'>Ready to play?</h2>
-                    <p className='text-neutral-400 mb-10 text-lg'>
-                        Start your journey with Oasis Cloud today. Your server is just 60 seconds away.
-                    </p>
-                    <div className='inline-block'>
-                        <motion.button
-                            onClick={scrollToPricing}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className='relative overflow-hidden bg-transparent hover:border-brand hover:border-[1.5px] px-12 py-5 font-bold text-lg text-white group'
-                            style={{
-                                borderRadius: 'var(--button-border-radius, 0.5rem)',
-                                boxShadow: '0 0 20px color-mix(in srgb, var(--color-brand) 40%, transparent)',
-                            }}
-                        >
-                            {/* Brand color overlay that sweeps from right to left on hover */}
-                            <div
-                                className='absolute inset-y-0 right-0 bg-brand transition-all duration-300 ease-in-out w-full group-hover:w-0'
+                        <div className='inline-block'>
+                            <motion.button
+                                onClick={scrollToPricing}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className='relative overflow-hidden bg-transparent hover:border-brand hover:border-[1.5px] px-12 py-5 font-bold text-lg text-white group'
                                 style={{
                                     borderRadius: 'var(--button-border-radius, 0.5rem)',
+                                    boxShadow: '0 0 20px color-mix(in srgb, var(--color-brand) 40%, transparent)',
                                 }}
-                            />
+                            >
+                                {/* Brand color overlay that sweeps from right to left on hover */}
+                                <div
+                                    className='absolute inset-y-0 right-0 bg-brand transition-all duration-300 ease-in-out w-full group-hover:w-0'
+                                    style={{
+                                        borderRadius: 'var(--button-border-radius, 0.5rem)',
+                                    }}
+                                />
 
-                            <span className='relative z-10 flex items-center gap-2'>
-                                Create Server Now <ChevronRight width={16} height={16} />
-                            </span>
-                            <div className='absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0' />
-                        </motion.button>
+                                <span className='relative z-10 flex items-center gap-2'>
+                                    Create Server Now <ChevronRight width={16} height={16} />
+                                </span>
+                                <div className='absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0' />
+                            </motion.button>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Footer */}
-            <footer className='py-10 text-center text-neutral-600 text-sm border-t border-neutral-900 bg-neutral-950'>
-                &copy; 2025 Oasis Cloud. Built for Gamers, by Gamers.
-            </footer>
+                {/* Footer */}
+                <footer className='py-10 text-center text-neutral-600 text-sm border-t border-neutral-900 bg-neutral-950'>
+                    &copy; 2025 Oasis Cloud. Built for Gamers, by Gamers.
+                </footer>
             </div>
         </div>
     );

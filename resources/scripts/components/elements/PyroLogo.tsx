@@ -49,7 +49,7 @@ const Logo = ({ className, uniqueId }: { className?: string; uniqueId?: string }
     if (customLogoUrl) {
         // Check if it's an SVG by file extension or URL
         const isSvg = customLogoUrl.toLowerCase().endsWith('.svg') || customLogoUrl.includes('image/svg+xml');
-        
+
         if (isSvg) {
             // Use object tag for SVG to allow CSS styling
             return (

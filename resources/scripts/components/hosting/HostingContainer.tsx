@@ -2,19 +2,19 @@ import {
     ArrowRight,
     ArrowUpToLine,
     ChevronRight,
+    Cpu,
     Database,
+    FloppyDisk,
+    FolderOpen,
     Gear,
     Link as LinkIcon,
     Magnifier,
+    PlanetEarth,
     Play,
+    PlugConnection,
     Server,
     Shield,
     Thunderbolt,
-    Cpu,
-    FolderOpen,
-    FloppyDisk,
-    PlugConnection,
-    PlanetEarth,
 } from '@gravity-ui/icons';
 import { motion } from 'framer-motion';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -69,21 +69,22 @@ const HostingContainer = () => {
         '/api/client/hosting/categories',
         async (url: string) => {
             const response = await http.get(url);
-            return response.data.data || [
-                { name: 'Game', slug: 'game-server' },
-                { name: 'VPS', slug: 'vps' },
-            ];
+            return (
+                response.data.data || [
+                    { name: 'Game', slug: 'game-server' },
+                    { name: 'VPS', slug: 'vps' },
+                ]
+            );
         },
     );
 
     // Fetch billing discounts dynamically
-    const { data: billingDiscountsData } = useSWR<{ [categorySlug: string]: { month: number; quarter: number; 'half-year': number; year: number } }>(
-        '/api/client/hosting/billing-discounts',
-        async (url: string) => {
-            const response = await http.get(url);
-            return response.data.data || {};
-        },
-    );
+    const { data: billingDiscountsData } = useSWR<{
+        [categorySlug: string]: { month: number; quarter: number; 'half-year': number; year: number };
+    }>('/api/client/hosting/billing-discounts', async (url: string) => {
+        const response = await http.get(url);
+        return response.data.data || {};
+    });
 
     const categories = categoriesData || [
         { name: 'Game', slug: 'game-server' },
@@ -199,7 +200,7 @@ const HostingContainer = () => {
         if (!cycle) return 0;
 
         // Find current category slug
-        const currentCategory = categories.find(cat => cat.name === activeCategory);
+        const currentCategory = categories.find((cat) => cat.name === activeCategory);
         if (!currentCategory) return 0;
 
         const categoryDiscounts = billingDiscounts[currentCategory.slug] || {
@@ -794,10 +795,20 @@ const HostingContainer = () => {
                                         >
                                             {cycle.label}
                                             {(() => {
-                                                const currentCategory = categories.find(cat => cat.name === activeCategory);
+                                                const currentCategory = categories.find(
+                                                    (cat) => cat.name === activeCategory,
+                                                );
                                                 if (!currentCategory) return null;
-                                                const categoryDiscounts = billingDiscounts[currentCategory.slug] || { month: 0, quarter: 5, 'half-year': 10, year: 20 };
-                                                const discount = categoryDiscounts[cycle.interval as keyof typeof categoryDiscounts] || 0;
+                                                const categoryDiscounts = billingDiscounts[currentCategory.slug] || {
+                                                    month: 0,
+                                                    quarter: 5,
+                                                    'half-year': 10,
+                                                    year: 20,
+                                                };
+                                                const discount =
+                                                    categoryDiscounts[
+                                                        cycle.interval as keyof typeof categoryDiscounts
+                                                    ] || 0;
                                                 return discount > 0 ? (
                                                     <span className='block text-[9px] text-brand mt-1'>
                                                         -{discount}%
@@ -877,8 +888,9 @@ const HostingContainer = () => {
                                                 </div>
 
                                                 <ul className='space-y-3 mb-8 text-sm text-neutral-400'>
-                                                <li className='flex gap-2'>
-                                                        <Shield width={14} height={14} className='text-white' /> AMD Ryzen™ 9 9950X
+                                                    <li className='flex gap-2'>
+                                                        <Shield width={14} height={14} className='text-white' /> AMD
+                                                        Ryzen™ 9 9950X
                                                     </li>
                                                     <li className='flex gap-2'>
                                                         <Thunderbolt width={14} height={14} className='text-white' />{' '}
@@ -889,20 +901,24 @@ const HostingContainer = () => {
                                                         {formatMemory(plan.attributes.memory)} DDR5 RAM
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <FolderOpen width={14} height={14} className='text-white' /> Unlimited NVMe Storage
+                                                        <FolderOpen width={14} height={14} className='text-white' />{' '}
+                                                        Unlimited NVMe Storage
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <FloppyDisk width={14} height={14} className='text-white' /> 24 Free Backup Slots
+                                                        <FloppyDisk width={14} height={14} className='text-white' /> 24
+                                                        Free Backup Slots
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <PlugConnection width={14} height={14} className='text-white' /> 12 Port Allocations
+                                                        <PlugConnection width={14} height={14} className='text-white' />{' '}
+                                                        12 Port Allocations
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <PlanetEarth width={14} height={14} className='text-white' /> Free oasis.cloud subdomain
+                                                        <PlanetEarth width={14} height={14} className='text-white' />{' '}
+                                                        Free oasis.cloud subdomain
                                                     </li>
                                                     <li className='flex gap-2'>
-                                                        <Shield width={14} height={14} className='text-white' /> Always-On DDoS
-                                                        Protection
+                                                        <Shield width={14} height={14} className='text-white' />{' '}
+                                                        Always-On DDoS Protection
                                                     </li>
                                                 </ul>
 

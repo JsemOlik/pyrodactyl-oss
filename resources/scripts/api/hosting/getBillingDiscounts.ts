@@ -18,4 +18,3 @@ export default async (): Promise<BillingDiscounts> => {
             .catch(reject);
     });
 };
-

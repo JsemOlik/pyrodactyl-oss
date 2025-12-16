@@ -195,9 +195,9 @@ const SupportContainer = () => {
                         <div className='flex-1'>
                             <h2 className='text-xl sm:text-2xl font-bold text-white mb-2'>Need Help from Our Team?</h2>
                             <p className='text-sm sm:text-base text-zinc-300 leading-relaxed'>
-                                If you need support from one of our technicians or sales representatives, create a ticket, or join our
-                                Discord server. Our team is ready to assist you with any questions or issues you may
-                                have.
+                                If you need support from one of our technicians or sales representatives, create a
+                                ticket, or join our Discord server. Our team is ready to assist you with any questions
+                                or issues you may have.
                             </p>
                         </div>
                         <a

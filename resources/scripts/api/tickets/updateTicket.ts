@@ -1,4 +1,5 @@
 import http from '@/api/http';
+
 import { Ticket } from './getTickets';
 
 export interface UpdateTicketData {
