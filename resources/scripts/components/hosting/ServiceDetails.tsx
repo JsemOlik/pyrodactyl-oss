@@ -17,7 +17,7 @@ import {
 } from '@gravity-ui/icons';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import Navbar from '@/components/Navbar';
 
@@ -292,7 +292,7 @@ const GameLibrary = ({ games }: { games: GameSupport[] }) => {
     );
 
     return (
-        <section className='py-24 px-6 max-w-7xl mx-auto'>
+        <section className='py-24 px-6 max-w-7xl mx-auto bg-neutral-950/65 border-y border-white/5'>
             <div className='text-center mb-12'>
                 <h2 className='text-3xl font-bold mb-4'>Supported Games</h2>
                 <p className='text-neutral-400 mb-8'>
@@ -362,8 +362,17 @@ const GameLibrary = ({ games }: { games: GameSupport[] }) => {
 
 export default function ServiceDetails() {
     const { slug } = useParams<{ slug: string }>();
+    const navigate = useNavigate();
     const data = (slug && SERVICE_DATA[slug] ? SERVICE_DATA[slug] : SERVICE_DATA['game-hosting']) as ServiceData;
     const isGameHosting = slug === 'game-hosting' || !slug;
+
+    const scrollToPricing = () => {
+        navigate('/hosting#pricing');
+    };
+
+    const scrollToServices = () => {
+        navigate('/hosting#services');
+    };
 
     useEffect(() => {
         document.title = `${data.title} - Oasis Cloud`;
@@ -391,15 +400,15 @@ export default function ServiceDetails() {
 
             {/* HERO SECTION */}
             <section className='relative pt-32 pb-24 px-6 border-b border-neutral-900 overflow-hidden'>
-                {/* Background Image - Brightened per request (opacity-40) */}
+                {/* Background Image - Slightly darkened */}
                 <div className='absolute inset-0 z-0'>
                     <img
                         src={data.heroImage}
                         alt='Background'
-                        className='w-full h-full object-cover opacity-40 blur-[2px]'
+                        className='w-full h-full object-cover opacity-35 blur-[2px]'
                     />
-                    {/* Gradient overlay to ensure text readability */}
-                    <div className='absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30' />
+                    {/* Gradient overlay to ensure text readability - slightly darker */}
+                    <div className='absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40' />
                 </div>
 
                 <div className='relative z-10 max-w-7xl mx-auto'>
@@ -426,14 +435,14 @@ export default function ServiceDetails() {
                             <p className='text-neutral-400 leading-relaxed mb-8 text-lg'>{data.description}</p>
 
                             <div className='flex flex-wrap gap-4'>
-                                <Link
-                                    to='/hosting'
-                                    className='bg-brand text-white px-8 py-4 font-bold hover:bg-white hover:text-black transition-all shadow-[0_0_30px_rgba(var(--color-brand-rgb),0.4)] flex items-center gap-2'
-                                    style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
-                                >
-                                    Deploy Now <ChevronRight width={16} height={16} />
-                                </Link>
-                                <ShimmerButton text='Docs & API' />
+                            <ShimmerButton text='Deploy Now' onClick={scrollToPricing} />
+                            <button
+                                onClick={scrollToServices}
+                                className='px-8 py-4 border border-white/20 hover:bg-white hover:text-black font-bold uppercase text-sm tracking-widest transition-all flex items-center gap-2'
+                                style={{ borderRadius: 'var(--button-border-radius, 0.5rem)' }}
+                            >
+                                Our Services <ChevronRight width={16} height={16} />
+                            </button>
                             </div>
                         </div>
                     </motion.div>
@@ -452,7 +461,7 @@ export default function ServiceDetails() {
 
             {/* VISUAL SHOWCASE (GAMER VIBE) - Only for Game Hosting */}
             {isGameHosting && data.showcaseImages && (
-                <section className='py-20 bg-neutral-900/20 overflow-hidden'>
+                <section className='py-20 overflow-hidden'>
                     <div className='max-w-7xl mx-auto px-6 mb-10 text-center'>
                         <h2 className='text-2xl font-bold uppercase tracking-widest mb-2'>Immersive Worlds</h2>
                         <p className='text-neutral-400'>Powered by Oasis Cloud infrastructure.</p>
@@ -629,8 +638,9 @@ export default function ServiceDetails() {
                     <p className='text-neutral-400 mb-10 text-lg'>
                         Start your journey with Oasis Cloud today. Your server is just 60 seconds away.
                     </p>
-                    <Link to='/hosting' className='inline-block'>
+                    <div className='inline-block'>
                         <motion.button
+                            onClick={scrollToPricing}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className='relative overflow-hidden bg-transparent hover:border-brand hover:border-[1.5px] px-12 py-5 font-bold text-lg text-white group'
@@ -652,7 +662,7 @@ export default function ServiceDetails() {
                             </span>
                             <div className='absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0' />
                         </motion.button>
-                    </Link>
+                    </div>
                 </div>
             </section>
 

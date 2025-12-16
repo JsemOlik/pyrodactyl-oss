@@ -120,6 +120,18 @@ const HostingContainer = () => {
         const root = document.documentElement;
         root.style.setProperty('--button-border-radius', hostingButtonRadius);
 
+        // Handle hash-based scrolling from other pages
+        const hash = window.location.hash;
+        if (hash) {
+            // Small delay to ensure page is rendered
+            setTimeout(() => {
+                const element = document.querySelector(hash);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 100);
+        }
+
         return () => {
             // Reset to default when component unmounts (don't set anything, let it use default)
             root.style.removeProperty('--button-border-radius');
