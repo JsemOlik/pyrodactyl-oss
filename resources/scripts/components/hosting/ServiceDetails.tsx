@@ -379,8 +379,15 @@ export default function ServiceDetails() {
     }, [data.title]);
 
     return (
-        <div className='h-full min-h-screen bg-black text-white font-sans selection:bg-brand selection:text-white overflow-y-auto overflow-x-hidden -mx-2 -my-2 w-[calc(100%+1rem)]'>
-            <Navbar />
+        <div className='h-full min-h-screen bg-black text-white font-sans selection:bg-brand selection:text-white overflow-y-auto overflow-x-hidden -mx-2 -my-2 w-[calc(100%+1rem)] relative'>
+            {/* Background Ambience - Same as HostingContainer */}
+            <div className='fixed inset-0 z-0 pointer-events-none'>
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay" />
+                <div className='absolute inset-0 bg-gradient-to-b from-black/50 via-black/70 to-black' />
+            </div>
+            
+            <div className='relative z-10'>
+                <Navbar />
 
             {/* HERO SECTION */}
             <section className='relative pt-32 pb-24 px-6 border-b border-neutral-900 overflow-hidden'>
@@ -653,6 +660,7 @@ export default function ServiceDetails() {
             <footer className='py-10 text-center text-neutral-600 text-sm border-t border-neutral-900 bg-neutral-950'>
                 &copy; 2025 Oasis Cloud. Built for Gamers, by Gamers.
             </footer>
+            </div>
         </div>
     );
 }
