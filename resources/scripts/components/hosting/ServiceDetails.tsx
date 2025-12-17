@@ -259,7 +259,7 @@ const InfiniteMarquee = React.memo(
                     initial={{ x: direction === 'right' ? '0%' : '-50%' }}
                     transition={{ ease: 'linear', duration: speed, repeat: Infinity, repeatType: 'loop' }}
                 >
-                    {children} {children}
+                    {children} {children} {children} {children}
                 </motion.div>
             </div>
         );
@@ -271,6 +271,10 @@ InfiniteMarquee.displayName = 'InfiniteMarquee';
 const GameLibrary = ({ games }: { games: GameSupport[] }) => {
     const [search, setSearch] = useState('');
     const filteredGames = games.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()));
+
+    // Split games into two halves
+    const firstHalf = filteredGames.slice(0, Math.ceil(filteredGames.length / 2));
+    const secondHalf = filteredGames.slice(Math.ceil(filteredGames.length / 2));
 
     const GameCard = ({ game }: { game: GameSupport }) => (
         <div className='group relative w-[280px] shrink-0 aspect-[4/3] rounded-xl overflow-hidden cursor-pointer'>
@@ -293,8 +297,8 @@ const GameLibrary = ({ games }: { games: GameSupport[] }) => {
 
     return (
         <section className='py-24 bg-neutral-950/65 border-y border-white/5'>
-            <div className='max-w-7xl mx-auto px-6'>
-                <div className='text-center mb-12'>
+            <div className='max-w-7xl mx-auto px-6 mb-12'>
+                <div className='text-center'>
                     <h2 className='text-3xl font-bold mb-4'>Supported Games</h2>
                     <p className='text-neutral-400 mb-8'>
                         Instantly deploy any of these titles with our 1-Click Installer.
@@ -314,50 +318,72 @@ const GameLibrary = ({ games }: { games: GameSupport[] }) => {
                         </div>
                     </div>
                 </div>
-
-                <div className='overflow-hidden min-h-[300px]'>
-                    <AnimatePresence mode='wait'>
-                        {filteredGames.length === 0 ? (
-                            <motion.div
-                                key='no-results'
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                className='text-center py-10 text-neutral-500'
-                            >
-                                No games found matching &quot;{search}&quot;.
-                                <br />
-                                <span className='text-xs'>
-                                    But you can likely host it via our Custom Docker container!
-                                </span>
-                            </motion.div>
-                        ) : filteredGames.length === 1 && filteredGames[0] ? (
-                            <motion.div
-                                key='single-game'
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className='flex justify-center'
-                            >
-                                <GameCard game={filteredGames[0]} />
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key='multiple-games'
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                            >
-                                <InfiniteMarquee speed={30} direction='right'>
-                                    {filteredGames.map((game) => (
-                                        <GameCard key={game.name} game={game} />
-                                    ))}
-                                </InfiniteMarquee>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
             </div>
+
+            <AnimatePresence mode='wait'>
+                {filteredGames.length === 0 ? (
+                    <motion.div
+                        key='no-results'
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className='text-center py-10 text-neutral-500'
+                    >
+                        No games found matching &quot;{search}&quot;.
+                        <br />
+                        <span className='text-xs'>But you can likely host it via our Custom Docker container!</span>
+                    </motion.div>
+                ) : search && filteredGames.length > 0 && filteredGames[0] ? (
+                    // When searching, show single centered game without scrolling
+                    <motion.div
+                        key='search-result'
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                        className='flex justify-center py-10 min-h-[400px]'
+                    >
+                        <GameCard game={filteredGames[0]} />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key='scrolling-games'
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className='space-y-6 min-h-[400px]'
+                    >
+                        {/* First row - scrolls right with first half of games */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: 0.05 }}
+                            className='w-full overflow-hidden'
+                        >
+                            <InfiniteMarquee speed={30} direction='right'>
+                                {firstHalf.map((game) => (
+                                    <GameCard key={game.name} game={game} />
+                                ))}
+                            </InfiniteMarquee>
+                        </motion.div>
+                        {/* Second row - scrolls left with second half of games */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: 0.1 }}
+                            className='w-full overflow-hidden'
+                        >
+                            <InfiniteMarquee speed={30} direction='left'>
+                                {secondHalf.map((game) => (
+                                    <GameCard key={game.name} game={game} />
+                                ))}
+                            </InfiniteMarquee>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </section>
     );
 };
