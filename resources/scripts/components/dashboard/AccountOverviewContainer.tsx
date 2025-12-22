@@ -712,7 +712,7 @@ const AccountOverviewContainer = () => {
                     >
                         <ContentBox title={'Panel Version'}>
                             <p className='text-sm mb-4 text-zinc-300'>
-                                This is useful to provide Oasis staff if you run into an unexpected issue.
+                                This is useful to provide Oasis staff if you run into an unexpected issue. Oh yeah!
                             </p>
                             <div className='flex flex-col gap-4'>
                                 <Code>
