@@ -200,7 +200,7 @@ const SupportContainer = () => {
                                 or issues you may have.
                             </p>
                         </div>
-                        <a
+                        {/* <a
                             href='https://discord.gg/UhuYKKK2uM'
                             target='_blank'
                             rel='noopener noreferrer'
@@ -209,7 +209,7 @@ const SupportContainer = () => {
                         >
                             <DiscordLogo className='w-5 h-5 flex-shrink-0' />
                             <span>Join Discord</span>
-                        </a>
+                        </a> */}
                         {!showTicketForm && (
                             <button
                                 onClick={() => setShowTicketForm(true)}
