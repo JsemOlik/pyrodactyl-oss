@@ -50,4 +50,16 @@ class ServerController extends ClientApiController
         $controller = app($controllerClass);
         return $controller->__invoke($request, $server);
     }
+
+    public function websocket(GetServerRequest $request, Server $server)
+    {
+        $server->loadMissing('node');
+
+        $daemonType = $server->node?->daemonType ?? 'elytra';
+        $controllers = DaemonType::allWebsockets();
+        $controllerClass = $controllers[$daemonType];
+
+        $controller = app($controllerClass);
+        return $controller->__invoke($request, $server);
+    }
 }

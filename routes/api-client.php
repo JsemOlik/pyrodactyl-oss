@@ -120,7 +120,7 @@ Route::group([
     ],
 ], function () {
     Route::get('/', [Client\Servers\ServerController::class, 'index'])->name('api:client:server.view');
-    Route::get('/websocket', Client\Servers\WebsocketController::class)->name('api:client:server.ws');
+    Route::get('/websocket', [Client\ServerController::class, 'websocket'])->name('api:client:server.ws');
     Route::get('/resources', Client\Servers\ResourceUtilizationController::class)->name('api:client:server.resources');
     Route::get('/activity', Client\Servers\ActivityLogController::class)->name('api:client:server.activity');
     Route::get('/billing-portal', [Client\Servers\ServerController::class, 'billingPortal'])->name('api:client:server.billing-portal');
