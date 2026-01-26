@@ -22,6 +22,11 @@ enum DaemonType: string
         self::ELYTRA->value => \Pterodactyl\Http\Controllers\Api\Client\Servers\Elytra\WebsocketController::class,
     ];
 
+    private const ACTIVITY_LOG_MAP = [
+        self::WINGS->value => \Pterodactyl\Http\Controllers\Api\Client\Servers\Wings\ActivityLogController::class,
+        self::ELYTRA->value => \Pterodactyl\Http\Controllers\Api\Client\Servers\Elytra\ActivityLogController::class,
+    ];
+
     public static function all(): array
     {
         return array_column(self::cases(), 'value', 'value');
@@ -35,6 +40,11 @@ enum DaemonType: string
     public static function allWebsockets(): array
     {
         return self::WEBSOCKET_MAP;
+    }
+
+    public static function allActivityLogs(): array
+    {
+        return self::ACTIVITY_LOG_MAP;
     }
 
     public static function allClass(): array

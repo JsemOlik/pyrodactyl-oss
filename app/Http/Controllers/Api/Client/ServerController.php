@@ -62,4 +62,16 @@ class ServerController extends ClientApiController
         $controller = app($controllerClass);
         return $controller->__invoke($request, $server);
     }
+
+    public function activityLog(GetServerRequest $request, Server $server)
+    {
+        $server->loadMissing('node');
+
+        $daemonType = $server->node?->daemonType ?? 'elytra';
+        $controllers = DaemonType::allActivityLogs();
+        $controllerClass = $controllers[$daemonType];
+
+        $controller = app($controllerClass);
+        return $controller->__invoke($request, $server);
+    }
 }

@@ -122,7 +122,7 @@ Route::group([
     Route::get('/', [Client\Servers\ServerController::class, 'index'])->name('api:client:server.view');
     Route::get('/websocket', [Client\ServerController::class, 'websocket'])->name('api:client:server.ws');
     Route::get('/resources', [Client\ServerController::class, 'resources'])->name('api:client:server.resources');
-    Route::get('/activity', Client\Servers\ActivityLogController::class)->name('api:client:server.activity');
+    Route::get('/activity', [Client\ServerController::class, 'activityLog'])->name('api:client:server.activity');
     Route::get('/billing-portal', [Client\Servers\ServerController::class, 'billingPortal'])->name('api:client:server.billing-portal');
 
     Route::post('/command', [Client\Servers\CommandController::class, 'index']);
