@@ -193,7 +193,7 @@ Route::group([
         Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
     });
 
-        Route::get('/', [Client\ServerController::class, 'index'])->name('api.client.servers.daemonType');
+    Route::get('/', [Client\ServerController::class, 'index'])->name('api.client.servers.daemonType');
     Route::get('/resources', [Client\ServerController::class, 'resources'])->name('api.client.servers.resources');
 
     Route::group(['prefix' => '/subdomain'], function () {
