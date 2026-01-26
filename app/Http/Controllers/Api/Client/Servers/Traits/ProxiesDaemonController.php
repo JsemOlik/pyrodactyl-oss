@@ -34,7 +34,9 @@ trait ProxiesDaemonController
 
         $server->loadMissing('node');
 
-        $daemonType = ucfirst($server->node?->daemonType ?? 'elytra');
+        // Get daemon type from node, fallback to 'elytra'
+        $rawDaemonType = $server->node?->daemonType ?? $server->node?->daemon_type ?? 'elytra';
+        $daemonType = ucfirst(strtolower($rawDaemonType));
         $controllerClass = "Pterodactyl\\Http\\Controllers\\Api\\Client\\Servers\\{$daemonType}\\{$controllerName}";
 
         if (!class_exists($controllerClass)) {
