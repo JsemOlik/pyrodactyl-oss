@@ -11,6 +11,7 @@ use Pterodactyl\Http\Middleware\Api\Client\Server\ResourceBelongsToServer;
 use Pterodactyl\Http\Middleware\Api\Client\Server\AuthenticateServerAccess;
 use Pterodactyl\Http\Controllers\Api\Client\ServersOrderController;
 use Pterodactyl\Models\Announcement;
+use Pterodactyl\Http\Middleware\ResolveDaemonController;
 
 /*
 |--------------------------------------------------------------------------
@@ -117,6 +118,7 @@ Route::group([
         ServerSubject::class,
         AuthenticateServerAccess::class,
         ResourceBelongsToServer::class,
+        ResolveDaemonController::class,
     ],
 ], function () {
     Route::get('/', [Client\Servers\ServerController::class, 'index'])->name('api:client:server.view');
