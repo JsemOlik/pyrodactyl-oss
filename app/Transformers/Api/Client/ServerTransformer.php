@@ -112,8 +112,7 @@ class ServerTransformer extends BaseClientTransformer
         return $this->collection($server->allocations, $transformer, Allocation::RESOURCE_NAME);
     }
 
-<<<<<<< HEAD
-    return $this->collection($server->subusers, $this->makeTransformer(SubuserTransformer::class), Subuser::RESOURCE_NAME);
+      return $this->collection($server->subusers, $this->makeTransformer(SubuserTransformer::class), Subuser::RESOURCE_NAME);
   }
 
   /**
@@ -131,7 +130,7 @@ class ServerTransformer extends BaseClientTransformer
 
     return $this->item($subdomain, $this->makeTransformer(ServerSubdomainTransformer::class), ServerSubdomain::RESOURCE_NAME);
   }
-=======
+
     /**
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
      */
@@ -171,5 +170,4 @@ class ServerTransformer extends BaseClientTransformer
 
         return $this->collection($server->subusers, $this->makeTransformer(SubuserTransformer::class), Subuser::RESOURCE_NAME);
     }
->>>>>>> upstream/main
 }
