@@ -112,11 +112,6 @@ class ServerTransformer extends BaseClientTransformer
         return $this->collection($server->allocations, $transformer, Allocation::RESOURCE_NAME);
     }
 
-    public function includeSubusers(Server $server): Collection
-    {
-        return $this->collection($server->subusers, $this->makeTransformer(SubuserTransformer::class), Subuser::RESOURCE_NAME);
-    }
-
     /**
      * Returns the active subdomain associated with this server.
      *
