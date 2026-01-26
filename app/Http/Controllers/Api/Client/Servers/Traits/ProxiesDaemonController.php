@@ -29,7 +29,7 @@ trait ProxiesDaemonController
         }
 
         if (!$request) {
-            $request = request();
+            abort(500, 'Request not found in parameters');
         }
 
         $server->loadMissing('node');
@@ -38,7 +38,7 @@ trait ProxiesDaemonController
         $controllerClass = "Pterodactyl\\Http\\Controllers\\Api\\Client\\Servers\\{$daemonType}\\{$controllerName}";
 
         if (!class_exists($controllerClass)) {
-            abort(500, "Controller {$controllerClass} does not exist");
+            abort(404, "This feature is not available for {$daemonType} servers");
         }
 
         $controller = app($controllerClass);
