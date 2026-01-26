@@ -86,4 +86,3 @@ class FileController extends ClientApiController
         return $this->proxyToDaemonController('FileController', $method, $parameters);
     }
 }
-}
