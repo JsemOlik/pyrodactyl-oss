@@ -2,6 +2,10 @@ import http, { FractalResponseData, FractalResponseList } from '@/api/http';
 import { ServerEggVariable, ServerStatus } from '@/api/server/types';
 import { rawDataToServerAllocation, rawDataToServerEggVariable } from '@/api/transformers';
 
+// import { getGlobalDaemonType } from '@/api/server/getServer';
+
+let globalDaemonType: string | null = null;
+
 export interface Allocation {
     id: number;
     ip: string;
@@ -56,8 +60,12 @@ export interface Server {
     variables: ServerEggVariable[];
     allocations: Allocation[];
     egg: string;
+<<<<<<< HEAD
     nest: number;
     active_subdomain?: ServerSubdomain | null;
+=======
+    daemonType: string;
+>>>>>>> upstream/main
 }
 
 export const rawDataToServerObject = ({ attributes: data }: FractalResponseData): Server => ({
@@ -86,6 +94,7 @@ export const rawDataToServerObject = ({ attributes: data }: FractalResponseData)
         rawDataToServerAllocation,
     ),
     egg: data.egg,
+<<<<<<< HEAD
     nest: data.nest,
     active_subdomain: (() => {
         const subdomainRel = data.relationships?.active_subdomain;
@@ -110,18 +119,44 @@ export const rawDataToServerObject = ({ attributes: data }: FractalResponseData)
         }
         return null;
     })(),
+=======
+    daemonType: data.daemonType,
+>>>>>>> upstream/main
 });
 
-export default (uuid: string): Promise<[Server, string[]]> => {
-    return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${uuid}`)
-            .then(({ data }) =>
-                resolve([
-                    rawDataToServerObject(data),
+export default async (uuid: string): Promise<[Server, string[]]> => {
+    let daemonType_api = 'elytra';
+    return http
+        .get(`/api/client/servers/${uuid}`)
+        .then((response) => {
+            daemonType_api = response.data?.meta.daemonType;
+            const daemonType: string = response.data?.meta.daemonType;
 
-                    data.meta?.is_server_owner ? ['*'] : data.meta?.user_permissions || [],
-                ]),
-            )
-            .catch(reject);
-    });
+            if (daemonType) {
+                globalDaemonType = daemonType;
+            }
+
+            return http.get(`/api/client/servers/${daemonType}/${uuid}`);
+        })
+        .then((response) => {
+            const payload = response.data;
+
+            const server = rawDataToServerObject(payload);
+            server.daemonType = daemonType_api;
+
+            const permissions = payload.meta?.is_server_owner
+                ? ['*']
+                : (payload.meta?.user_permissions as string[] | undefined) || [];
+
+            return [server, permissions] as [Server, string[]];
+        })
+        .catch((error) => {
+            console.error('Failed to load server:', error);
+            throw error;
+        });
+};
+
+export const getGlobalDaemonType = (): string | null => globalDaemonType;
+export const setGlobalDaemonType = (type: string): void => {
+    globalDaemonType = type;
 };

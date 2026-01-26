@@ -50,7 +50,11 @@ public function index(Request $request): View
             'users.id',
             'users.username',
             'users.email',
+<<<<<<< HEAD
             'users.credits_balance',
+=======
+            'users.use_totp',
+>>>>>>> upstream/main
             'users.created_at',
             'users.updated_at',
         ])
