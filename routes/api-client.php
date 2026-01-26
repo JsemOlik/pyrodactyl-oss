@@ -119,7 +119,6 @@ Route::group([
         ResourceBelongsToServer::class,
     ],
 ], function () {
-<<<<<<< HEAD
     Route::get('/', [Client\Servers\ServerController::class, 'index'])->name('api:client:server.view');
     Route::get('/websocket', Client\Servers\WebsocketController::class)->name('api:client:server.ws');
     Route::get('/resources', Client\Servers\ResourceUtilizationController::class)->name('api:client:server.resources');
@@ -193,10 +192,9 @@ Route::group([
         Route::post('/allocations/{allocation}/primary', [Client\Servers\NetworkAllocationController::class, 'setPrimary']);
         Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
     });
-=======
-    Route::get('/', [Client\ServerController::class, 'index'])->name('api.client.servers.daemonType');
+
+        Route::get('/', [Client\ServerController::class, 'index'])->name('api.client.servers.daemonType');
     Route::get('/resources', [Client\ServerController::class, 'resources'])->name('api.client.servers.resources');
->>>>>>> upstream/main
 
     Route::group(['prefix' => '/subdomain'], function () {
         Route::get('/', [Elytra\SubdomainController::class, 'index']);
