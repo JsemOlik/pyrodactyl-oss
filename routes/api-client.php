@@ -195,6 +195,35 @@ Route::group([
         Route::delete('/allocations/{allocation}', [Client\Servers\NetworkAllocationController::class, 'delete']);
     });
 
+    Route::group(['prefix' => '/users'], function () {
+        Route::get('/', [Client\Servers\SubuserController::class, 'index']);
+        Route::post('/', [Client\Servers\SubuserController::class, 'store']);
+        Route::get('/{user}', [Client\Servers\SubuserController::class, 'view']);
+        Route::post('/{user}', [Client\Servers\SubuserController::class, 'update']);
+        Route::delete('/{user}', [Client\Servers\SubuserController::class, 'delete']);
+    });
+
+    Route::group(['prefix' => '/backups'], function () {
+        Route::get('/', [Client\Servers\BackupController::class, 'index']);
+        Route::post('/', [Client\Servers\BackupController::class, 'store']);
+        Route::get('/{backup}', [Client\Servers\BackupController::class, 'view']);
+        Route::get('/{backup}/download', [Client\Servers\BackupController::class, 'download']);
+        Route::post('/{backup}/restore', [Client\Servers\BackupController::class, 'restore']);
+        Route::post('/{backup}/lock', [Client\Servers\BackupController::class, 'toggleLock']);
+        Route::delete('/{backup}', [Client\Servers\BackupController::class, 'delete']);
+    });
+
+    Route::group(['prefix' => '/startup'], function () {
+        Route::get('/', [Client\Servers\StartupController::class, 'index']);
+        Route::put('/variable', [Client\Servers\StartupController::class, 'update']);
+    });
+
+    Route::group(['prefix' => '/settings'], function () {
+        Route::post('/rename', [Client\Servers\SettingsController::class, 'rename']);
+        Route::post('/reinstall', [Client\Servers\SettingsController::class, 'reinstall']);
+        Route::put('/docker-image', [Client\Servers\SettingsController::class, 'dockerImage']);
+    });
+
     Route::get('/', [Client\ServerController::class, 'index'])->name('api.client.servers.daemonType');
     Route::get('/resources', [Client\ServerController::class, 'resources'])->name('api.client.servers.resources');
 
