@@ -169,7 +169,7 @@ Route::group([
         Route::post('/create-folder', [Client\Servers\FileController::class, 'create']);
         Route::post('/chmod', [Client\Servers\FileController::class, 'chmod']);
         Route::post('/pull', [Client\Servers\FileController::class, 'pull'])->middleware(['throttle:10,5']);
-        Route::get('/upload', Client\Servers\FileUploadController::class);
+        Route::get('/upload', [Client\ServerController::class, 'fileUpload']);
     });
 
     Route::group(['prefix' => '/schedules'], function () {

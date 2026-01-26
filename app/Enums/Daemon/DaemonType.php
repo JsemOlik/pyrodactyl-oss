@@ -27,6 +27,11 @@ enum DaemonType: string
         self::ELYTRA->value => \Pterodactyl\Http\Controllers\Api\Client\Servers\Elytra\ActivityLogController::class,
     ];
 
+    private const FILE_UPLOAD_MAP = [
+        self::WINGS->value => \Pterodactyl\Http\Controllers\Api\Client\Servers\Wings\FileUploadController::class,
+        self::ELYTRA->value => \Pterodactyl\Http\Controllers\Api\Client\Servers\Elytra\FileUploadController::class,
+    ];
+
     public static function all(): array
     {
         return array_column(self::cases(), 'value', 'value');
@@ -45,6 +50,11 @@ enum DaemonType: string
     public static function allActivityLogs(): array
     {
         return self::ACTIVITY_LOG_MAP;
+    }
+
+    public static function allFileUploads(): array
+    {
+        return self::FILE_UPLOAD_MAP;
     }
 
     public static function allClass(): array
