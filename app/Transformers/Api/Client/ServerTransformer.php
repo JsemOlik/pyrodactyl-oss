@@ -17,7 +17,7 @@ use Pterodactyl\Services\Servers\StartupCommandService;
 
 class ServerTransformer extends BaseClientTransformer
 {
-  protected array $defaultIncludes = ['allocations', 'variables', 'active_subdomain'];
+    protected array $defaultIncludes = ['allocations', 'variables', 'active_subdomain'];
 
     protected array $availableIncludes = ['egg', 'subusers'];
 
@@ -112,24 +112,26 @@ class ServerTransformer extends BaseClientTransformer
         return $this->collection($server->allocations, $transformer, Allocation::RESOURCE_NAME);
     }
 
-      return $this->collection($server->subusers, $this->makeTransformer(SubuserTransformer::class), Subuser::RESOURCE_NAME);
-  }
-
-  /**
-   * Returns the active subdomain associated with this server.
-   *
-   * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
-   */
-  public function includeActiveSubdomain(Server $server): Item|NullResource
-  {
-    $subdomain = $server->activeSubdomain;
-    
-    if (!$subdomain) {
-      return $this->null();
+    public function includeSubusers(Server $server): Collection
+    {
+        return $this->collection($server->subusers, $this->makeTransformer(SubuserTransformer::class), Subuser::RESOURCE_NAME);
     }
 
-    return $this->item($subdomain, $this->makeTransformer(ServerSubdomainTransformer::class), ServerSubdomain::RESOURCE_NAME);
-  }
+    /**
+     * Returns the active subdomain associated with this server.
+     *
+     * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
+     */
+    public function includeActiveSubdomain(Server $server): Item|NullResource
+    {
+        $subdomain = $server->activeSubdomain;
+
+        if (!$subdomain) {
+            return $this->null();
+        }
+
+        return $this->item($subdomain, $this->makeTransformer(ServerSubdomainTransformer::class), ServerSubdomain::RESOURCE_NAME);
+    }
 
     /**
      * @throws \Pterodactyl\Exceptions\Transformer\InvalidTransformerLevelException
