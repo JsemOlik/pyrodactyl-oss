@@ -45,14 +45,9 @@ $(document).ready(function() {
 });
 
 let lastActiveBox = null;
-<<<<<<< HEAD
 let currentNode = null;
 
-$(document).on('click', function (event) {
-=======
-$(document).on('click', function(event) {
->>>>>>> upstream/main
-    if (lastActiveBox !== null) {
+$(document).on('click', function (event) {    if (lastActiveBox !== null) {
         lastActiveBox.removeClass('box-primary');
     }
 
@@ -61,7 +56,6 @@ $(document).on('click', function(event) {
 });
 $('#pNodeId').on('change', function() {
     currentNode = $(this).val();
-<<<<<<< HEAD
     filterAndUpdateAllocations();
 });
 
@@ -71,12 +65,7 @@ function filterAndUpdateAllocations() {
     const selectedNestId = $('#pNestId').val();
     const selectedEggId = $('#pEggId').val();
     
-    $.each(Pterodactyl.nodeData, function (i, v) {
-=======
-
-    $.each(Pyrodactyl.nodeData, function(i, v) {
->>>>>>> upstream/main
-        if (v.id == currentNode) {
+    $.each(Pyrodactyl.nodeData, function (i, v) {        if (v.id == currentNode) {
             let filteredAllocations = v.allocations;
             
             // Filter allocations based on nest/egg restrictions if both are selected
