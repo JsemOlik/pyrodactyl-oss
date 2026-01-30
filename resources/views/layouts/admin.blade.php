@@ -128,12 +128,14 @@
                             </a>
                         </li>
                         <li>
-                        <li><a href="{{ route('index') }}" data-toggle="tooltip" data-placement="bottom"
-                                title="Exit Admin Control"><i class="fa fa-server"></i></a></li>
+                            <a href="{{ route('index') }}" data-toggle="tooltip" data-placement="bottom" title="Exit Admin Control">
+                                <i class="fa fa-server"></i>
+                            </a>
                         </li>
                         <li>
-                        <li><a href="{{ route('auth.logout') }}" id="logoutButton" data-toggle="tooltip"
-                                data-placement="bottom" title="Logout"><i class="fa fa-sign-out"></i></a></li>
+                            <a href="{{ route('auth.logout') }}" id="logoutButton" data-toggle="tooltip" data-placement="bottom" title="Logout">
+                                <i class="fa fa-sign-out"></i>
+                            </a>
                         </li>
                     </ul>
                 </div>
@@ -143,27 +145,27 @@
             <section class="sidebar">
                 <ul class="sidebar-menu">
                     <li class="header">BASIC ADMINISTRATION</li>
-                    <li class="{{ Route::currentRouteName() !== 'admin.index' ?: 'active' }}">
+                    <li class="{{ Route::currentRouteName() === 'admin.index' ? 'active' : '' }}">
                         <a href="{{ route('admin.index') }}">
                             <i class="bi bi-house-fill"></i> <span>Overview</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.settings') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.settings') ? 'active' : '' }}">
                         <a href="{{ route('admin.settings')}}">
                             <i class="bi bi-gear-fill"></i> <span>Settings</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.api') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.api') ? 'active' : '' }}">
                         <a href="{{ route('admin.api.index')}}">
                             <i class="bi bi-globe"></i> <span>Application API</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.announcements') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.announcements') ? 'active' : '' }}">
                         <a href="{{ route('admin.announcements.index') }}">
                             <i class="bi bi-megaphone-fill"></i> <span>Announcements</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.themes') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.themes') ? 'active' : '' }}">
                         <a href="{{ route('admin.themes.index')}}">
                             <i class="bi bi-palette-fill"></i> <span>Theme</span>
                         </a>
@@ -200,44 +202,44 @@
                         </a>
                     </li>
                     <li class="header">MANAGEMENT</li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.databases') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.databases') ? 'active' : '' }}">
                         <a href="{{ route('admin.databases') }}">
                             <i class="bi bi-database-fill"></i> <span>Databases</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.locations') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.locations') ? 'active' : '' }}">
                         <a href="{{ route('admin.locations') }}">
                             <i class="bi bi-globe-americas"></i> <span>Locations</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.nodes') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.nodes') ? 'active' : '' }}">
                         <a href="{{ route('admin.nodes') }}">
                             <i class="bi bi-hdd-fill"></i> <span>Nodes</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.servers') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.servers') ? 'active' : '' }}">
                         <a href="{{ route('admin.servers') }}">
                             <i class="bi bi-hdd-stack-fill"></i> <span>Servers</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.users') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.users') ? 'active' : '' }}">
                         <a href="{{ route('admin.users') }}">
                             <i class="bi bi-people-fill"></i> <span>Users</span>
                         </a>
                     </li>
                     <li class="header">SERVICE MANAGEMENT</li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.mounts') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.mounts') ? 'active' : '' }}">
                         <a href="{{ route('admin.mounts') }}">
                             <i class="bi bi-magic"></i> <span>Mounts</span>
                         </a>
                     </li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.nests') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.nests') ? 'active' : '' }}">
                         <a href="{{ route('admin.nests') }}">
                             <i class="bi bi-egg-fill"></i> <span>Nests</span>
                         </a>
                     </li>
                     <li class="header">SUPPORT</li>
-                    <li class="{{ !starts_with(Route::currentRouteName(), 'admin.tickets') ?: 'active' }}">
+                    <li class="{{ starts_with(Route::currentRouteName(), 'admin.tickets') ? 'active' : '' }}">
                         <a href="{{ route('admin.tickets') }}">
                             <i class="bi bi-ticket-perforated"></i> <span>Tickets</span>
                         </a>
