@@ -92,7 +92,11 @@ const NetworkContainer = () => {
                                         </span>
                                     )}
                                     {(allocationLimit === null ||
+<<<<<<< HEAD
                                         (allocationLimit > 0 && data.length < allocationLimit)) && (
+=======
+                                        (allocationLimit > 0 && allocationLimit > data.length)) && (
+>>>>>>> upstream/main
                                         <ActionButton variant='primary' onClick={onCreateAllocation} size='sm'>
                                             New Allocation
                                         </ActionButton>

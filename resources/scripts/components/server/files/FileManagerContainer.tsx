@@ -1,7 +1,6 @@
 import { hashToPath } from '@/helpers';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import debounce from 'debounce';
-import { For } from 'million/react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
@@ -86,7 +85,6 @@ const FileManagerContainer = () => {
             searchInputRef.current.value = '';
         }
     }, [hash, pathname, directory]);
-
     const rowVirtualizer = useVirtualizer({
         // count: 10000,
         count: filesArray.length,
@@ -101,7 +99,7 @@ const FileManagerContainer = () => {
 
     return (
         <ServerContentBlock className='p-0!' title={'File Manager'} showFlashKey={'files'}>
-            <div className='px-2 sm:px-14 pt-2 sm:pt-14'>
+            <div className='px-2 sm:px-14 pt-2 h-full sm:pt-14'>
                 <ErrorBoundary>
                     <MainPageHeader
                         direction='column'
@@ -142,40 +140,57 @@ const FileManagerContainer = () => {
                         <p className={`text-sm text-zinc-400 text-center`}>This folder is empty.</p>
                     ) : (
                         <>
-                            <div ref={parentRef}>
+                            <div className='relative p-1 border-[1px] border-[#ffffff12] rounded-md sm:ml-12 sm:mr-12 mx-2'>
+                                <div className='absolute left-4 top-1/2 pl-2 -translate-y-1/2 pointer-events-none'>
+                                    <svg
+                                        xmlns='http://www.w3.org/2000/svg'
+                                        fill='none'
+                                        viewBox='0 0 24 24'
+                                        strokeWidth={1.5}
+                                        stroke='currentColor'
+                                        className='w-5 h-5 opacity-40'
+                                    >
+                                        <path
+                                            strokeLinecap='round'
+                                            strokeLinejoin='round'
+                                            d='m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z'
+                                        />
+                                    </svg>
+                                </div>
+
+                                <input
+                                    ref={searchInputRef}
+                                    className='pl-14 py-4 w-full rounded-lg bg-[#ffffff11] text-sm font-bold outline-none'
+                                    type='text'
+                                    placeholder='Search...'
+                                    onChange={(event) => debouncedSearchTerm(event.target.value)}
+                                />
+                            </div>
+                            <div ref={parentRef} className='max-h-screen min-h-screen overflow-auto'>
                                 <div
                                     data-pyro-file-manager-files
                                     className='p-1 border-[1px] border-[#ffffff12] rounded-xl sm:ml-12 sm:mr-12 mx-2 bg-[radial-gradient(124.75%_124.75%_at_50.01%_-10.55%,_rgb(16,16,16)_0%,rgb(4,4,4)_100%)]'
+                                    style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
                                 >
-                                    <div className='relative w-full h-full mb-1'>
-                                        <svg
-                                            xmlns='http://www.w3.org/2000/svg'
-                                            fill='none'
-                                            viewBox='0 0 24 24'
-                                            strokeWidth={1.5}
-                                            stroke='currentColor'
-                                            className='w-5 h-5 absolute top-1/2 -translate-y-1/2 left-5 opacity-40'
-                                        >
-                                            <path
-                                                strokeLinecap='round'
-                                                strokeLinejoin='round'
-                                                d='m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z'
-                                            />
-                                        </svg>
-
-                                        <input
-                                            ref={searchInputRef}
-                                            className='pl-14 py-4 w-full rounded-lg bg-[#ffffff11] text-sm font-bold'
-                                            type='text'
-                                            placeholder='Search...'
-                                            onChange={(event) => debouncedSearchTerm(event.target.value)}
-                                        />
-                                    </div>
-                                    <div className='w-full overflow-hidden rounded-lg gap-0.5 flex flex-col'>
+                                    <div
+                                        className='w-full overflow-hidden rounded-lg gap-0.5 flex flex-col'
+                                        style={{
+                                            height: `${rowVirtualizer.getTotalSize()}px`,
+                                            width: '100%',
+                                            position: 'relative',
+                                        }}
+                                    >
                                         {rowVirtualizer.getVirtualItems().map((item) => {
                                             if (filesArray[item.index] !== undefined) {
                                                 return (
-                                                    <div key={item.key} className='w-full'>
+                                                    <div
+                                                        key={item.key}
+                                                        className='w-full absolute left-0 top-0'
+                                                        style={{
+                                                            height: `${item.size}px`,
+                                                            transform: `translateY(${item.start}px)`,
+                                                        }}
+                                                    >
                                                         <FileObjectRow
                                                             // @ts-expect-error - Legacy type suppression
                                                             file={filesArray[item.index]}

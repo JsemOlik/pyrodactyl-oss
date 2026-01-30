@@ -1,6 +1,6 @@
 <?php
 
-namespace Pterodactyl\Http\Controllers\Api\Client\Servers;
+namespace Pterodactyl\Http\Controllers\Api\Client\Servers\Elytra;
 
 use Carbon\CarbonImmutable;
 use Pterodactyl\Models\Server;

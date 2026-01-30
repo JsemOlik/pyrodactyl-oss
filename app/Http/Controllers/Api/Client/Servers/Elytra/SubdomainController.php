@@ -1,6 +1,6 @@
 <?php
 
-namespace Pterodactyl\Http\Controllers\Api\Client\Servers;
+namespace Pterodactyl\Http\Controllers\Api\Client\Servers\Elytra;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -28,7 +28,7 @@ class SubdomainController extends ClientApiController
     public function index(Request $request): JsonResponse
     {
         $server = $request->attributes->get('server');
-        
+
         $this->authorize(Permission::ACTION_ALLOCATION_READ, $server);
 
         try {
@@ -73,15 +73,15 @@ class SubdomainController extends ClientApiController
     public function store(CreateSubdomainRequest $request): JsonResponse
     {
         $server = $request->attributes->get('server');
-        
+
         $this->authorize(Permission::ACTION_ALLOCATION_CREATE, $server);
-        
+
         $data = $request->validated();
 
         try {
             // Get ALL active subdomains for this server (more than one should be impossible, but PHP makes me angry)
             $existingSubdomains = $server->subdomains()->where('is_active', true)->get();
-            
+
             $domain = Domain::where('id', $data['domain_id'])
                 ->where('is_active', true)
                 ->first();
@@ -151,7 +151,7 @@ class SubdomainController extends ClientApiController
     public function destroy(Request $request): JsonResponse
     {
         $server = $request->attributes->get('server');
-        
+
         $this->authorize(Permission::ACTION_ALLOCATION_DELETE, $server);
 
         try {
@@ -189,9 +189,9 @@ class SubdomainController extends ClientApiController
     public function checkAvailability(Request $request): JsonResponse
     {
         $server = $request->attributes->get('server');
-        
+
         $this->authorize(Permission::ACTION_ALLOCATION_READ, $server);
-        
+
         $request->validate([
             'subdomain' => 'required|string|min:1|max:63|regex:/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/',
             'domain_id' => 'required|integer|exists:domains,id',
@@ -222,3 +222,4 @@ class SubdomainController extends ClientApiController
         }
     }
 }
+

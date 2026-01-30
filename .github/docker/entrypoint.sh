@@ -11,48 +11,51 @@ mkdir -p /app/storage/logs /app/storage/framework/cache /app/storage/framework/s
 chmod g+s /app/storage/logs/
 chown nginx:nginx /app/storage/logs/
 
-# Check that user has mounted the /app/var directory
-if [ ! -d /app/var ]; then
-  echo "You must mount the /app/var directory to the container."
-  exit 1
+# Check if any variables are unset and must be generated
+if [ -z "$APP_KEY" ] || [ -z "$HASHIDS_LENGTH" ] || [ -z "$HASHIDS_SALT" ]; then
+  # Check that user has mounted the /app/var directory
+  if [ ! -d /app/var ]; then
+    echo "You must mount the /app/var directory to the container."
+    exit 1
+  fi
+  
+  # Check the .env file exists and make a blank one if needed
+  if [ ! -f /app/var/.env ]; then
+    echo "Creating .env file."
+    touch /app/var/.env
+  fi
+  
+  # Replace .env in container with our external .env file
+  rm -f /app/.env
+  ln -s /app/var/.env /app/
+  
+  # Use a subshell to avoid polluting the global environment
+  (
+      # Load in any existing environment variables in the .env file
+      source /app/.env
+  
+      # Check if APP_KEY is set
+      if [ -z "$APP_KEY" ]; then
+          echo "Generating APP_KEY"
+          echo "APP_KEY=" >> /app/.env
+          APP_ENVIRONMENT_ONLY=true php artisan key:generate
+      fi
+  
+      # Check if HASHIDS_LENGTH is set
+      if [ -z "$HASHIDS_LENGTH" ]; then
+          echo "Defaulting HASHIDS_LENGTH to 8"
+          echo "HASHIDS_LENGTH=8" >> /app/.env
+      fi
+  
+  
+      # Check if HASHID_SALT is set
+      if [ -z "$HASHIDS_SALT" ]; then
+          echo "Generating HASHIDS_SALT"
+          HASHIDS_SALT=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
+          echo "HASHIDS_SALT=$HASHIDS_SALT" >> /app/.env
+      fi
+  )
 fi
-
-# Check the .env file exists and make a blank one if needed
-if [ ! -f /app/var/.env ]; then
-  echo "Creating .env file."
-  touch /app/var/.env
-fi
-
-# Replace .env in container with our external .env file
-rm -f /app/.env
-ln -s /app/var/.env /app/
-
-# Use a subshell to avoid polluting the global environment
-(
-    # Load in any existing environment variables in the .env file
-    source /app/.env
-
-    # Check if APP_KEY is set
-    if [ -z "$APP_KEY" ]; then
-        echo "Generating APP_KEY"
-        echo "APP_KEY=" >> /app/.env
-        APP_ENVIRONMENT_ONLY=true php artisan key:generate
-    fi
-
-    # Check if HASHIDS_LENGTH is set
-    if [ -z "$HASHIDS_LENGTH" ]; then
-        echo "Defaulting HASHIDS_LENGTH to 8"
-        echo "HASHIDS_LENGTH=8" >> /app/.env
-    fi
-
-
-    # Check if HASHID_SALT is set
-    if [ -z "$HASHIDS_SALT" ]; then
-        echo "Generating HASHIDS_SALT"
-        HASHIDS_SALT=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-        echo "HASHIDS_SALT=$HASHIDS_SALT" >> /app/.env
-    fi
-)
 
 if [ -f /etc/nginx/http.d/panel.conf ]; then
   nginx -t
@@ -140,7 +143,7 @@ fi
     fi
     # Make a location and node for the panel
     php artisan p:location:make -n --short local --long Local
-    php artisan p:node:make -n --name local --description "Development Node" --locationId 1 --fqdn localhost --internal-fqdn $ELYTRA_INTERNAL_IP --public 1 --scheme http --proxy 0 --maxMemory 1024 --maxDisk 10240 --overallocateMemory 0 --overallocateDisk 0
+    php artisan p:node:make -n --name local --description "Development Node" --locationId 1 --fqdn localhost --internal-fqdn $ELYTRA_INTERNAL_IP --public 1 --scheme http --proxy 0 --maxMemory 1024 --maxDisk 10240 --overallocateMemory 0 --overallocateDisk 0 --daemonType elytra
 
     echo "Adding dummy allocations..."
     if [ "$DB_CONNECTION" = "mysql" ] || [ "$DB_CONNECTION" = "mariadb" ]; then

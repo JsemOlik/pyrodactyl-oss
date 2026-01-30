@@ -102,8 +102,12 @@
                             <th>Owner</th>
                             <th>Node</th>
                             <th>Connection</th>
+<<<<<<< HEAD
                             <th>Subscription</th>
                             <th>Subscription Status</th>
+=======
+                            <!-- <th>Domain</th> -->
+>>>>>>> upstream/main
                             <th></th>
                             <th></th>
                         </tr>
@@ -116,6 +120,7 @@
                                 <td>
                                     <code>{{ $server->allocation->alias }}:{{ $server->allocation->port }}</code>
                                 </td>
+<<<<<<< HEAD
                                 <td>
                                     @if($server->subscription)
                                         @php
@@ -151,6 +156,9 @@
                                         <span class="text-muted">N/A</span>
                                     @endif
                                 </td>
+=======
+                                <!-- <td>{{ $server->domain }}</td> -->
+>>>>>>> upstream/main
                                 <td class="text-center">
                                     @if($server->isSuspended())
                                         <span class="label bg-maroon">Suspended</span>
@@ -159,7 +167,7 @@
                                     @else
                                         <span class="label label-success">Active</span>
                                     @endif
-                                    
+
                                     @if($server->exclude_from_resource_calculation)
                                         <br><small><span class="label label-info" title="Excluded from resource calculations">Excluded</span></small>
                                     @endif

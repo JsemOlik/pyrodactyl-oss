@@ -45,7 +45,10 @@ class NestSeeder extends Seeder
         $this->createVoiceServersNest(array_get($items, 'Voice Servers'));
         $this->createRustNest(array_get($items, 'Rust'));
         $this->createVintageStoryNest(array_get($items, 'Vintage Story'));
+<<<<<<< HEAD
         $this->createDatabasesNest(array_get($items, 'Databases'));
+=======
+>>>>>>> upstream/main
     }
 
     /**
@@ -108,7 +111,11 @@ class NestSeeder extends Seeder
         }
     }
 
+<<<<<<< HEAD
     /**
+=======
+     /**
+>>>>>>> upstream/main
      * Create the Vintage Story nest to be used later on.
      *
      * @throws \Pterodactyl\Exceptions\Model\DataValidationException
@@ -118,11 +125,16 @@ class NestSeeder extends Seeder
         if (is_null($nest)) {
             $this->creationService->handle([
                 'name' => 'Vintage Story',
+<<<<<<< HEAD
                 'description' => 'Vintage Story is an uncompromising wilderness survival sandbox game inspired by lovecraftian horror themes.',
+=======
+                'description' => 'Vintage Story - An uncompromising wilderness survival sandbox game.',
+>>>>>>> upstream/main
             ], 'support@pterodactyl.io');
         }
     }
 
+<<<<<<< HEAD
     /**
      * Create the Databases nest to be used later on.
      *
@@ -137,4 +149,6 @@ class NestSeeder extends Seeder
             ], 'support@pterodactyl.io');
         }
     }
+=======
+>>>>>>> upstream/main
 }

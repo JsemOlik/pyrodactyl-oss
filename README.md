@@ -15,6 +15,9 @@
 
 <h1 align="center">Pyrodactyl</h1>
 
+> [!NOTE]
+> All Issues and Pr's should be made in the [Pyrodactyl-oss Repo](https://github.com/pyrodactyl-oss/pyrodactyl)
+
 > [!WARNING]
 > Pyrodactyl is under development and pre-release. Some UI elements may appear broken, and there might be some bugs.
 
@@ -66,4 +69,4 @@ Pterodactyl® Copyright © 2015 - 2022 Dane Everitt and contributors.
 
 Pyrodactyl™ Copyright © 2023-Present Pyro Inc. and contributors.
 
-AGPL-3.0-or-later
+Apache-2.0

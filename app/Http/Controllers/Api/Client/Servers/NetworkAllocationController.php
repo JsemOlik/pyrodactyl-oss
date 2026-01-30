@@ -3,142 +3,46 @@
 namespace Pterodactyl\Http\Controllers\Api\Client\Servers;
 
 use Pterodactyl\Models\Server;
-use Illuminate\Http\JsonResponse;
-use Pterodactyl\Facades\Activity;
 use Pterodactyl\Models\Allocation;
-use Pterodactyl\Exceptions\DisplayException;
-use Pterodactyl\Repositories\Eloquent\ServerRepository;
-use Pterodactyl\Transformers\Api\Client\AllocationTransformer;
 use Pterodactyl\Http\Controllers\Api\Client\ClientApiController;
-use Pterodactyl\Services\Allocations\FindAssignableAllocationService;
+use Pterodactyl\Http\Controllers\Api\Client\Servers\Traits\ProxiesDaemonController;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Network\GetNetworkRequest;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Network\NewAllocationRequest;
-use Pterodactyl\Http\Requests\Api\Client\Servers\Network\DeleteAllocationRequest;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Network\UpdateAllocationRequest;
+use Pterodactyl\Http\Requests\Api\Client\Servers\Network\DeleteAllocationRequest;
 use Pterodactyl\Http\Requests\Api\Client\Servers\Network\SetPrimaryAllocationRequest;
 
 class NetworkAllocationController extends ClientApiController
 {
-    /**
-     * NetworkAllocationController constructor.
-     */
-    public function __construct(
-        private FindAssignableAllocationService $assignableAllocationService,
-        private ServerRepository $serverRepository,
-    ) {
-        parent::__construct();
+    use ProxiesDaemonController;
+
+    public function index(GetNetworkRequest $request, Server $server)
+    {
+        return $this->proxyToDaemonController('NetworkAllocationController', 'index', func_get_args());
     }
 
-    /**
-     * Lists all the allocations available to a server and whether
-     * they are currently assigned as the primary for this server.
-     */
-    public function index(GetNetworkRequest $request, Server $server): array
+    public function update(UpdateAllocationRequest $request, Server $server, Allocation $allocation)
     {
-        return $this->fractal->collection($server->allocations)
-            ->transformWith($this->getTransformer(AllocationTransformer::class))
-            ->toArray();
+        return $this->proxyToDaemonController('NetworkAllocationController', 'update', func_get_args());
     }
 
-    /**
-     * Set the notes for an allocation.
-     *
-     * @throws \Pterodactyl\Exceptions\Model\DataValidationException
-     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
-     */
-    public function update(UpdateAllocationRequest $request, Server $server, Allocation $allocation): array
+    public function setPrimary(SetPrimaryAllocationRequest $request, Server $server, Allocation $allocation)
     {
-        $original = $allocation->notes;
-
-        $allocation->forceFill(['notes' => $request->input('notes')])->skipValidation()->save();
-
-        if ($original !== $allocation->notes) {
-            Activity::event('server:allocation.notes')
-                ->subject($allocation)
-                ->property(['allocation' => $allocation->toString(), 'old' => $original, 'new' => $allocation->notes])
-                ->log();
-        }
-
-        return $this->fractal->item($allocation)
-            ->transformWith($this->getTransformer(AllocationTransformer::class))
-            ->toArray();
+        return $this->proxyToDaemonController('NetworkAllocationController', 'setPrimary', func_get_args());
     }
 
-    /**
-     * Set the primary allocation for a server.
-     *
-     * @throws \Pterodactyl\Exceptions\Model\DataValidationException
-     * @throws \Pterodactyl\Exceptions\Repository\RecordNotFoundException
-     */
-    public function setPrimary(SetPrimaryAllocationRequest $request, Server $server, Allocation $allocation): array
+    public function store(NewAllocationRequest $request, Server $server)
     {
-        $this->serverRepository->update($server->id, ['allocation_id' => $allocation->id]);
-
-        Activity::event('server:allocation.primary')
-            ->subject($allocation)
-            ->property('allocation', $allocation->toString())
-            ->log();
-
-        return $this->fractal->item($allocation)
-            ->transformWith($this->getTransformer(AllocationTransformer::class))
-            ->toArray();
+        return $this->proxyToDaemonController('NetworkAllocationController', 'store', func_get_args());
     }
 
-    /**
-     * Create a new allocation for a server.
-     *s.
-     *
-     * @throws DisplayException
-     */
-    public function store(NewAllocationRequest $request, Server $server): array
+    public function delete(DeleteAllocationRequest $request, Server $server, Allocation $allocation)
     {
-        if (!$server->allowsAllocations()) {
-            throw new DisplayException('Cannot assign allocations to this server: allocations are disabled.');
-        }
-
-        if ($server->hasAllocationLimit() && $server->allocations()->count() >= $server->allocation_limit) {
-            throw new DisplayException('Cannot assign additional allocations to this server: limit has been reached.');
-        }
-
-        $allocation = $this->assignableAllocationService->handle($server);
-
-        Activity::event('server:allocation.create')
-            ->subject($allocation)
-            ->property('allocation', $allocation->toString())
-            ->log();
-
-        return $this->fractal->item($allocation)
-            ->transformWith($this->getTransformer(AllocationTransformer::class))
-            ->toArray();
+        return $this->proxyToDaemonController('NetworkAllocationController', 'delete', func_get_args());
     }
 
-    /**
-     * Delete an allocation from a server.
-     *
-     * @throws DisplayException
-     */
-    public function delete(DeleteAllocationRequest $request, Server $server, Allocation $allocation): JsonResponse
+    public function __call($method, $parameters)
     {
-        // Don't allow the deletion of allocations if the server does not have an
-        // allocation limit set.
-        if (empty($server->allocation_limit)) {
-            throw new DisplayException('You cannot delete allocations for this server: no allocation limit is set.');
-        }
-
-        if ($allocation->id === $server->allocation_id) {
-            throw new DisplayException('You cannot delete the primary allocation for this server.');
-        }
-
-        Allocation::query()->where('id', $allocation->id)->update([
-            'notes' => null,
-            'server_id' => null,
-        ]);
-
-        Activity::event('server:allocation.delete')
-            ->subject($allocation)
-            ->property('allocation', $allocation->toString())
-            ->log();
-
-        return new JsonResponse([], JsonResponse::HTTP_NO_CONTENT);
+        return $this->proxyToDaemonController('NetworkAllocationController', $method, $parameters);
     }
 }

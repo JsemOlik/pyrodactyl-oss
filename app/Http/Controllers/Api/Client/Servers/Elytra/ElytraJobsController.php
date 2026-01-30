@@ -1,6 +1,6 @@
 <?php
 
-namespace Pterodactyl\Http\Controllers\Api\Client\Servers;
+namespace Pterodactyl\Http\Controllers\Api\Client\Servers\Elytra;
 
 use Illuminate\Http\Request;
 use Pterodactyl\Models\Server;
@@ -124,3 +124,4 @@ class ElytraJobsController extends ClientApiController
         return new JsonResponse($result);
     }
 }
+

@@ -123,6 +123,7 @@
                         <li class="user-menu">
                             <a href="{{ route('account') }}">
 
+<<<<<<< HEAD
                                 <span class="hidden-xs">{{ Auth::user()->name_first }}
                                     {{ Auth::user()->name_last }}</span>
                             </a>
@@ -138,6 +139,103 @@
                             </a>
                         </li>
                     </ul>
+=======
+                <span class="hidden-xs">{{ Auth::user()->name_first }} {{ Auth::user()->name_last }}</span>
+              </a>
+            </li>
+            <li>
+            <li><a href="{{ route('index') }}" data-toggle="tooltip" data-placement="bottom"
+                title="Exit Admin Control"><i class="fa fa-server"></i></a></li>
+            </li>
+            <li>
+            <li><a href="{{ route('auth.logout') }}" id="logoutButton" data-toggle="tooltip" data-placement="bottom"
+                title="Logout"><i class="fa fa-sign-out"></i></a></li>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </header>
+    <aside class="main-sidebar">
+      <section class="sidebar">
+        <ul class="sidebar-menu">
+          <li class="header">BASIC ADMINISTRATION</li>
+          <li class="{{ Route::currentRouteName() !== 'admin.index' ?: 'active' }}">
+            <a href="{{ route('admin.index') }}">
+              <i class="bi bi-house-fill"></i> <span>Overview</span>
+            </a>
+          </li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.settings') ?: 'active' }}">
+            <a href="{{ route('admin.settings')}}">
+              <i class="bi bi-gear-fill"></i> <span>Settings</span>
+            </a>
+          </li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.api') ?: 'active' }}">
+            <a href="{{ route('admin.api.index')}}">
+              <i class="bi bi-globe"></i> <span>Application API</span>
+            </a>
+          </li>
+          <li class="header">MANAGEMENT</li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.databases') ?: 'active' }}">
+            <a href="{{ route('admin.databases') }}">
+              <i class="bi bi-database-fill"></i> <span>Databases</span>
+            </a>
+          </li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.locations') ?: 'active' }}">
+            <a href="{{ route('admin.locations') }}">
+              <i class="bi bi-globe-americas"></i> <span>Locations</span>
+            </a>
+          </li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.nodes') ?: 'active' }}">
+            <a href="{{ route('admin.nodes') }}">
+              <i class="bi bi-hdd-fill"></i> <span>Nodes</span>
+            </a>
+          </li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.servers') ?: 'active' }}">
+            <a href="{{ route('admin.servers') }}">
+              <i class="bi bi-hdd-stack-fill"></i> <span>Servers</span>
+            </a>
+          </li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.users') ?: 'active' }}">
+            <a href="{{ route('admin.users') }}">
+              <i class="bi bi-people-fill"></i> <span>Users</span>
+            </a>
+          </li>
+          <li class="header">SERVICE MANAGEMENT</li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.mounts') ?: 'active' }}">
+            <a href="{{ route('admin.mounts') }}">
+              <i class="bi bi-magic"></i> <span>Mounts</span>
+            </a>
+          </li>
+          <li class="{{ !starts_with(Route::currentRouteName(), 'admin.nests') ?: 'active' }}">
+            <a href="{{ route('admin.nests') }}">
+              <i class="bi bi-egg-fill"></i> <span>Nests</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+    </aside>
+    <div class="content-wrapper">
+      <section class="content-header">
+        @yield('content-header')
+      </section>
+      <section class="content">
+        <div class="row">
+          <div class="col-xs-12">
+            @if (count($errors) > 0)
+              <div class="alert alert-danger">
+                There was an error validating the data provided.<br><br>
+                <ul>
+                  @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                  @endforeach
+                </ul>
+              </div>
+            @endif
+            @foreach (Alert::getMessages() as $type => $messages)
+              @foreach ($messages as $message)
+                <div class="alert alert-{{ $type }} alert-dismissable" role="alert">
+                  {{ $message }}
+>>>>>>> upstream/main
                 </div>
             </nav>
         </header>

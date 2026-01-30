@@ -1,6 +1,6 @@
 <?php
 
-namespace Pterodactyl\Http\Controllers\Api\Client\Servers;
+namespace Pterodactyl\Http\Controllers\Api\Client\Servers\Wings;
 
 use Carbon\CarbonImmutable;
 use Pterodactyl\Models\User;

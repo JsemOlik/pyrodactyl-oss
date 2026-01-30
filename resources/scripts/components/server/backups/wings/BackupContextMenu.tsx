@@ -33,7 +33,8 @@ import { ServerContext } from '@/state/server';
 
 import useFlash from '@/plugins/useFlash';
 
-import { useUnifiedBackups } from './useUnifiedBackups';
+import { useUnifiedBackups } from '../useUnifiedBackups';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 interface Props {
     backup: ServerBackup;
@@ -41,6 +42,7 @@ interface Props {
 
 const BackupContextMenu = ({ backup }: Props) => {
     const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
+    const daemonType = getGlobalDaemonType();
     const setServerFromState = ServerContext.useStoreActions((actions) => actions.server.setServerFromState);
     const [modal, setModal] = useState('');
     const [loading, setLoading] = useState(false);
@@ -91,7 +93,7 @@ const BackupContextMenu = ({ backup }: Props) => {
         clearFlashes('backup:delete');
 
         try {
-            await http.delete(`/api/client/servers/${uuid}/backups/${backup.uuid}`, {
+            await http.delete(`/api/client/servers/${daemonType}/${uuid}/backups/${backup.uuid}`, {
                 data: {
                     password: deletePassword,
                     ...(hasTwoFactor ? { totp_code: deleteTotpCode } : {}),
@@ -134,7 +136,7 @@ const BackupContextMenu = ({ backup }: Props) => {
         clearFlashes('backup:restore');
 
         try {
-            await http.post(`/api/client/servers/${uuid}/backups/${backup.uuid}/restore`, {
+            await http.post(`/api/client/servers/${daemonType}/backups/${backup.uuid}/restore`, {
                 password: restorePassword,
                 ...(hasTwoFactor ? { totp_code: restoreTotpCode } : {}),
             });
@@ -341,8 +343,8 @@ const BackupContextMenu = ({ backup }: Props) => {
                         {loading
                             ? 'Restoring...'
                             : countdown > 0
-                              ? `Delete All & Restore (${countdown}s)`
-                              : 'Delete All & Restore Backup'}
+                                ? `Delete All & Restore (${countdown}s)`
+                                : 'Delete All & Restore Backup'}
                     </ActionButton>
                 </Dialog.Footer>
             </Dialog>
