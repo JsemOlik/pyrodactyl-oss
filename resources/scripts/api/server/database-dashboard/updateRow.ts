@@ -14,6 +14,9 @@ export interface UpdateRowResponse {
 }
 
 export default async (uuid: string, request: UpdateRowRequest): Promise<UpdateRowResponse> => {
-    const response = await http.put(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`, request);
+    const response = await http.put(
+        `/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`,
+        request,
+    );
     return response.data.attributes;
 };

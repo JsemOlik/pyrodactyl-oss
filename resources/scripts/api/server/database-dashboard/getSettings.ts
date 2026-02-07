@@ -17,6 +17,8 @@ export default async (uuid: string, databaseName?: string): Promise<DatabaseSett
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/settings`, { params });
+    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/settings`, {
+        params,
+    });
     return response.data.attributes;
 };

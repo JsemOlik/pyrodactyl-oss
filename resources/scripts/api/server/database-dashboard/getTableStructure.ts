@@ -39,6 +39,8 @@ export default async (uuid: string, tableName: string, databaseName?: string): P
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/structure`, { params });
+    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/structure`, {
+        params,
+    });
     return response.data.attributes;
 };

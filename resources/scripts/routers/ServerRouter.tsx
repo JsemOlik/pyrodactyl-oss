@@ -39,7 +39,6 @@ import { getSubdomainInfo } from '@/api/server/network/subdomain';
 
 import { ServerContext } from '@/state/server';
 
-
 const ServerRouter = () => {
     const params = useParams<'id'>();
     const location = useLocation();
@@ -382,7 +381,7 @@ const ServerRouter = () => {
                                 className='relative inset-[1px] w-full h-full overflow-y-auto overflow-x-hidden rounded-md bg-[#08080875]'
                             >
                                 {inConflictState &&
-                                    (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${id}`))) ? (
+                                (!rootAdmin || (rootAdmin && !location.pathname.endsWith(`/server/${id}`))) ? (
                                     <ConflictStateRenderer />
                                 ) : (
                                     <ErrorBoundary>

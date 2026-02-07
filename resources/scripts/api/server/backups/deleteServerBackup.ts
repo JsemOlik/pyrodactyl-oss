@@ -8,7 +8,9 @@ interface DeleteBackupResponse {
 }
 
 export default async (uuid: string, backup: string): Promise<{ jobId: string; status: string; message: string }> => {
-    const response = await http.delete<DeleteBackupResponse>(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/backups/${backup}`);
+    const response = await http.delete<DeleteBackupResponse>(
+        `/api/client/servers/${getGlobalDaemonType()}/${uuid}/backups/${backup}`,
+    );
 
     return {
         jobId: response.data.job_id,
