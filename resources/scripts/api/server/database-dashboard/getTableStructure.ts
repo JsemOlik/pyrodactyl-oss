@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface ColumnInfo {
     name: string;
@@ -38,6 +39,6 @@ export default async (uuid: string, tableName: string, databaseName?: string): P
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${uuid}/database/tables/structure`, { params });
+    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/structure`, { params });
     return response.data.attributes;
 };

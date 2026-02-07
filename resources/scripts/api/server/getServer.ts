@@ -60,12 +60,9 @@ export interface Server {
     variables: ServerEggVariable[];
     allocations: Allocation[];
     egg: string;
-<<<<<<< HEAD
     nest: number;
     active_subdomain?: ServerSubdomain | null;
-=======
     daemonType: string;
->>>>>>> upstream/main
 }
 
 export const rawDataToServerObject = ({ attributes: data }: FractalResponseData): Server => ({
@@ -94,7 +91,6 @@ export const rawDataToServerObject = ({ attributes: data }: FractalResponseData)
         rawDataToServerAllocation,
     ),
     egg: data.egg,
-<<<<<<< HEAD
     nest: data.nest,
     active_subdomain: (() => {
         const subdomainRel = data.relationships?.active_subdomain;
@@ -119,9 +115,7 @@ export const rawDataToServerObject = ({ attributes: data }: FractalResponseData)
         }
         return null;
     })(),
-=======
     daemonType: data.daemonType,
->>>>>>> upstream/main
 });
 
 export default async (uuid: string): Promise<[Server, string[]]> => {

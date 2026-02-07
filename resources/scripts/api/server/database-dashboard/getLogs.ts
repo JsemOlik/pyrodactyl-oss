@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface LogEntry {
     timestamp: string;
@@ -30,6 +31,6 @@ export default async (
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${uuid}/database/logs`, { params });
+    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/logs`, { params });
     return response.data.attributes;
 };

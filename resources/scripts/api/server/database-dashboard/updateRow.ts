@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface UpdateRowRequest {
     table: string;
@@ -13,6 +14,6 @@ export interface UpdateRowResponse {
 }
 
 export default async (uuid: string, request: UpdateRowRequest): Promise<UpdateRowResponse> => {
-    const response = await http.put(`/api/client/servers/${uuid}/database/tables/data`, request);
+    const response = await http.put(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`, request);
     return response.data.attributes;
 };

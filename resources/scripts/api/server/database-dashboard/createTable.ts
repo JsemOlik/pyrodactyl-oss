@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface TableColumn {
     name: string;
@@ -28,6 +29,6 @@ export interface CreateTableResponse {
 }
 
 export default async (uuid: string, data: CreateTableRequest): Promise<CreateTableResponse> => {
-    const response = await http.post(`/api/client/servers/${uuid}/database/tables`, data);
+    const response = await http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables`, data);
     return response.data.attributes;
 };

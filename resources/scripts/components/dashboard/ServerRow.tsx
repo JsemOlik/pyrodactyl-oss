@@ -111,15 +111,12 @@ const ServerRow = ({
     }, [stats?.isSuspended, server.status]);
 
     useEffect(() => {
-<<<<<<< HEAD
-=======
         setIsInstalling(stats?.isInstalling || server.status === 'installing');
     }, [stats?.isInstalling, server.status]);
 
     useEffect(() => {
         // Don't waste a HTTP request if there is nothing important to show to the user because
         // the server is suspended.
->>>>>>> upstream/main
         if (isSuspended) return;
 
         getStats().then(() => {
@@ -200,7 +197,6 @@ const ServerRow = ({
     } as const;
 
     return (
-<<<<<<< HEAD
         <StatusIndicatorBox
             as={Link}
             to={`/server/${server.id}`}
@@ -209,16 +205,11 @@ const ServerRow = ({
             style={isEditMode ? { pointerEvents: 'none' } : undefined}
         >
             <div className='flex items-center'>
-=======
-        <StatusIndicatorBox as={Link} to={`/server/${server.id}`} className={className} $status={stats?.status}>
-            <div className={`flex items-center`}>
->>>>>>> upstream/main
                 <div className='flex flex-col'>
                     <div className='flex items-center gap-2'>
                         <p className='text-xl tracking-tight font-bold break-words'>{server.name}</p>
                         <div className='status-bar' />
                     </div>
-<<<<<<< HEAD
 
                     {connectionText && (
                         <div className='mt-1 flex items-center gap-2 text-sm text-[#ffffff66]'>
@@ -299,40 +290,10 @@ const ServerRow = ({
                             Start
                         </button>
                     </div>
-                ) : !stats ? (
+                ) : !stats || isInstalling ? (
                     server.isTransferring || server.status ? (
                         <div className='flex-1 text-center'>
                             <span className='text-zinc-100 text-xs'>
-=======
-                    <p className={`text-sm text-[#ffffff66]`}>
-                        {server.allocations
-                            .filter((alloc) => alloc.isDefault)
-                            .map((allocation) => (
-                                <Fragment key={allocation.ip + allocation.port.toString()}>
-                                    {allocation.alias || ip(allocation.ip)}:{allocation.port}
-                                </Fragment>
-                            ))}
-                    </p>
-                </div>
-            </div>
-            <div
-                style={{
-                    background:
-                        'radial-gradient(124.75% 124.75% at 50.01% -10.55%, rgb(36, 36, 36) 0%, rgb(20, 20, 20) 100%)',
-                }}
-                className={`h-full hidden sm:flex items-center justify-center border-[1px] border-[#ffffff12] shadow-md rounded-lg w-fit whitespace-nowrap px-4 py-2 text-sm gap-4`}
-            >
-                {!stats || isSuspended || isInstalling ? (
-                    isSuspended ? (
-                        <div className={`flex-1 text-center`}>
-                            <span className={`text-red-100 text-xs`}>
-                                {server.status === 'suspended' ? 'Suspended' : 'Connection Error'}
-                            </span>
-                        </div>
-                    ) : server.isTransferring || server.status ? (
-                        <div className={`flex-1 text-center`}>
-                            <span className={`text-zinc-100 text-xs`}>
->>>>>>> upstream/main
                                 {server.isTransferring
                                     ? 'Transferring'
                                     : server.status === 'installing'

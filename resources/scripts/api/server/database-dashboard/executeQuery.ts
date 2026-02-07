@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface ExecuteQueryRequest {
     query: string;
@@ -14,6 +15,6 @@ export interface ExecuteQueryResponse {
 }
 
 export default async (uuid: string, request: ExecuteQueryRequest): Promise<ExecuteQueryResponse> => {
-    const response = await http.post(`/api/client/servers/${uuid}/database/query`, request);
+    const response = await http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/query`, request);
     return response.data.attributes;
 };

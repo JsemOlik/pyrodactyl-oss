@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface CreateDatabaseRequest {
     name: string;
@@ -15,6 +16,6 @@ export interface CreateDatabaseResponse {
 }
 
 export default async (uuid: string, data: CreateDatabaseRequest): Promise<CreateDatabaseResponse> => {
-    const response = await http.post(`/api/client/servers/${uuid}/database/databases`, data);
+    const response = await http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/databases`, data);
     return response.data.attributes;
 };

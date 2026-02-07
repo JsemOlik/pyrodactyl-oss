@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface TableDataResponse {
     data: Record<string, any>[];
@@ -22,6 +23,6 @@ export default async (
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${uuid}/database/tables/data`, { params });
+    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`, { params });
     return response.data.attributes;
 };

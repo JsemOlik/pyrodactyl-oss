@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface UpdateSettingsRequest {
     charset?: string;
@@ -12,6 +13,6 @@ export interface UpdateSettingsResponse {
 }
 
 export default async (uuid: string, request: UpdateSettingsRequest): Promise<UpdateSettingsResponse> => {
-    const response = await http.put(`/api/client/servers/${uuid}/database/settings`, request);
+    const response = await http.put(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/settings`, request);
     return response.data.attributes;
 };

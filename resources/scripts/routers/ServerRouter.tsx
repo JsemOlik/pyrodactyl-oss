@@ -1,24 +1,6 @@
 'use client';
 
-<<<<<<< HEAD
-import {
-    Box,
-    BranchesDown,
-    ClockArrowRotateLeft,
-    CloudArrowUpIn,
-    Database,
-    Ellipsis,
-    FolderOpen,
-    Gear,
-    House,
-    PencilToLine,
-    Person,
-    Persons,
-    Terminal,
-} from '@gravity-ui/icons';
-=======
 import { Ellipsis } from '@gravity-ui/icons';
->>>>>>> upstream/main
 import { useStoreState } from 'easy-peasy';
 import type { RefObject } from 'react';
 import { Fragment, Suspense, createRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -52,131 +34,12 @@ import StatBlock from '@/components/server/console/StatBlock';
 
 import { httpErrorToHuman } from '@/api/http';
 import http from '@/api/http';
-<<<<<<< HEAD
 import getBillingPortalUrl from '@/api/server/getBillingPortalUrl';
-import { SubdomainInfo, getSubdomainInfo } from '@/api/server/network/subdomain';
-
-import { ServerContext } from '@/state/server';
-
-// Sidebar item components that check both permissions and feature limits
-const DatabasesSidebarItem = React.forwardRef<HTMLAnchorElement, { id: string; onClick: () => void }>(
-    ({ id, onClick }, ref) => {
-        const databaseLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.databases);
-
-        // Hide if databases are disabled (limit is 0)
-        if (databaseLimit === 0) return null;
-
-        return (
-            <Can action={'database.*'} matchAny>
-                <NavLink
-                    className='flex flex-row items-center transition-colors duration-200 hover:bg-white/10 rounded-md'
-                    ref={ref}
-                    to={`/server/${id}/databases`}
-                    onClick={onClick}
-                    end
-                >
-                    <Database width={22} height={22} fill='currentColor' />
-                    <p>Databases</p>
-                </NavLink>
-            </Can>
-        );
-    },
-);
-DatabasesSidebarItem.displayName = 'DatabasesSidebarItem';
-
-const BackupsSidebarItem = React.forwardRef<HTMLAnchorElement, { id: string; onClick: () => void }>(
-    ({ id, onClick }, ref) => {
-        const backupLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.backups);
-
-        // Hide if backups are disabled (limit is 0)
-        if (backupLimit === 0) return null;
-
-        return (
-            <Can action={'backup.*'} matchAny>
-                <NavLink
-                    className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                    ref={ref}
-                    to={`/server/${id}/backups`}
-                    onClick={onClick}
-                    end
-                >
-                    <CloudArrowUpIn width={22} height={22} fill='currentColor' />
-                    <p>Backups</p>
-                </NavLink>
-            </Can>
-        );
-    },
-);
-BackupsSidebarItem.displayName = 'BackupsSidebarItem';
-
-const NetworkingSidebarItem = React.forwardRef<HTMLAnchorElement, { id: string; onClick: () => void }>(
-    ({ id, onClick }, ref) => {
-        const [subdomainSupported, setSubdomainSupported] = useState(false);
-        const [isChecking, setIsChecking] = useState(true);
-        const allocationLimit = ServerContext.useStoreState(
-            (state) => state.server.data?.featureLimits.allocations ?? 0,
-        );
-        const uuid = ServerContext.useStoreState((state) => state.server.data?.uuid);
-
-        useEffect(() => {
-            const checkSubdomainSupport = async () => {
-                if (!uuid) {
-                    setIsChecking(false);
-                    return;
-                }
-
-                setIsChecking(true);
-                try {
-                    const data = await getSubdomainInfo(uuid);
-                    setSubdomainSupported(data.supported);
-                } catch (error) {
-                    setSubdomainSupported(false);
-                } finally {
-                    setIsChecking(false);
-                }
-            };
-
-            checkSubdomainSupport();
-        }, [uuid]);
-
-        // Show if allocations are available (> 0) OR subdomains are supported
-        // While checking subdomain support, show optimistically to prevent flickering
-        // This matches the mobile menu logic: (allocationLimit > 0 || subdomainSupported)
-        const shouldShow = allocationLimit > 0 || subdomainSupported || (isChecking && uuid);
-
-        if (!shouldShow) return null;
-
-        return (
-            <Can action={'allocation.*'} matchAny>
-                <NavLink
-                    className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                    ref={ref}
-                    to={`/server/${id}/network`}
-                    onClick={onClick}
-                    end
-                >
-                    <BranchesDown width={22} height={22} fill='currentColor' />
-                    <p>Networking</p>
-                </NavLink>
-            </Can>
-        );
-    },
-);
-NetworkingSidebarItem.displayName = 'NetworkingSidebarItem';
-
-/**
- * Creates a swipe event from an X and Y location at start and current co-ords.
- * Important to create a shared, but not public, space for methods.
- *
- * @class
- */
-
-=======
 import { getSubdomainInfo } from '@/api/server/network/subdomain';
 
 import { ServerContext } from '@/state/server';
 
->>>>>>> upstream/main
+
 const ServerRouter = () => {
     const params = useParams<'id'>();
     const location = useLocation();
@@ -192,11 +55,6 @@ const ServerRouter = () => {
     const serverName = ServerContext.useStoreState((state) => state.server.data?.name);
     const getServer = ServerContext.useStoreActions((actions) => actions.server.getServer);
     const clearServerState = ServerContext.useStoreActions((actions) => actions.clearServerState);
-<<<<<<< HEAD
-    const egg_id = ServerContext.useStoreState((state) => state.server.data?.egg);
-    const nest_id = ServerContext.useStoreState((state) => state.server.data?.nest);
-=======
->>>>>>> upstream/main
     const databaseLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.databases);
     const backupLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.backups);
     const allocationLimit = ServerContext.useStoreState((state) => state.server.data?.featureLimits.allocations);
@@ -294,42 +152,6 @@ const ServerRouter = () => {
         }
     }, [uuid]);
 
-<<<<<<< HEAD
-    // Define refs for navigation buttons.
-    const NavigationHome = useRef(null);
-    const NavigationFiles = useRef(null);
-    const NavigationDatabases = useRef(null);
-    const NavigationBackups = useRef(null);
-    const NavigationNetworking = useRef(null);
-    const NavigationUsers = useRef(null);
-    const NavigationStartup = useRef(null);
-    const NavigationSchedules = useRef(null);
-    const NavigationSettings = useRef(null);
-    const NavigationActivity = useRef(null);
-    const NavigationMod = useRef(null);
-    const NavigationShell = useRef(null);
-    const NavigationPlayers = useRef(null);
-    const NavigationProperties = useRef(null);
-
-    const calculateTop = (pathname: string) => {
-        if (!id) return '0';
-
-        // Get currents of navigation refs.
-        const ButtonHome = NavigationHome.current;
-        const ButtonFiles = NavigationFiles.current;
-        const ButtonDatabases = NavigationDatabases.current;
-        const ButtonBackups = NavigationBackups.current;
-        const ButtonNetworking = NavigationNetworking.current;
-        const ButtonUsers = NavigationUsers.current;
-        const ButtonStartup = NavigationStartup.current;
-        const ButtonSchedules = NavigationSchedules.current;
-        const ButtonSettings = NavigationSettings.current;
-        const ButtonShell = NavigationShell.current;
-        const ButtonActivity = NavigationActivity.current;
-        const ButtonMod = NavigationMod.current;
-        const ButtonPlayers = NavigationPlayers.current;
-        const ButtonProperties = NavigationProperties.current;
-=======
     /**
      * Calculate the top position of the highlight indicator based on the current route.
      * Dynamically matches routes using the route config instead of hardcoded paths.
@@ -338,47 +160,12 @@ const ServerRouter = () => {
         if (!id) return '0';
 
         const HighlightOffset = 8;
->>>>>>> upstream/main
 
         // Find matching route for the current pathname
         for (const route of navRoutes) {
             const key = route.path || 'home';
             const ref = navRefs[key];
 
-<<<<<<< HEAD
-        if (pathname.endsWith(`/server/${id}`) && ButtonHome != null)
-            return (ButtonHome as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/files`) && ButtonFiles != null)
-            return (ButtonFiles as any).offsetTop + HighlightOffset;
-        if (new RegExp(`^/server/${id}/files(/(new|edit).*)?$`).test(pathname) && ButtonFiles != null)
-            return (ButtonFiles as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/databases`) && ButtonDatabases != null)
-            return (ButtonDatabases as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/backups`) && ButtonBackups != null)
-            return (ButtonBackups as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/network`) && ButtonNetworking != null)
-            return (ButtonNetworking as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/users`) && ButtonUsers != null)
-            return (ButtonUsers as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/startup`) && ButtonStartup != null)
-            return (ButtonStartup as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/schedules`) && ButtonSchedules != null)
-            return (ButtonSchedules as any).offsetTop + HighlightOffset;
-        if (new RegExp(`^/server/${id}/schedules/\\d+$`).test(pathname) && ButtonSchedules != null)
-            return (ButtonSchedules as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/settings`) && ButtonSettings != null)
-            return (ButtonSettings as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/shell`) && ButtonShell != null)
-            return (ButtonShell as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/activity`) && ButtonActivity != null)
-            return (ButtonActivity as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/mods`) && ButtonMod != null)
-            return (ButtonMod as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/players`) && ButtonPlayers != null)
-            return (ButtonPlayers as any).offsetTop + HighlightOffset;
-        if (pathname.endsWith(`/server/${id}/properties`) && ButtonProperties != null)
-            return (ButtonProperties as any).offsetTop + HighlightOffset;
-=======
             if (!ref?.current) continue;
 
             const basePath = route.path ? `/server/${id}/${route.path}` : `/server/${id}`;
@@ -402,7 +189,6 @@ const ServerRouter = () => {
                 return ref.current.offsetTop + HighlightOffset;
             }
         }
->>>>>>> upstream/main
 
         return '0';
     };
@@ -556,144 +342,6 @@ const ServerRouter = () => {
                                 data-pyro-subnav-routes-wrapper=''
                                 className='pyro-subnav-routes-wrapper flex-grow overflow-y-auto'
                             >
-<<<<<<< HEAD
-                                {/* lord forgive me for hardcoding this */}
-                                <NavLink
-                                    className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                    ref={NavigationHome}
-                                    to={`/server/${id}`}
-                                    end
-                                >
-                                    <House width={22} height={22} fill='currentColor' />
-                                    <p>Home</p>
-                                </NavLink>
-                                <>
-                                    <Can action={'file.*'} matchAny>
-                                        <NavLink
-                                            className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                            ref={NavigationFiles}
-                                            to={`/server/${id}/files`}
-                                        >
-                                            <FolderOpen width={22} height={22} fill='currentColor' />
-                                            <p>Files</p>
-                                        </NavLink>
-                                    </Can>
-                                    <DatabasesSidebarItem id={id} ref={NavigationDatabases} onClick={() => {}} />
-                                    <BackupsSidebarItem id={id} ref={NavigationBackups} onClick={() => {}} />
-                                    <NetworkingSidebarItem id={id} ref={NavigationNetworking} onClick={() => {}} />
-                                    <Can action={'user.*'} matchAny>
-                                        <NavLink
-                                            className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                            ref={NavigationUsers}
-                                            to={`/server/${id}/users`}
-                                            end
-                                        >
-                                            <Persons width={22} height={22} fill='currentColor' />
-                                            <p>Users</p>
-                                        </NavLink>
-                                    </Can>
-                                    <Can
-                                        action={[
-                                            'startup.read',
-                                            'startup.update',
-                                            'startup.command',
-                                            'startup.docker-image',
-                                        ]}
-                                        matchAny
-                                    >
-                                        <NavLink
-                                            className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                            ref={NavigationStartup}
-                                            to={`/server/${id}/startup`}
-                                            end
-                                        >
-                                            <Terminal width={22} height={22} fill='currentColor' />
-                                            <p>Startup</p>
-                                        </NavLink>
-                                    </Can>
-                                    <Can action={'schedule.*'} matchAny>
-                                        <NavLink
-                                            className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                            ref={NavigationSchedules}
-                                            to={`/server/${id}/schedules`}
-                                        >
-                                            <ClockArrowRotateLeft width={22} height={22} fill='currentColor' />
-                                            <p>Schedules</p>
-                                        </NavLink>
-                                    </Can>
-                                    <Can action={['settings.*', 'file.sftp']} matchAny>
-                                        <NavLink
-                                            className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                            ref={NavigationSettings}
-                                            to={`/server/${id}/settings`}
-                                            end
-                                        >
-                                            <Gear width={22} height={22} fill='currentColor' />
-                                            <p>Settings</p>
-                                        </NavLink>
-                                    </Can>
-                                    <Can action={['activity.*', 'activity.read']} matchAny>
-                                        <NavLink
-                                            className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                            ref={NavigationActivity}
-                                            to={`/server/${id}/activity`}
-                                            end
-                                        >
-                                            <PencilToLine width={22} height={22} fill='currentColor' />
-                                            <p>Activity</p>
-                                        </NavLink>
-                                    </Can>
-                                    {/* {/* TODO: finish modrinth support *\} */}
-                                    {/* <Can action={['modrinth.*', 'modrinth.download']} matchAny> */}
-                                    {/*     <NavLink */}
-                                    {/*         className='flex flex-row items-center sm:hidden md:show' */}
-                                    {/*         ref={NavigationMod} */}
-                                    {/*         to={`/server/${id}/mods`} */}
-                                    {/*         end */}
-                                    {/*     > */}
-                                    {/*         <ModrinthLogo /> */}
-                                    {/*         <p>Mods/Plugins</p> */}
-                                    {/*     </NavLink> */}
-                                    {/* </Can> */}
-                                </>
-                                <Can action={'startup.software'}>
-                                    <NavLink
-                                        className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                        ref={NavigationShell}
-                                        to={`/server/${id}/shell`}
-                                        end
-                                    >
-                                        <Box width={22} height={22} fill='currentColor' />
-                                        <p>Software</p>
-                                    </NavLink>
-                                </Can>
-                                {nest_id === 1 && (
-                                    <>
-                                        <Can action={'control.console'}>
-                                            <NavLink
-                                                className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                                ref={NavigationPlayers}
-                                                to={`/server/${id}/players`}
-                                                end
-                                            >
-                                                <Person width={22} height={22} fill='currentColor' />
-                                                <p>Players</p>
-                                            </NavLink>
-                                        </Can>
-                                        <Can action={'file.read'}>
-                                            <NavLink
-                                                className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
-                                                ref={NavigationProperties}
-                                                to={`/server/${id}/properties`}
-                                                end
-                                            >
-                                                <Gear width={22} height={22} fill='currentColor' />
-                                                <p>Server Properties</p>
-                                            </NavLink>
-                                        </Can>
-                                    </>
-                                )}
-=======
                                 {/* Dynamic navigation items from routes config */}
                                 {navRoutes.map((route) => (
                                     <ServerSidebarNavItem
@@ -704,7 +352,6 @@ const ServerRouter = () => {
                                         onClick={() => {}}
                                     />
                                 ))}
->>>>>>> upstream/main
                             </ul>
                             <div className='shrink-0'>
                                 <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-full'></div>
