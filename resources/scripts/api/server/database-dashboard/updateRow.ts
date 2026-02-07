@@ -15,9 +15,6 @@ export interface UpdateRowResponse {
 
 export default async (uuid: string, request: UpdateRowRequest, daemonType?: string): Promise<UpdateRowResponse> => {
     const type = daemonType || getGlobalDaemonType() || 'elytra';
-    const response = await http.put(
-        `/api/client/servers/${type}/${uuid}/database/tables/data`,
-        request,
-    );
+    const response = await http.put(`/api/client/servers/${type}/${uuid}/database/tables/data`, request);
     return response.data.attributes;
 };

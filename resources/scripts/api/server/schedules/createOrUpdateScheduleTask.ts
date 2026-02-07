@@ -9,7 +9,13 @@ interface Data {
     continueOnFailure: boolean;
 }
 
-export default async (uuid: string, schedule: number, task: number | undefined, data: Data, daemonType?: string): Promise<Task> => {
+export default async (
+    uuid: string,
+    schedule: number,
+    task: number | undefined,
+    data: Data,
+    daemonType?: string,
+): Promise<Task> => {
     const type = daemonType || getGlobalDaemonType() || 'elytra';
     const { data: response } = await http.post(
         `/api/client/servers/${type}/${uuid}/schedules/${schedule}/tasks${task ? `/${task}` : ''}`,

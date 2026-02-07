@@ -63,9 +63,7 @@ export default async (uuid: string, data: ApplyEggChangeData, daemonType?: strin
             }
 
             if (should_wipe) {
-                const filesResponse = await http.get(
-                    `/api/client/servers/${type}/${uuid}/files/list?directory=/`,
-                );
+                const filesResponse = await http.get(`/api/client/servers/${type}/${uuid}/files/list?directory=/`);
                 const files = filesResponse.data?.data || [];
                 if (files.length > 0) {
                     const fileNames = files.map((file: any) => file.name);

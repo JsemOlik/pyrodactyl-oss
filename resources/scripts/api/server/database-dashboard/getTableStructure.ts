@@ -34,7 +34,12 @@ export interface TableStructure {
     rowCount: number;
 }
 
-export default async (uuid: string, tableName: string, databaseName?: string, daemonType?: string): Promise<TableStructure> => {
+export default async (
+    uuid: string,
+    tableName: string,
+    databaseName?: string,
+    daemonType?: string,
+): Promise<TableStructure> => {
     const type = daemonType || getGlobalDaemonType() || 'elytra';
     const params: any = { table: tableName };
     if (databaseName) {

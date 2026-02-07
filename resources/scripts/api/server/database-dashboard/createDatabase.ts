@@ -15,7 +15,11 @@ export interface CreateDatabaseResponse {
     password?: string;
 }
 
-export default async (uuid: string, data: CreateDatabaseRequest, daemonType?: string): Promise<CreateDatabaseResponse> => {
+export default async (
+    uuid: string,
+    data: CreateDatabaseRequest,
+    daemonType?: string,
+): Promise<CreateDatabaseResponse> => {
     const type = daemonType || getGlobalDaemonType() || 'elytra';
     const response = await http.post(`/api/client/servers/${type}/${uuid}/database/databases`, data);
     return response.data.attributes;
