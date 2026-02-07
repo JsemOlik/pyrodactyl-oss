@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface DatabaseMetrics {
     size: number;
@@ -11,6 +12,6 @@ export interface DatabaseMetrics {
 }
 
 export default async (uuid: string): Promise<DatabaseMetrics> => {
-    const response = await http.get(`/api/client/servers/${uuid}/database/metrics`);
+    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/metrics`);
     return response.data.attributes;
 };

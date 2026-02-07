@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface DatabaseSettings {
     database: {
@@ -16,6 +17,6 @@ export default async (uuid: string, databaseName?: string): Promise<DatabaseSett
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${uuid}/database/settings`, { params });
+    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/settings`, { params });
     return response.data.attributes;
 };

@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 interface DeleteBackupResponse {
     job_id: string;
@@ -7,7 +8,7 @@ interface DeleteBackupResponse {
 }
 
 export default async (uuid: string, backup: string): Promise<{ jobId: string; status: string; message: string }> => {
-    const response = await http.delete<DeleteBackupResponse>(`/api/client/servers/${uuid}/backups/${backup}`);
+    const response = await http.delete<DeleteBackupResponse>(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/backups/${backup}`);
 
     return {
         jobId: response.data.job_id,

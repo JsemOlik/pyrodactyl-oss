@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface DatabaseConnectionInfo {
     host: string;
@@ -13,6 +14,6 @@ export interface DatabaseConnectionInfo {
 }
 
 export default async (uuid: string): Promise<DatabaseConnectionInfo> => {
-    const response = await http.get(`/api/client/servers/${uuid}/database/connection`);
+    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/connection`);
     return response.data.attributes;
 };

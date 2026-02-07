@@ -29,7 +29,7 @@ const daemonType = getGlobalDaemonType();
 
 export const getSubdomainInfo = (uuid: string): Promise<SubdomainInfo> => {
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${uuid}/subdomain`)
+        http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/subdomain`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
@@ -37,7 +37,7 @@ export const getSubdomainInfo = (uuid: string): Promise<SubdomainInfo> => {
 
 export const setSubdomain = (uuid: string, subdomain: string, domainId: number): Promise<void> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${uuid}/subdomain`, {
+        http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/subdomain`, {
             subdomain,
             domain_id: domainId,
         })
@@ -48,7 +48,7 @@ export const setSubdomain = (uuid: string, subdomain: string, domainId: number):
 
 export const deleteSubdomain = (uuid: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-        http.delete(`/api/client/servers/${uuid}/subdomain`)
+        http.delete(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/subdomain`)
             .then(() => resolve())
             .catch(reject);
     });
@@ -60,7 +60,7 @@ export const checkSubdomainAvailability = (
     domainId: number,
 ): Promise<AvailabilityResponse> => {
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${uuid}/subdomain/check-availability`, {
+        http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/subdomain/check-availability`, {
             subdomain,
             domain_id: domainId,
         })

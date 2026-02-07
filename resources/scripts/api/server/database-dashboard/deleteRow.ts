@@ -1,4 +1,5 @@
 import http from '@/api/http';
+import { getGlobalDaemonType } from '@/api/server/getServer';
 
 export interface DeleteRowRequest {
     table: string;
@@ -7,7 +8,7 @@ export interface DeleteRowRequest {
 }
 
 export default async (uuid: string, request: DeleteRowRequest): Promise<void> => {
-    await http.delete(`/api/client/servers/${uuid}/database/tables/data`, {
+    await http.delete(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`, {
         data: request,
     });
 };
