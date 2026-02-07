@@ -4,9 +4,10 @@ import { Schedule, rawDataToServerSchedule } from '@/api/server/schedules/getSer
 
 type Data = Pick<Schedule, 'cron' | 'name' | 'onlyWhenOnline' | 'isActive'> & { id?: number };
 
-export default async (uuid: string, schedule: Data): Promise<Schedule> => {
+export default async (uuid: string, schedule: Data, daemonType?: string): Promise<Schedule> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     const { data } = await http.post(
-        `/api/client/servers/${getGlobalDaemonType()}/${uuid}/schedules${schedule.id ? `/${schedule.id}` : ''}`,
+        `/api/client/servers/${type}/${uuid}/schedules${schedule.id ? `/${schedule.id}` : ''}`,
         {
             is_active: schedule.isActive,
             only_when_online: schedule.onlyWhenOnline,

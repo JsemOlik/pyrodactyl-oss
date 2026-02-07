@@ -12,7 +12,8 @@ export interface InsertRowResponse {
     insertId: number | string;
 }
 
-export default async (uuid: string, request: InsertRowRequest): Promise<InsertRowResponse> => {
-    const response = await http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`, request);
+export default async (uuid: string, request: InsertRowRequest, daemonType?: string): Promise<InsertRowResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.post(`/api/client/servers/${type}/${uuid}/database/tables/data`, request);
     return response.data.attributes;
 };

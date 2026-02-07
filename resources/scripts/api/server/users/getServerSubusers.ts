@@ -14,9 +14,10 @@ export const rawDataToServerSubuser = (data: FractalResponseData): Subuser => ({
     can: (permission) => (data.attributes.permissions || []).indexOf(permission) >= 0,
 });
 
-export default (uuid: string): Promise<Subuser[]> => {
+export default (uuid: string, daemonType?: string): Promise<Subuser[]> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/users`)
+        http.get(`/api/client/servers/${type}/${uuid}/users`)
             .then(({ data }) => resolve((data.data || []).map(rawDataToServerSubuser)))
             .catch(reject);
     });

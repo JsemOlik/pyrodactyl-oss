@@ -10,8 +10,9 @@ export interface TableInfo {
     collation: string;
 }
 
-export default async (uuid: string, databaseName?: string): Promise<TableInfo[]> => {
+export default async (uuid: string, databaseName?: string, daemonType?: string): Promise<TableInfo[]> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     const params = databaseName ? { database: databaseName } : undefined;
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables`, { params });
+    const response = await http.get(`/api/client/servers/${type}/${uuid}/database/tables`, { params });
     return (response.data.data || []).map((item: any) => item.attributes);
 };

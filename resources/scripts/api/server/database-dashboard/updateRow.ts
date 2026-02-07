@@ -13,7 +13,8 @@ export interface UpdateRowResponse {
     affected: number;
 }
 
-export default async (uuid: string, request: UpdateRowRequest): Promise<UpdateRowResponse> => {
-    const response = await http.put(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`, request);
+export default async (uuid: string, request: UpdateRowRequest, daemonType?: string): Promise<UpdateRowResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.put(`/api/client/servers/${type}/${uuid}/database/tables/data`, request);
     return response.data.attributes;
 };

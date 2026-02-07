@@ -34,11 +34,19 @@ export interface TableStructure {
     rowCount: number;
 }
 
-export default async (uuid: string, tableName: string, databaseName?: string): Promise<TableStructure> => {
+export default async (
+    uuid: string,
+    tableName: string,
+    databaseName?: string,
+    daemonType?: string,
+): Promise<TableStructure> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     const params: any = { table: tableName };
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/structure`, { params });
+    const response = await http.get(`/api/client/servers/${type}/${uuid}/database/tables/structure`, {
+        params,
+    });
     return response.data.attributes;
 };

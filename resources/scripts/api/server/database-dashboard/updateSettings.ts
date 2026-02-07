@@ -12,7 +12,12 @@ export interface UpdateSettingsResponse {
     message: string;
 }
 
-export default async (uuid: string, request: UpdateSettingsRequest): Promise<UpdateSettingsResponse> => {
-    const response = await http.put(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/settings`, request);
+export default async (
+    uuid: string,
+    request: UpdateSettingsRequest,
+    daemonType?: string,
+): Promise<UpdateSettingsResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.put(`/api/client/servers/${type}/${uuid}/database/settings`, request);
     return response.data.attributes;
 };

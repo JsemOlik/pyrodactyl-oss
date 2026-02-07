@@ -22,9 +22,10 @@ interface CreateBackupResponse {
 export default async (
     uuid: string,
     params: RequestParameters,
+    daemonType?: string,
 ): Promise<{ backup: ServerBackup; jobId: string; status: string; progress: number; message?: string }> => {
-    const daemonType = getGlobalDaemonType();
-    const response = await http.post<CreateBackupResponse>(`/api/client/servers/${daemonType}/${uuid}/backups`, {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.post<CreateBackupResponse>(`/api/client/servers/${type}/${uuid}/backups`, {
         name: params.name,
         ignored: params.ignored,
         is_locked: params.isLocked,

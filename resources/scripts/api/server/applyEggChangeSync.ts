@@ -1,5 +1,6 @@
 import http from '@/api/http';
 import { getGlobalDaemonType } from '@/api/server/getServer';
+
 // NOTE: This is Specific to wings, it should also work for elytra, but I haven't actually tested
 
 interface ApplyEggChangeData {
@@ -12,14 +13,14 @@ interface ApplyEggChangeData {
     should_wipe?: boolean;
 }
 
-export default async (uuid: string, data: ApplyEggChangeData): Promise<void> => {
-    const daemonType = getGlobalDaemonType();
+export default async (uuid: string, data: ApplyEggChangeData, daemonType?: string): Promise<void> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
 
-    if (daemonType?.toLowerCase() === 'elytra') {
-        return http.post(`/api/client/servers/${daemonType}/${uuid}/settings/egg/apply`, data);
+    if (type?.toLowerCase() === 'elytra') {
+        return http.post(`/api/client/servers/${type}/${uuid}/settings/egg/apply`, data);
     }
 
-    if (daemonType?.toLowerCase() === 'wings') {
+    if (type?.toLowerCase() === 'wings') {
         const {
             egg_id,
             nest_id,
@@ -31,13 +32,13 @@ export default async (uuid: string, data: ApplyEggChangeData): Promise<void> => 
         } = data;
 
         try {
-            await http.put(`/api/client/servers/${daemonType}/${uuid}/settings/egg`, {
+            await http.put(`/api/client/servers/${type}/${uuid}/settings/egg`, {
                 egg_id,
                 nest_id,
             });
 
             if (docker_image) {
-                await http.put(`/api/client/servers/${daemonType}/${uuid}/settings/docker-image`, {
+                await http.put(`/api/client/servers/${type}/${uuid}/settings/docker-image`, {
                     docker_image,
                 });
             }
@@ -47,7 +48,7 @@ export default async (uuid: string, data: ApplyEggChangeData): Promise<void> => 
             }
 
             const envPromises = Object.entries(environment).map(([key, value]) =>
-                http.put(`/api/client/servers/${daemonType}/${uuid}/startup/variable`, {
+                http.put(`/api/client/servers/${type}/${uuid}/startup/variable`, {
                     key,
                     value,
                 }),
@@ -55,27 +56,25 @@ export default async (uuid: string, data: ApplyEggChangeData): Promise<void> => 
             await Promise.all(envPromises);
 
             if (should_backup) {
-                await http.post(`/api/client/servers/${daemonType}/${uuid}/backups`, {
+                await http.post(`/api/client/servers/${type}/${uuid}/backups`, {
                     name: `Software Change Backup - ${new Date().toISOString()}`,
                     is_locked: false,
                 });
             }
 
             if (should_wipe) {
-                const filesResponse = await http.get(
-                    `/api/client/servers/${daemonType}/${uuid}/files/list?directory=/`,
-                );
+                const filesResponse = await http.get(`/api/client/servers/${type}/${uuid}/files/list?directory=/`);
                 const files = filesResponse.data?.data || [];
                 if (files.length > 0) {
                     const fileNames = files.map((file: any) => file.name);
-                    await http.post(`/api/client/servers/${daemonType}/${uuid}/files/delete`, {
+                    await http.post(`/api/client/servers/${type}/${uuid}/files/delete`, {
                         root: '/',
                         files: fileNames,
                     });
                 }
             }
 
-            await http.post(`/api/client/servers/${daemonType}/${uuid}/settings/reinstall`);
+            await http.post(`/api/client/servers/${type}/${uuid}/settings/reinstall`);
         } catch (error) {
             console.error('Failed to apply egg change for Wings:', error);
             throw error;

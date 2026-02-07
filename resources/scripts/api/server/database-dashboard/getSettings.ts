@@ -12,11 +12,14 @@ export interface DatabaseSettings {
     };
 }
 
-export default async (uuid: string, databaseName?: string): Promise<DatabaseSettings> => {
+export default async (uuid: string, databaseName?: string, daemonType?: string): Promise<DatabaseSettings> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     const params: any = {};
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/settings`, { params });
+    const response = await http.get(`/api/client/servers/${type}/${uuid}/database/settings`, {
+        params,
+    });
     return response.data.attributes;
 };

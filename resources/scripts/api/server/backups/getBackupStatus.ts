@@ -15,9 +15,9 @@ export interface BackupJobStatus {
     completed_at?: string;
 }
 
-export default async (uuid: string, backupUuid: string): Promise<BackupJobStatus> => {
-    const daemonType = getGlobalDaemonType();
-    const { data } = await http.get(`/api/client/servers/${daemonType}/${uuid}/backups/${backupUuid}/status`);
+export default async (uuid: string, backupUuid: string, daemonType?: string): Promise<BackupJobStatus> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const { data } = await http.get(`/api/client/servers/${type}/${uuid}/backups/${backupUuid}/status`);
 
     return data;
 };

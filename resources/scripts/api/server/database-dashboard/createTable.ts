@@ -28,7 +28,8 @@ export interface CreateTableResponse {
     created: boolean;
 }
 
-export default async (uuid: string, data: CreateTableRequest): Promise<CreateTableResponse> => {
-    const response = await http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables`, data);
+export default async (uuid: string, data: CreateTableRequest, daemonType?: string): Promise<CreateTableResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.post(`/api/client/servers/${type}/${uuid}/database/tables`, data);
     return response.data.attributes;
 };

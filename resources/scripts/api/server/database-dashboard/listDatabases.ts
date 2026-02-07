@@ -8,7 +8,8 @@ export interface DatabaseInfo {
     tableCount: number;
 }
 
-export default async (uuid: string): Promise<DatabaseInfo[]> => {
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/databases`);
+export default async (uuid: string, daemonType?: string): Promise<DatabaseInfo[]> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.get(`/api/client/servers/${type}/${uuid}/database/databases`);
     return (response.data.data || []).map((item: any) => item.attributes);
 };

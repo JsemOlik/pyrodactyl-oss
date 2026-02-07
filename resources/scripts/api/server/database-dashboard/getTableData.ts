@@ -18,11 +18,15 @@ export default async (
     page: number = 1,
     perPage: number = 50,
     databaseName?: string,
+    daemonType?: string,
 ): Promise<TableDataResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     const params: any = { table: tableName, page, per_page: perPage };
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`, { params });
+    const response = await http.get(`/api/client/servers/${type}/${uuid}/database/tables/data`, {
+        params,
+    });
     return response.data.attributes;
 };

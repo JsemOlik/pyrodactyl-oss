@@ -7,8 +7,13 @@ interface DeleteBackupResponse {
     message: string;
 }
 
-export default async (uuid: string, backup: string): Promise<{ jobId: string; status: string; message: string }> => {
-    const response = await http.delete<DeleteBackupResponse>(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/backups/${backup}`);
+export default async (
+    uuid: string,
+    backup: string,
+    daemonType?: string,
+): Promise<{ jobId: string; status: string; message: string }> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.delete<DeleteBackupResponse>(`/api/client/servers/${type}/${uuid}/backups/${backup}`);
 
     return {
         jobId: response.data.job_id,

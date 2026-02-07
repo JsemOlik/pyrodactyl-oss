@@ -9,9 +9,10 @@ interface PullFileOptions {
     foreground?: boolean;
 }
 
-export default (uuid: string, options: PullFileOptions): Promise<void> => {
+export default (uuid: string, options: PullFileOptions, daemonType?: string): Promise<void> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/files/pull`, options)
+        http.post(`/api/client/servers/${type}/${uuid}/files/pull`, options)
             .then(() => resolve())
             .catch(reject);
     });

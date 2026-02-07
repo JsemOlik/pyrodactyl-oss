@@ -11,7 +11,8 @@ export interface DatabaseMetrics {
     uptime: number;
 }
 
-export default async (uuid: string): Promise<DatabaseMetrics> => {
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/metrics`);
+export default async (uuid: string, daemonType?: string): Promise<DatabaseMetrics> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.get(`/api/client/servers/${type}/${uuid}/database/metrics`);
     return response.data.attributes;
 };

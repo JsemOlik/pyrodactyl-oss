@@ -125,7 +125,7 @@ const StartupContainer = () => {
         setCommandLoading(true);
         clearFlashes('startup:command');
 
-        updateStartupCommand(uuid, commandValue)
+        updateStartupCommand(uuid, commandValue, server.daemonType)
             .then((invocation) => {
                 mutate(
                     (data) => ({
@@ -146,7 +146,7 @@ const StartupContainer = () => {
 
     const loadDefaultCommand = async () => {
         try {
-            const defaultCommand = await resetStartupCommand(uuid);
+            const defaultCommand = await resetStartupCommand(uuid, server.daemonType);
             setCommandValue(defaultCommand);
             const processed = await processCommandLive(defaultCommand);
             setLiveProcessedCommand(processed);
@@ -157,7 +157,7 @@ const StartupContainer = () => {
 
     const processCommandLive = async (rawCommand: string): Promise<string> => {
         try {
-            return await processStartupCommand(uuid, rawCommand);
+            return await processStartupCommand(uuid, rawCommand, server.daemonType);
         } catch (error) {
             console.error('Failed to process command:', error);
             return rawCommand;

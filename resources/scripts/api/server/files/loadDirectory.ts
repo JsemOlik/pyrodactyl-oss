@@ -17,8 +17,9 @@ export interface FileObject {
     isEditable: () => boolean;
 }
 
-export default async (uuid: string, directory?: string): Promise<FileObject[]> => {
-    const { data } = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/files/list`, {
+export default async (uuid: string, directory?: string, daemonType?: string): Promise<FileObject[]> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const { data } = await http.get(`/api/client/servers/${type}/${uuid}/files/list`, {
         params: { directory: directory ?? '/' },
     });
 

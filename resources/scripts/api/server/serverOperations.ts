@@ -50,16 +50,25 @@ export interface ApplyEggChangeAsyncResponse {
 /**
  * Get specific operation status by ID.
  */
-export const getOperationStatus = async (uuid: string, operationId: string): Promise<ServerOperation> => {
-    const { data } = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/operations/${operationId}`);
+export const getOperationStatus = async (
+    uuid: string,
+    operationId: string,
+    daemonType?: string,
+): Promise<ServerOperation> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const { data } = await http.get(`/api/client/servers/${type}/${uuid}/operations/${operationId}`);
     return data;
 };
 
 /**
  * Get all operations for a server.
  */
-export const getServerOperations = async (uuid: string): Promise<{ operations: ServerOperation[] }> => {
-    const { data } = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/operations`);
+export const getServerOperations = async (
+    uuid: string,
+    daemonType?: string,
+): Promise<{ operations: ServerOperation[] }> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const { data } = await http.get(`/api/client/servers/${type}/${uuid}/operations`);
     return data;
 };
 

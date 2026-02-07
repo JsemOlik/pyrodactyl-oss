@@ -25,19 +25,20 @@ export interface AvailabilityResponse {
     available: boolean;
     message: string;
 }
-const daemonType = getGlobalDaemonType();
 
-export const getSubdomainInfo = (uuid: string): Promise<SubdomainInfo> => {
+export const getSubdomainInfo = (uuid: string, daemonType?: string): Promise<SubdomainInfo> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/subdomain`)
+        http.get(`/api/client/servers/${type}/${uuid}/subdomain`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });
 };
 
-export const setSubdomain = (uuid: string, subdomain: string, domainId: number): Promise<void> => {
+export const setSubdomain = (uuid: string, subdomain: string, domainId: number, daemonType?: string): Promise<void> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/subdomain`, {
+        http.post(`/api/client/servers/${type}/${uuid}/subdomain`, {
             subdomain,
             domain_id: domainId,
         })
@@ -46,9 +47,10 @@ export const setSubdomain = (uuid: string, subdomain: string, domainId: number):
     });
 };
 
-export const deleteSubdomain = (uuid: string): Promise<void> => {
+export const deleteSubdomain = (uuid: string, daemonType?: string): Promise<void> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.delete(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/subdomain`)
+        http.delete(`/api/client/servers/${type}/${uuid}/subdomain`)
             .then(() => resolve())
             .catch(reject);
     });
@@ -58,9 +60,11 @@ export const checkSubdomainAvailability = (
     uuid: string,
     subdomain: string,
     domainId: number,
+    daemonType?: string,
 ): Promise<AvailabilityResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/subdomain/check-availability`, {
+        http.post(`/api/client/servers/${type}/${uuid}/subdomain/check-availability`, {
             subdomain,
             domain_id: domainId,
         })
