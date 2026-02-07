@@ -13,7 +13,8 @@ export interface DatabaseConnectionInfo {
     };
 }
 
-export default async (uuid: string): Promise<DatabaseConnectionInfo> => {
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/connection`);
+export default async (uuid: string, daemonType?: string): Promise<DatabaseConnectionInfo> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.get(`/api/client/servers/${type}/${uuid}/database/connection`);
     return response.data.attributes;
 };

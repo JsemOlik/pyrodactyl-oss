@@ -6,9 +6,10 @@ interface Data {
     from: string;
 }
 
-export default (uuid: string, directory: string, files: Data[]): Promise<void> => {
+export default (uuid: string, directory: string, files: Data[], daemonType?: string): Promise<void> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.put(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/files/rename`, { root: directory, files })
+        http.put(`/api/client/servers/${type}/${uuid}/files/rename`, { root: directory, files })
             .then(() => resolve())
             .catch(reject);
     });

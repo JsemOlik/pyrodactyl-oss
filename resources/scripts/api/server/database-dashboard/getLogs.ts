@@ -26,11 +26,13 @@ export default async (
     logType: 'error' | 'slow' | 'general' = 'general',
     limit: number = 100,
     databaseName?: string,
+    daemonType?: string,
 ): Promise<LogsResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     const params: any = { type: logType, limit };
     if (databaseName) {
         params.database = databaseName;
     }
-    const response = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/logs`, { params });
+    const response = await http.get(`/api/client/servers/${type}/${uuid}/database/logs`, { params });
     return response.data.attributes;
 };

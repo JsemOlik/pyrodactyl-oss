@@ -1,9 +1,10 @@
 import http from '@/api/http';
 import { getGlobalDaemonType } from '@/api/server/getServer';
 
-export default async (uuid: string, directory: string, file: string): Promise<void> => {
+export default async (uuid: string, directory: string, file: string, daemonType?: string): Promise<void> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     await http.post(
-        `/api/client/servers/${getGlobalDaemonType()}/${uuid}/files/decompress`,
+        `/api/client/servers/${type}/${uuid}/files/decompress`,
         { root: directory, file },
         {
             timeout: 300000,

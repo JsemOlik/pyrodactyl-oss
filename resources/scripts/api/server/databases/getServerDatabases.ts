@@ -19,11 +19,11 @@ export const rawDataToServerDatabase = (data: any): ServerDatabase => ({
     password: data.relationships.password?.attributes?.password,
 });
 
-export default (uuid: string, includePassword = true): Promise<ServerDatabase[]> => {
-    const daemonType = getGlobalDaemonType();
+export default (uuid: string, includePassword = true, daemonType?: string): Promise<ServerDatabase[]> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
 
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${daemonType}/${uuid}/databases`, {
+        http.get(`/api/client/servers/${type}/${uuid}/databases`, {
             params: includePassword ? { include: 'password' } : undefined,
         })
             .then((response) =>

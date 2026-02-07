@@ -31,9 +31,9 @@ export interface EggPreview {
  * Preview egg configuration changes before applying them.
  * Returns egg details, variables, and available Docker images.
  */
-export default async (uuid: string, eggId: number, nestId: number): Promise<EggPreview> => {
-    const daemonType = getGlobalDaemonType();
-    const { data } = await http.post(`/api/client/servers/${daemonType}/${uuid}/settings/egg/preview`, {
+export default async (uuid: string, eggId: number, nestId: number, daemonType?: string): Promise<EggPreview> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const { data } = await http.post(`/api/client/servers/${type}/${uuid}/settings/egg/preview`, {
         egg_id: eggId,
         nest_id: nestId,
     });

@@ -10,10 +10,11 @@ interface RestoreBackupResponse {
 export const restoreServerBackup = async (
     uuid: string,
     backup: string,
+    daemonType?: string,
 ): Promise<{ jobId: string; status: string; message: string }> => {
-    const daemonType = getGlobalDaemonType();
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     const response = await http.post<RestoreBackupResponse>(
-        `/api/client/servers/${daemonType}/${uuid}/backups/${backup}/restore`,
+        `/api/client/servers/${type}/${uuid}/backups/${backup}/restore`,
         {
             // FIXME: This can't be right
             adapter: 'rustic_s3',

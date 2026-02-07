@@ -6,11 +6,11 @@ interface Response {
     socket: string;
 }
 
-export default (server: string): Promise<Response> => {
-    const daemonType = getGlobalDaemonType();
+export default (server: string, daemonType?: string): Promise<Response> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
 
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${daemonType}/${server}/websocket`)
+        http.get(`/api/client/servers/${type}/${server}/websocket`)
             .then(({ data }) =>
                 resolve({
                     token: data.data.token,

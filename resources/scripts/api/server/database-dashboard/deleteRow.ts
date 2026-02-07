@@ -7,8 +7,9 @@ export interface DeleteRowRequest {
     database?: string;
 }
 
-export default async (uuid: string, request: DeleteRowRequest): Promise<void> => {
-    await http.delete(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/tables/data`, {
+export default async (uuid: string, request: DeleteRowRequest, daemonType?: string): Promise<void> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    await http.delete(`/api/client/servers/${type}/${uuid}/database/tables/data`, {
         data: request,
     });
 };

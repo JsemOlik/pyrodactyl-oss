@@ -14,7 +14,8 @@ export interface ExecuteQueryResponse {
     executionTime: number;
 }
 
-export default async (uuid: string, request: ExecuteQueryRequest): Promise<ExecuteQueryResponse> => {
-    const response = await http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/database/query`, request);
+export default async (uuid: string, request: ExecuteQueryRequest, daemonType?: string): Promise<ExecuteQueryResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const response = await http.post(`/api/client/servers/${type}/${uuid}/database/query`, request);
     return response.data.attributes;
 };

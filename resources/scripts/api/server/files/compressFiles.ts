@@ -3,9 +3,10 @@ import { FileObject } from '@/api/server/files/loadDirectory';
 import { getGlobalDaemonType } from '@/api/server/getServer';
 import { rawDataToFileObject } from '@/api/transformers';
 
-export default async (uuid: string, directory: string, files: string[]): Promise<FileObject> => {
+export default async (uuid: string, directory: string, files: string[], daemonType?: string): Promise<FileObject> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     const { data } = await http.post(
-        `/api/client/servers/${getGlobalDaemonType()}/${uuid}/files/compress`,
+        `/api/client/servers/${type}/${uuid}/files/compress`,
         { root: directory, files },
         {
             timeout: 60000,

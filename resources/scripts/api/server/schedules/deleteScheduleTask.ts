@@ -1,9 +1,10 @@
 import http from '@/api/http';
 import { getGlobalDaemonType } from '@/api/server/getServer';
 
-export default (uuid: string, scheduleId: number, taskId: number): Promise<void> => {
+export default (uuid: string, scheduleId: number, taskId: number, daemonType?: string): Promise<void> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.delete(`/api/client/${getGlobalDaemonType()}/servers/${uuid}/schedules/${scheduleId}/tasks/${taskId}`)
+        http.delete(`/api/client/${type}/servers/${uuid}/schedules/${scheduleId}/tasks/${taskId}`)
             .then(() => resolve())
             .catch(reject);
     });

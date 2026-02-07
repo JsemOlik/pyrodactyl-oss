@@ -5,9 +5,10 @@ export interface BillingPortalUrlResponse {
     url: string;
 }
 
-export default (serverUuid: string): Promise<BillingPortalUrlResponse> => {
+export default (serverUuid: string, daemonType?: string): Promise<BillingPortalUrlResponse> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.get(`/api/client/servers/${getGlobalDaemonType()}/${serverUuid}/billing-portal`)
+        http.get(`/api/client/servers/${type}/${serverUuid}/billing-portal`)
             .then(({ data }) => resolve(data))
             .catch(reject);
     });

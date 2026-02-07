@@ -67,8 +67,9 @@ export const rawDataToServerSchedule = (data: any): Schedule => ({
     tasks: (data.relationships?.tasks?.data || []).map((row: any) => rawDataToServerTask(row.attributes)),
 });
 
-export default async (uuid: string): Promise<Schedule[]> => {
-    const { data } = await http.get(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/schedules`, {
+export default async (uuid: string, daemonType?: string): Promise<Schedule[]> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
+    const { data } = await http.get(`/api/client/servers/${type}/${uuid}/schedules`, {
         params: {
             include: ['tasks'],
         },

@@ -9,9 +9,10 @@ interface Params {
     permissions: string[];
 }
 
-export default (uuid: string, params: Params, subuser?: Subuser): Promise<Subuser> => {
+export default (uuid: string, params: Params, subuser?: Subuser, daemonType?: string): Promise<Subuser> => {
+    const type = daemonType || getGlobalDaemonType() || 'elytra';
     return new Promise((resolve, reject) => {
-        http.post(`/api/client/servers/${getGlobalDaemonType()}/${uuid}/users${subuser ? `/${subuser.uuid}` : ''}`, {
+        http.post(`/api/client/servers/${type}/${uuid}/users${subuser ? `/${subuser.uuid}` : ''}`, {
             ...params,
         })
             .then((data) => resolve(rawDataToServerSubuser(data.data)))
