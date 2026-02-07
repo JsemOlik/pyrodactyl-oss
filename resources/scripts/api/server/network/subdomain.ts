@@ -25,7 +25,6 @@ export interface AvailabilityResponse {
     available: boolean;
     message: string;
 }
-const daemonType = getGlobalDaemonType();
 
 export const getSubdomainInfo = (uuid: string, daemonType?: string): Promise<SubdomainInfo> => {
     const type = daemonType || getGlobalDaemonType() || 'elytra';
