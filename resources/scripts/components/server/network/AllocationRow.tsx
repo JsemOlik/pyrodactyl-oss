@@ -90,13 +90,9 @@ const AllocationRow = ({ allocation }: Props) => {
     };
 
     const deleteAllocation = () => {
-<<<<<<< HEAD
-=======
         setShowDeleteDialog(false);
->>>>>>> upstream/main
         clearFlashes();
         setDeleteLoading(true);
-        setShowDeleteDialog(false);
 
         deleteServerAllocation(uuid, allocation.id)
             .then(() => {
@@ -250,60 +246,8 @@ const AllocationRow = ({ allocation }: Props) => {
                         </Can>
                     </div>
                 </div>
-<<<<<<< HEAD
             </PageListItem>
         </>
-=======
-
-                <div className='flex items-center justify-center gap-2 sm:flex-col sm:gap-3'>
-                    <Can action={'allocation.update'}>
-                        <ActionButton
-                            variant='secondary'
-                            size='sm'
-                            onClick={setPrimaryAllocation}
-                            disabled={allocation.isDefault}
-                            title={
-                                allocation.isDefault
-                                    ? 'This is already the primary allocation'
-                                    : 'Make this the primary allocation'
-                            }
-                        >
-                            <CrownDiamond width={22} height={22} fill='currentColor' className='mr-1' />
-                            <span className='hidden sm:inline'>Make Primary</span>
-                            <span className='sm:hidden'>Primary</span>
-                        </ActionButton>
-                    </Can>
-                    <Can action={'allocation.delete'}>
-                        <ActionButton
-                            variant='danger'
-                            size='sm'
-                            onClick={() => setShowDeleteDialog(true)}
-                            disabled={allocation.isDefault || deleteLoading}
-                            title={
-                                allocation.isDefault ? 'Cannot delete the primary allocation' : 'Delete this allocation'
-                            }
-                        >
-                            {deleteLoading ? (
-                                <Spinner size='small' />
-                            ) : (
-                                <TrashBin width={22} height={22} fill='currentColor' className='mr-1' />
-                            )}
-                            <span className='hidden sm:inline'>Delete</span>
-                        </ActionButton>
-                    </Can>
-                </div>
-            </div>
-            <Dialog.Confirm
-                open={showDeleteDialog}
-                onClose={() => setShowDeleteDialog(false)}
-                title={'Delete Allocation'}
-                confirm={'Delete'}
-                onConfirmed={deleteAllocation}
-            >
-                Are you sure you want to delete this allocation? This action cannot be undone.
-            </Dialog.Confirm>
-        </PageListItem>
->>>>>>> upstream/main
     );
 };
 

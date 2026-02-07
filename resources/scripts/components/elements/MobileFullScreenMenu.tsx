@@ -7,14 +7,9 @@ import { getServerNavRoutes } from '@/routers/routes';
 
 import Can from '@/components/elements/Can';
 
-<<<<<<< HEAD
-import HugeIconsCashIcon from './hugeicons/CashIcon';
-import HugeIconsQuestion from './hugeicons/Question';
-=======
 import { getSubdomainInfo } from '@/api/server/network/subdomain';
 
 import { ServerContext } from '@/state/server';
->>>>>>> upstream/main
 
 interface MobileFullScreenMenuProps {
     isVisible: boolean;
@@ -92,17 +87,7 @@ export const DashboardMobileMenu = ({ isVisible, onClose }: DashboardMobileMenuP
             <NavigationItem to='/account/ssh' icon={Key} end onClick={onClose}>
                 SSH Keys
             </NavigationItem>
-<<<<<<< HEAD
-            <NavigationItem to='/billing' icon={Gear} end>
-                Billing
-            </NavigationItem>
-            <NavigationItem to='/support' icon={Gear} end>
-                Support
-            </NavigationItem>
-            <NavigationItem to='/account' icon={Gear} end>
-=======
             <NavigationItem to='/account' icon={Gear} end onClick={onClose}>
->>>>>>> upstream/main
                 Settings
             </NavigationItem>
         </MobileFullScreenMenu>

@@ -92,7 +92,6 @@ export default defineConfig({
             telemetry: false,
         }),
         react({
-<<<<<<< HEAD
             // Note: @swc/plugin-styled-components is currently disabled due to build errors
             // styled-components will still work, just without SWC optimization
             // plugins: [
@@ -104,17 +103,6 @@ export default defineConfig({
             //         },
             //     ],
             // ],
-=======
-            plugins: [
-                [
-                    '@swc/plugin-styled-components',
-                    {
-                        pure: true,
-                        namespace: 'pyrodactyl',
-                    },
-                ],
-            ],
->>>>>>> upstream/main
         }),
     ],
 
