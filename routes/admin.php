@@ -179,6 +179,7 @@ Route::group(['prefix' => 'users'], function () {
 */
 Route::group(['prefix' => 'servers'], function () {
     Route::get('/', [Admin\Servers\ServerController::class, 'index'])->name('admin.servers');
+    Route::post('/refresh-power-states', [Admin\Servers\ServerController::class, 'refreshPowerStates'])->name('admin.servers.refresh-power-states');
     Route::get('/new', [Admin\Servers\CreateServerController::class, 'index'])->name('admin.servers.new');
     Route::get('/view/{server:id}', [Admin\Servers\ServerViewController::class, 'index'])->name('admin.servers.view');
 

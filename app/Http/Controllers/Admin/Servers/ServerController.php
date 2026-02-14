@@ -10,13 +10,17 @@ use Spatie\QueryBuilder\AllowedFilter;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Models\Filters\AdminServerFilter;
 use Illuminate\Contracts\View\Factory as ViewFactory;
+use Pterodactyl\Services\Servers\SyncPowerStateService;
 
 class ServerController extends Controller
 {
     /**
      * ServerController constructor.
      */
-    public function __construct(private ViewFactory $view) {}
+    public function __construct(
+        private ViewFactory $view,
+        private SyncPowerStateService $syncPowerStateService,
+    ) {}
 
     /**
      * Returns all the servers that exist on the system using a paginated result set. If
@@ -107,5 +111,17 @@ class ServerController extends Controller
             ],
             'current_filter' => $filterType,
         ]);
+    }
+
+    /**
+     * Manually refresh cached power_state for all servers from Wings/Elytra.
+     */
+    public function refreshPowerStates(Request $request)
+    {
+        $this->syncPowerStateService->handle();
+
+        return redirect()
+            ->route('admin.servers', $request->only('filter_type', 'filter'))
+            ->with('status', 'Server power states are being refreshed.');
     }
 }
