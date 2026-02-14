@@ -270,6 +270,7 @@ const DashboardRouter = () => {
                                 end
                                 className='flex flex-row items-center justify-center'
                                 ref={NavigationSettingsBilling}
+                                title='Billing'
                             >
                                 <CircleDollar width={22} height={22} fill='currentColor' />
                             </NavLink>
@@ -278,13 +279,15 @@ const DashboardRouter = () => {
                                 end
                                 className='flex flex-row items-center justify-center'
                                 ref={NavigationSupport}
+                                title='Support'
                             >
                                 <CircleQuestion width={22} height={22} fill='currentColor' />
                             </NavLink>
                             <button
                                 type='button'
                                 onClick={onTriggerLogout}
-                                className='flex flex-row items-center justify-center text-white/80 hover:text-white'
+                                className='flex flex-row items-center justify-center text-white/80 hover:text-white cursor-pointer'
+                                title='Log out'
                             >
                                 <span className='text-lg leading-none'>&#x21AA;</span>
                             </button>
