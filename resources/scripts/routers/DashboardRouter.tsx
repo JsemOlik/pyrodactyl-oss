@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
@@ -258,40 +259,83 @@ const DashboardRouter = () => {
                         </NavLink>
 
                         {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
-                        <div
-                            className={`pt-3 gap-3 flex ${
-                                isSidebarCollapsed
-                                    ? 'flex-col items-stretch justify-end'
-                                    : 'flex-row items-center justify-between'
-                            }`}
-                        >
-                            <NavLink
-                                to={'/billing'}
-                                end
-                                className='flex flex-row items-center justify-center'
-                                ref={NavigationSettingsBilling}
-                                title='Billing'
+                        <Tooltip.Provider delayDuration={150}>
+                            <div
+                                className={`pt-3 gap-3 flex ${
+                                    isSidebarCollapsed
+                                        ? 'flex-col items-stretch justify-end'
+                                        : 'flex-row items-center justify-between'
+                                }`}
                             >
-                                <CircleDollar width={22} height={22} fill='currentColor' />
-                            </NavLink>
-                            <NavLink
-                                to={'/support'}
-                                end
-                                className='flex flex-row items-center justify-center'
-                                ref={NavigationSupport}
-                                title='Support'
-                            >
-                                <CircleQuestion width={22} height={22} fill='currentColor' />
-                            </NavLink>
-                            <button
-                                type='button'
-                                onClick={onTriggerLogout}
-                                className='flex flex-row items-center justify-center text-white/80 hover:text-white cursor-pointer'
-                                title='Log out'
-                            >
-                                <span className='text-lg leading-none'>&#x21AA;</span>
-                            </button>
-                        </div>
+                                <Tooltip.Root>
+                                    <Tooltip.Trigger asChild>
+                                        <NavLink
+                                            to={'/billing'}
+                                            end
+                                            className='flex flex-row items-center justify-center'
+                                            ref={NavigationSettingsBilling}
+                                        >
+                                            <CircleDollar width={22} height={22} fill='currentColor' />
+                                        </NavLink>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Portal>
+                                        <Tooltip.Content
+                                            side='top'
+                                            sideOffset={6}
+                                            className='px-2 py-1 text-xs rounded bg-gray-800 text-gray-100 shadow-lg z-50'
+                                        >
+                                            Billing
+                                            <Tooltip.Arrow className='fill-gray-800' />
+                                        </Tooltip.Content>
+                                    </Tooltip.Portal>
+                                </Tooltip.Root>
+
+                                <Tooltip.Root>
+                                    <Tooltip.Trigger asChild>
+                                        <NavLink
+                                            to={'/support'}
+                                            end
+                                            className='flex flex-row items-center justify-center'
+                                            ref={NavigationSupport}
+                                        >
+                                            <CircleQuestion width={22} height={22} fill='currentColor' />
+                                        </NavLink>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Portal>
+                                        <Tooltip.Content
+                                            side='top'
+                                            sideOffset={6}
+                                            className='px-2 py-1 text-xs rounded bg-gray-800 text-gray-100 shadow-lg z-50'
+                                        >
+                                            Support
+                                            <Tooltip.Arrow className='fill-gray-800' />
+                                        </Tooltip.Content>
+                                    </Tooltip.Portal>
+                                </Tooltip.Root>
+
+                                <Tooltip.Root>
+                                    <Tooltip.Trigger asChild>
+                                        <button
+                                            type='button'
+                                            onClick={onTriggerLogout}
+                                            className='flex flex-row items-center justify-center text-white/80 hover:text-white cursor-pointer'
+                                        >
+                                            <span className='text-lg leading-none'>&#x21AA;</span>
+                                        </button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Portal>
+                                        <Tooltip.Content
+                                            side='top'
+                                            sideOffset={6}
+                                            className='px-2 py-1 text-xs rounded bg-gray-800 text-gray-100 shadow-lg z-50'
+                                        >
+                                            Log out
+                                            <Tooltip.Arrow className='fill-gray-800' />
+                                        </Tooltip.Content>
+                                    </Tooltip.Portal>
+                                </Tooltip.Root>
+                            </div>
+                        </Tooltip.Provider>
                     </ul>
                 </MainSidebar>
 
