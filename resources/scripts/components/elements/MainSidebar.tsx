@@ -13,6 +13,12 @@ const MainSidebar = styled.nav`
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.08);
 
+    &.collapsed {
+        width: 80px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
     & > .pyro-subnav-routes-wrapper {
         display: flex;
         flex-direction: column;

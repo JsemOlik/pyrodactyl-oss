@@ -1,4 +1,4 @@
-import { CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
+import { Bars, CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
@@ -38,6 +38,7 @@ const DashboardRouter = () => {
     // Mobile menu state
     const [isMobileMenuVisible, setMobileMenuVisible] = useState(false);
     const [accountData, setAccountData] = useState<AccountData | null>(null);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const toggleMobileMenu = () => {
         setMobileMenuVisible(!isMobileMenuVisible);
@@ -156,7 +157,9 @@ const DashboardRouter = () => {
 
             <div className='flex flex-row w-full lg:pt-0 pt-16'>
                 {/* Desktop Sidebar */}
-                <MainSidebar className='hidden lg:flex lg:relative lg:shrink-0 w-[300px] bg-[#1a1a1a]'>
+                <MainSidebar
+                    className={`hidden lg:flex lg:relative lg:shrink-0 bg-[#1a1a1a]${isSidebarCollapsed ? ' collapsed' : ''}`}
+                >
                     <div
                         className='absolute bg-brand w-[3px] h-10 left-0 rounded-full pointer-events-none '
                         style={{
@@ -180,14 +183,22 @@ const DashboardRouter = () => {
                         <NavLink to={'/'} className='flex shrink-0 h-8 w-fit'>
                             <Logo uniqueId='desktop-sidebar' />
                         </NavLink>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className='w-10 h-10 flex items-center justify-center rounded-md text-white hover:bg-white/10 p-2 cursor-pointer'>
-                                    {' '}
-                                    <Ellipsis fill='currentColor' width={26} height={22} />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className='z-99999' sideOffset={8}>
+                        <div className='flex items-center gap-2'>
+                            <button
+                                type='button'
+                                aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                                onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                                className='w-8 h-8 flex items-center justify-center rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-colors'
+                            >
+                                <Bars width={18} height={18} fill='currentColor' />
+                            </button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className='w-10 h-10 flex items-center justify-center rounded-md text-white hover:bg-white/10 p-2 cursor-pointer'>
+                                        <Ellipsis fill='currentColor' width={26} height={22} />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className='z-99999' sideOffset={8}>
                                 {rootAdmin && (
                                     <DropdownMenuItem onSelect={onSelectAdminPanel}>
                                         Admin Panel
@@ -208,7 +219,7 @@ const DashboardRouter = () => {
                     <ul data-pyro-subnav-routes-wrapper='' className='pyro-subnav-routes-wrapper'>
                         <NavLink to={'/'} end className='flex flex-row items-center' ref={NavigationHome}>
                             <House width={22} height={22} fill='currentColor' />
-                            <p>Your Servers</p>
+                            {!isSidebarCollapsed && <p>Your Servers</p>}
                         </NavLink>
                         {/* NOT FINISHED YET
                         <NavLink to={'/vps-servers'} end className='flex flex-row items-center'>
@@ -217,28 +228,37 @@ const DashboardRouter = () => {
                         </NavLink> */}
                         {/* Spacer pushes the following links to the bottom */}
                         <div className='pyro-subnav-spacer' />
-                        {/* Bottom links */}
-                        <NavLink
-                            to={'/billing'}
-                            end
-                            className='flex flex-row items-center'
-                            ref={NavigationSettingsBilling}
-                        >
-                            <CircleDollar width={22} height={22} fill='currentColor' />
-                            <p>Billing</p>
-                        </NavLink>
-                        <NavLink to={'/support'} end className='flex flex-row items-center' ref={NavigationSupport}>
-                            <CircleQuestion width={22} height={22} fill='currentColor' />
-                            <p>Support</p>
-                        </NavLink>
-                        <NavLink to={'/account'} end className='flex flex-row items-center' ref={NavigationSettings}>
-                            {userAvatarUrl ? (
-                                <img src={userAvatarUrl} alt='Account' className='w-[22px] h-[22px] rounded-full' />
-                            ) : (
-                                <div className='w-[22px] h-[22px] rounded-full bg-zinc-600' />
-                            )}
-                            <p>Account</p>
-                        </NavLink>
+                        {/* Bottom links as icon-only row */}
+                        <div className='flex flex-row items-center justify-between gap-3 pt-2'>
+                            <NavLink
+                                to={'/billing'}
+                                end
+                                className='flex flex-row items-center justify-center'
+                                ref={NavigationSettingsBilling}
+                            >
+                                <CircleDollar width={22} height={22} fill='currentColor' />
+                            </NavLink>
+                            <NavLink
+                                to={'/support'}
+                                end
+                                className='flex flex-row items-center justify-center'
+                                ref={NavigationSupport}
+                            >
+                                <CircleQuestion width={22} height={22} fill='currentColor' />
+                            </NavLink>
+                            <NavLink
+                                to={'/account'}
+                                end
+                                className='flex flex-row items-center justify-center'
+                                ref={NavigationSettings}
+                            >
+                                {userAvatarUrl ? (
+                                    <img src={userAvatarUrl} alt='Account' className='w-[22px] h-[22px] rounded-full' />
+                                ) : (
+                                    <div className='w-[22px] h-[22px] rounded-full bg-zinc-600' />
+                                )}
+                            </NavLink>
+                        </div>
                     </ul>
                 </MainSidebar>
 
