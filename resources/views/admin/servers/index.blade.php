@@ -71,12 +71,12 @@
                 </div>
             </div>
         </div>
-        <div class="row" style="margin-top: 10px;">
+        <div class="row" style="margin-top: 10px; margin-bottom: 5px;">
             <div class="col-xs-12 text-right">
                 <form action="{{ route('admin.servers.refresh-power-states') }}" method="POST" style="display: inline-block;">
                     @csrf
-                    <button type="submit" class="btn btn-default btn-sm" style="border-radius: 3px;">
-                        <i class="fa fa-refresh" aria-hidden="true"></i> Refresh Power States
+                    <button type="submit" class="btn btn-default btn-sm" style="border-radius: 3px; margin-bottom: 4px;">
+                        <i class="fa fa-refresh" aria-hidden="true"></i> Refresh
                     </button>
                 </form>
             </div>
