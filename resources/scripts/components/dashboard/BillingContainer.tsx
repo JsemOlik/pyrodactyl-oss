@@ -260,14 +260,14 @@ const BillingContainer = () => {
                 <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
                     <div>
                         <h3 className='text-sm font-semibold uppercase tracking-[0.14em] text-white/60 mb-1'>Need more capacity?</h3>
-                        <p className='text-sm text-white/80'>Purchase a new server in a few clicks. Billing is handled right here.</p>
+                        <p className='text-sm text-white/80'>Purchase a new server in a few clicks.</p>
                     </div>
-                    <button
-                        type='button'
+                    <ActionButton
+                        variant='primary'
                         onClick={() => {
                             window.location.href = '/hosting';
                         }}
-                        className='inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-black hover:bg-brand/90 transition-colors'
+                        className='cursor-pointer'
                     >
                         <svg
                             xmlns='http://www.w3.org/2000/svg'
@@ -279,6 +279,7 @@ const BillingContainer = () => {
                             strokeWidth='2'
                             strokeLinecap='round'
                             strokeLinejoin='round'
+                            className='mr-2'
                         >
                             <path d='M6 6h15l-1.5 9h-12z' />
                             <circle cx='9' cy='19' r='1' />
@@ -286,7 +287,7 @@ const BillingContainer = () => {
                             <path d='M6 6l-2-3' />
                         </svg>
                         <span>Purchase Server</span>
-                    </button>
+                    </ActionButton>
                 </div>
             </div>
 
