@@ -247,8 +247,8 @@ const DashboardRouter = () => {
                             {!isSidebarCollapsed && <p>Settings</p>}
                         </NavLink>
 
-                        {/* Separator above bottom icon actions — match top divider styling but a bit wider */}
-                        <div aria-hidden className='mt-6 mb-3 bg-[#ffffff33] min-h-[1px] w-16' />
+                        {/* Separator above bottom icon actions — slim horizontal line, slightly wider */}
+                        <div aria-hidden className='mt-6 mb-3 h-px max-h-[1px] w-16 bg-[#ffffff33]' />
 
                         {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
                         <Tooltip.Provider delayDuration={150}>
