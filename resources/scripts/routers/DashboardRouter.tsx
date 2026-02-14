@@ -248,7 +248,7 @@ const DashboardRouter = () => {
                         </NavLink>
 
                         {/* Separator above bottom icon actions — slim horizontal line, slightly wider */}
-                        <div aria-hidden className='mt-6 mb-3 h-px max-h-[1px] w-16 bg-[#ffffff33]' />
+                        <div aria-hidden className='mt-6 mb-3 max-h-[1px] w-16 bg-[#ffffff33]' />
 
                         {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
                         <Tooltip.Provider delayDuration={150}>
