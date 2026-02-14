@@ -92,9 +92,6 @@ const ServerConsoleContainer = () => {
                         title={name}
                         headChildren={
                             <div className='hidden bg-color ms:block ms:inline-flex md:inline-flex md:block absolute left-0 mb-4 mt-8 flex gap-2'>
-                                <p className='p-1 text-zinc-300 border-2 bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[#ffffff12] rounded-lg hover:border-[#ffffff20] transition-all duration-150 shadow-sm'>
-                                    Uptime: {UptimeDuration(uptime)}
-                                </p>
                                 {nest_id === 1 && playerData && (
                                     <p className='p-1 text-zinc-300 border-2 bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[#ffffff12] rounded-lg hover:border-[#ffffff20] transition-all duration-150 shadow-sm'>
                                         Players: {playerData.online}/{playerData.max}
@@ -112,9 +109,6 @@ const ServerConsoleContainer = () => {
                                 }}
                             >
                                 <div className='inline-flex relative max-w-50 min-w-35 block ms:hidden md:hidden justify-left left-0 mb-4 flex gap-2'>
-                                    <p className='p-1 text-zinc-300 border-2 bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[#ffffff12] rounded-lg hover:border-[#ffffff20] transition-all duration-150 shadow-sm'>
-                                        Uptime: {UptimeDuration(uptime)}
-                                    </p>
                                     {nest_id === 1 && playerData && (
                                         <p className='p-1 text-zinc-300 border-2 bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[#ffffff12] rounded-lg hover:border-[#ffffff20] transition-all duration-150 shadow-sm'>
                                             Players: {playerData.online}/{playerData.max}
