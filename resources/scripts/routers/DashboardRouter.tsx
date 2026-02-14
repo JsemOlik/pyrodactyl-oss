@@ -193,7 +193,12 @@ const DashboardRouter = () => {
                     </button>
                     <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-6'></div>
                     <ul data-pyro-subnav-routes-wrapper='' className='pyro-subnav-routes-wrapper'>
-                        <NavLink to={'/'} end className='flex flex-row items-center' ref={NavigationHome}>
+                        <NavLink
+                            to={'/'}
+                            end
+                            className={`flex flex-row items-center ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                            ref={NavigationHome}
+                        >
                             <House width={22} height={22} fill='currentColor' />
                             {!isSidebarCollapsed && <p>Your Servers</p>}
                         </NavLink>
@@ -209,27 +214,29 @@ const DashboardRouter = () => {
                         {rootAdmin && (
                             <div
                                 onClick={onSelectAdminPanel}
-                                className='flex flex-row items-center cursor-pointer'
+                                className={`flex flex-row items-center cursor-pointer ${
+                                    isSidebarCollapsed ? 'justify-center' : ''
+                                }`}
                             >
-                                <span className='inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand/20 text-[11px] text-brand-contrast'>
-                                    <Shield width={16} height={16} />
-                                </span>
+                                <Shield width={22} height={22} />
                                 {!isSidebarCollapsed && <p>Admin Panel</p>}
                             </div>
                         )}
                         <div
                             onClick={onTriggerReturnToWebsite}
-                            className='flex flex-row items-center cursor-pointer'
+                            className={`flex flex-row items-center cursor-pointer ${
+                                isSidebarCollapsed ? 'justify-center' : ''
+                            }`}
                         >
-                            <span className='inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-white/5 text-[11px]'>
-                                <ShoppingBasket width={16} height={16} />
-                            </span>
+                            <ShoppingBasket width={22} height={22} />
                             {!isSidebarCollapsed && <p>Purchase Server</p>}
                         </div>
                         <NavLink
                             to={'/account'}
                             end
-                            className='flex flex-row items-center'
+                            className={`flex flex-row items-center ${
+                                isSidebarCollapsed ? 'justify-center' : ''
+                            }`}
                             ref={NavigationSettings}
                         >
                             {userAvatarUrl ? (
@@ -243,10 +250,10 @@ const DashboardRouter = () => {
                         {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
                         <Tooltip.Provider delayDuration={150}>
                             <div
-                                className={`pt-3 gap-3 flex ${
+                                className={`pt-3 flex ${
                                     isSidebarCollapsed
-                                        ? 'flex-col items-stretch justify-end'
-                                        : 'flex-row items-center justify-between'
+                                        ? 'flex-col items-center justify-end gap-4'
+                                        : 'flex-row items-center justify-between gap-3'
                                 }`}
                             >
                                 <Tooltip.Root>
