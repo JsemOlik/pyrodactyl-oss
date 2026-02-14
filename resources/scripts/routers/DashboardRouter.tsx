@@ -199,21 +199,21 @@ const DashboardRouter = () => {
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className='z-99999' sideOffset={8}>
-                                {rootAdmin && (
-                                    <DropdownMenuItem onSelect={onSelectAdminPanel}>
-                                        Admin Panel
-                                        <span className='ml-2 z-10 rounded-full bg-brand px-2 py-1 text-xs text-white'>
-                                            Staff
-                                        </span>
+                                    {rootAdmin && (
+                                        <DropdownMenuItem onSelect={onSelectAdminPanel}>
+                                            Admin Panel
+                                            <span className='ml-2 z-10 rounded-full bg-brand px-2 py-1 text-xs text-white'>
+                                                Staff
+                                            </span>
+                                        </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem onSelect={onTriggerReturnToWebsite}>
+                                        Return to Website
                                     </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onSelect={onTriggerReturnToWebsite}>
-                                    Return to Website
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={onTriggerLogout}>Log Out</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onSelect={onTriggerLogout}>Log Out</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                     </div>
                     <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-6'></div>
                     <ul data-pyro-subnav-routes-wrapper='' className='pyro-subnav-routes-wrapper'>
