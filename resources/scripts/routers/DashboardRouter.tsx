@@ -1,4 +1,4 @@
-import { AngleLeft, AngleRight, CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
+import { ChevronLeft, ChevronRight, CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
@@ -215,9 +215,9 @@ const DashboardRouter = () => {
                         className='hidden lg:flex items-center justify-center w-7 h-12 rounded-full bg-[#ffffff11] hover:bg-[#ffffff1f] text-white/70 hover:text-white cursor-pointer transition-colors absolute -right-[14px] top-1/2 -translate-y-1/2 shadow-md border border-white/10'
                     >
                         {isSidebarCollapsed ? (
-                            <AngleRight width={18} height={18} fill='currentColor' />
+                            <ChevronRight width={18} height={18} fill='currentColor' />
                         ) : (
-                            <AngleLeft width={18} height={18} fill='currentColor' />
+                            <ChevronLeft width={18} height={18} fill='currentColor' />
                         )}
                     </button>
                     <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-6'></div>
