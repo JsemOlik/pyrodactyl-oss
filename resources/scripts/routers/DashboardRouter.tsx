@@ -214,6 +214,7 @@ const DashboardRouter = () => {
                                     <DropdownMenuItem onSelect={onTriggerLogout}>Log Out</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                        </div>
                     </div>
                     <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-6'></div>
                     <ul data-pyro-subnav-routes-wrapper='' className='pyro-subnav-routes-wrapper'>
