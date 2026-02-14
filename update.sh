@@ -41,8 +41,7 @@ php artisan view:cache
 echo "==> Bringing app back up"
 php artisan up
 
-echo "==> Restarting PHP-FPM and Nginx"
-systemctl restart php8.2-fpm || systemctl restart php-fpm || true
+echo "==> Restarting Nginx"
 systemctl restart nginx
 
 echo "==> Done."
