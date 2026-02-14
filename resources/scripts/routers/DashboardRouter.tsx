@@ -239,12 +239,12 @@ const DashboardRouter = () => {
                         </NavLink>
 
                         {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
-                        <Tooltip.Provider delayDuration={150}>
+                        <Tooltip.Provider delayDuration={0}>
                             <div
-                                className={`pt-2 flex ${
+                                className={`flex ${
                                     isSidebarCollapsed
-                                        ? 'flex-col items-center justify-end gap-6 pb-2'
-                                        : 'flex-row items-center justify-between gap-4'
+                                        ? 'flex-col items-center justify-end gap-8 pt-4 pb-4'
+                                        : 'flex-row items-center justify-between gap-4 pt-2 pb-2'
                                 }`}
                             >
                                 <Tooltip.Root>
