@@ -191,19 +191,7 @@ const DashboardRouter = () => {
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className='z-99999' sideOffset={8}>
-                                    {rootAdmin && (
-                                        <DropdownMenuItem onSelect={onSelectAdminPanel}>
-                                            Admin Panel
-                                            <span className='ml-2 z-10 rounded-full bg-brand px-2 py-1 text-xs text-white'>
-                                                Staff
-                                            </span>
-                                        </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem onSelect={onTriggerReturnToWebsite}>
-                                        Return to Website
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onSelect={onTriggerLogout}>Log Out</DropdownMenuItem>
+                                    <div className='px-3 py-1 text-xs text-white/60'>More options coming soon</div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
@@ -233,9 +221,49 @@ const DashboardRouter = () => {
                         </NavLink> */}
                         {/* Spacer pushes the following links to the bottom */}
                         <div className='pyro-subnav-spacer' />
+
+                        {/* Admin / Website / Settings full-width items above the bottom icon row */}
+                        <div className='flex flex-col gap-1 pt-2'>
+                            {rootAdmin && (
+                                <button
+                                    type='button'
+                                    onClick={onSelectAdminPanel}
+                                    className='flex flex-row items-center gap-2 rounded-md px-2 py-3 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 cursor-pointer transition-colors text-left'
+                                >
+                                    <span className='inline-flex h-6 w-6 items-center justify-center rounded-md bg-brand/20 text-xs font-bold text-brand-contrast'>
+                                        ADM
+                                    </span>
+                                    {!isSidebarCollapsed && <span>Admin Panel</span>}
+                                </button>
+                            )}
+                            <button
+                                type='button'
+                                onClick={onTriggerReturnToWebsite}
+                                className='flex flex-row items-center gap-2 rounded-md px-2 py-3 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 cursor-pointer transition-colors text-left'
+                            >
+                                <span className='inline-flex h-6 w-6 items-center justify-center rounded-md bg-white/5 text-xs font-bold'>
+                                    www
+                                </span>
+                                {!isSidebarCollapsed && <span>Return to Website</span>}
+                            </button>
+                            <NavLink
+                                to={'/account'}
+                                end
+                                className='flex flex-row items-center gap-2 rounded-md px-2 py-3 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 cursor-pointer transition-colors'
+                                ref={NavigationSettings}
+                            >
+                                {userAvatarUrl ? (
+                                    <img src={userAvatarUrl} alt='Settings' className='w-[22px] h-[22px] rounded-full' />
+                                ) : (
+                                    <div className='w-[22px] h-[22px] rounded-full bg-zinc-600' />
+                                )}
+                                {!isSidebarCollapsed && <span>Settings</span>}
+                            </NavLink>
+                        </div>
+
                         {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
                         <div
-                            className={`pt-2 gap-3 flex ${
+                            className={`pt-3 gap-3 flex ${
                                 isSidebarCollapsed
                                     ? 'flex-col items-stretch justify-end'
                                     : 'flex-row items-center justify-between'
@@ -257,18 +285,13 @@ const DashboardRouter = () => {
                             >
                                 <CircleQuestion width={22} height={22} fill='currentColor' />
                             </NavLink>
-                            <NavLink
-                                to={'/account'}
-                                end
-                                className='flex flex-row items-center justify-center'
-                                ref={NavigationSettings}
+                            <button
+                                type='button'
+                                onClick={onTriggerLogout}
+                                className='flex flex-row items-center justify-center text-white/80 hover:text-white'
                             >
-                                {userAvatarUrl ? (
-                                    <img src={userAvatarUrl} alt='Account' className='w-[22px] h-[22px] rounded-full' />
-                                ) : (
-                                    <div className='w-[22px] h-[22px] rounded-full bg-zinc-600' />
-                                )}
-                            </NavLink>
+                                <span className='text-lg leading-none'>&#x21AA;</span>
+                            </button>
                         </div>
                     </ul>
                 </MainSidebar>
