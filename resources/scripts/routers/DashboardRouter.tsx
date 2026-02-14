@@ -223,43 +223,39 @@ const DashboardRouter = () => {
                         <div className='pyro-subnav-spacer' />
 
                         {/* Admin / Website / Settings full-width items above the bottom icon row */}
-                        <div className='flex flex-col gap-1 pt-2'>
-                            {rootAdmin && (
-                                <button
-                                    type='button'
-                                    onClick={onSelectAdminPanel}
-                                    className='flex flex-row items-center gap-2 rounded-md px-2 py-3 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 cursor-pointer transition-colors text-left'
-                                >
-                                    <span className='inline-flex h-6 w-6 items-center justify-center rounded-md bg-brand/20 text-xs font-bold text-brand-contrast'>
-                                        ADM
-                                    </span>
-                                    {!isSidebarCollapsed && <span>Admin Panel</span>}
-                                </button>
-                            )}
-                            <button
-                                type='button'
-                                onClick={onTriggerReturnToWebsite}
-                                className='flex flex-row items-center gap-2 rounded-md px-2 py-3 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 cursor-pointer transition-colors text-left'
+                        {rootAdmin && (
+                            <div
+                                onClick={onSelectAdminPanel}
+                                className='flex flex-row items-center cursor-pointer'
                             >
-                                <span className='inline-flex h-6 w-6 items-center justify-center rounded-md bg-white/5 text-xs font-bold'>
-                                    www
+                                <span className='inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand/20 text-[11px] font-bold text-brand-contrast'>
+                                    ADM
                                 </span>
-                                {!isSidebarCollapsed && <span>Return to Website</span>}
-                            </button>
-                            <NavLink
-                                to={'/account'}
-                                end
-                                className='flex flex-row items-center gap-2 rounded-md px-2 py-3 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/5 cursor-pointer transition-colors'
-                                ref={NavigationSettings}
-                            >
-                                {userAvatarUrl ? (
-                                    <img src={userAvatarUrl} alt='Settings' className='w-[22px] h-[22px] rounded-full' />
-                                ) : (
-                                    <div className='w-[22px] h-[22px] rounded-full bg-zinc-600' />
-                                )}
-                                {!isSidebarCollapsed && <span>Settings</span>}
-                            </NavLink>
+                                {!isSidebarCollapsed && <p>Admin Panel</p>}
+                            </div>
+                        )}
+                        <div
+                            onClick={onTriggerReturnToWebsite}
+                            className='flex flex-row items-center cursor-pointer'
+                        >
+                            <span className='inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-white/5 text-[11px] font-bold'>
+                                www
+                            </span>
+                            {!isSidebarCollapsed && <p>Return to Website</p>}
                         </div>
+                        <NavLink
+                            to={'/account'}
+                            end
+                            className='flex flex-row items-center'
+                            ref={NavigationSettings}
+                        >
+                            {userAvatarUrl ? (
+                                <img src={userAvatarUrl} alt='Settings' className='w-[22px] h-[22px] rounded-full' />
+                            ) : (
+                                <div className='w-[22px] h-[22px] rounded-full bg-zinc-600' />
+                            )}
+                            {!isSidebarCollapsed && <p>Settings</p>}
+                        </NavLink>
 
                         {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
                         <div
