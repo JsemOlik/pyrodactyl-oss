@@ -1,4 +1,4 @@
-import { Bars, CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
+import { AngleLeft, AngleRight, CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
@@ -184,14 +184,6 @@ const DashboardRouter = () => {
                             <Logo uniqueId='desktop-sidebar' />
                         </NavLink>
                         <div className='flex items-center gap-2'>
-                            <button
-                                type='button'
-                                aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                                onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-                                className='w-8 h-8 flex items-center justify-center rounded-md text-white/70 hover:text-white hover:bg-white/10 cursor-pointer transition-colors'
-                            >
-                                <Bars width={18} height={18} fill='currentColor' />
-                            </button>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className='w-10 h-10 flex items-center justify-center rounded-md text-white hover:bg-white/10 p-2 cursor-pointer'>
@@ -216,6 +208,18 @@ const DashboardRouter = () => {
                             </DropdownMenu>
                         </div>
                     </div>
+                    <button
+                        type='button'
+                        aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                        className='hidden lg:flex items-center justify-center w-7 h-12 rounded-full bg-[#ffffff11] hover:bg-[#ffffff1f] text-white/70 hover:text-white cursor-pointer transition-colors absolute -right-[14px] top-1/2 -translate-y-1/2 shadow-md border border-white/10'
+                    >
+                        {isSidebarCollapsed ? (
+                            <AngleRight width={18} height={18} fill='currentColor' />
+                        ) : (
+                            <AngleLeft width={18} height={18} fill='currentColor' />
+                        )}
+                    </button>
                     <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-6'></div>
                     <ul data-pyro-subnav-routes-wrapper='' className='pyro-subnav-routes-wrapper'>
                         <NavLink to={'/'} end className='flex flex-row items-center' ref={NavigationHome}>
@@ -229,8 +233,14 @@ const DashboardRouter = () => {
                         </NavLink> */}
                         {/* Spacer pushes the following links to the bottom */}
                         <div className='pyro-subnav-spacer' />
-                        {/* Bottom links as icon-only row */}
-                        <div className='flex flex-row items-center justify-between gap-3 pt-2'>
+                        {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
+                        <div
+                            className={`pt-2 gap-3 flex ${
+                                isSidebarCollapsed
+                                    ? 'flex-col items-stretch justify-end'
+                                    : 'flex-row items-center justify-between'
+                            }`}
+                        >
                             <NavLink
                                 to={'/billing'}
                                 end
