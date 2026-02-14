@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
+import { ChevronLeft, ChevronRight, CircleDollar, CircleQuestion, House, Shield, ShoppingBasket } from '@gravity-ui/icons';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState } from 'react';
@@ -11,13 +11,6 @@ import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import SupportContainer from '@/components/dashboard/SupportContainer';
 import TicketDetailContainer from '@/components/dashboard/TicketDetailContainer';
 import TicketsContainer from '@/components/dashboard/TicketsContainer';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/elements/DropdownMenu';
 import MainSidebar from '@/components/elements/MainSidebar';
 import MainWrapper from '@/components/elements/MainWrapper';
 import { DashboardMobileMenu } from '@/components/elements/MobileFullScreenMenu';
@@ -57,7 +50,8 @@ const DashboardRouter = () => {
     };
 
     const onTriggerReturnToWebsite = () => {
-        window.location.href = '/hosting';
+        // Scroll directly to the plans section on the hosting page when possible.
+        window.location.href = '/hosting#plans';
     };
 
     const onSelectAdminPanel = () => {
@@ -184,18 +178,6 @@ const DashboardRouter = () => {
                         <NavLink to={'/'} className='flex shrink-0 h-8 w-fit'>
                             <Logo uniqueId='desktop-sidebar' />
                         </NavLink>
-                        <div className='flex items-center gap-2'>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className='w-10 h-10 flex items-center justify-center rounded-md text-white hover:bg-white/10 p-2 cursor-pointer'>
-                                        <Ellipsis fill='currentColor' width={26} height={22} />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className='z-99999' sideOffset={8}>
-                                    <div className='px-3 py-1 text-xs text-white/60'>More options coming soon</div>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
                     </div>
                     <button
                         type='button'
@@ -229,8 +211,8 @@ const DashboardRouter = () => {
                                 onClick={onSelectAdminPanel}
                                 className='flex flex-row items-center cursor-pointer'
                             >
-                                <span className='inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand/20 text-[11px] font-bold text-brand-contrast'>
-                                    ADM
+                                <span className='inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-brand/20 text-[11px] text-brand-contrast'>
+                                    <Shield width={16} height={16} />
                                 </span>
                                 {!isSidebarCollapsed && <p>Admin Panel</p>}
                             </div>
@@ -239,10 +221,10 @@ const DashboardRouter = () => {
                             onClick={onTriggerReturnToWebsite}
                             className='flex flex-row items-center cursor-pointer'
                         >
-                            <span className='inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-white/5 text-[11px] font-bold'>
-                                www
+                            <span className='inline-flex h-[22px] w-[22px] items-center justify-center rounded-md bg-white/5 text-[11px]'>
+                                <ShoppingBasket width={16} height={16} />
                             </span>
-                            {!isSidebarCollapsed && <p>Return to Website</p>}
+                            {!isSidebarCollapsed && <p>Purchase Server</p>}
                         </div>
                         <NavLink
                             to={'/account'}
