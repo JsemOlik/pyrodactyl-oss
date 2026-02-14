@@ -34,13 +34,11 @@ class ServerController extends Controller
         $totalServers = Server::count();
         
         // Online/offline servers: prefer cached power_state from Wings/Elytra.
-        // We treat "running" as online; everything else is offline for the dashboard stats.
+        // We treat "running" as online. Offline is any known non-running state.
         $onlineServers = Server::where('power_state', 'running')->count();
         
-        $offlineServers = Server::where(function ($query) {
-                $query->whereNull('power_state')
-                    ->orWhere('power_state', '!=', 'running');
-            })
+        $offlineServers = Server::whereNotNull('power_state')
+            ->where('power_state', '!=', 'running')
             ->count();
         
         // Count active subscriptions (subscription status is active, but exclude pending cancellation)
@@ -69,10 +67,8 @@ class ServerController extends Controller
         if ($filterType === 'online') {
             $baseQuery->where('power_state', 'running');
         } elseif ($filterType === 'offline') {
-            $baseQuery->where(function ($query) {
-                $query->whereNull('power_state')
-                    ->orWhere('power_state', '!=', 'running');
-            });
+            $baseQuery->whereNotNull('power_state')
+                ->where('power_state', '!=', 'running');
         } elseif ($filterType === 'active_subscription') {
             $baseQuery->whereHas('subscription', function ($query) {
                 $query->whereIn('stripe_status', ['active', 'trialing'])

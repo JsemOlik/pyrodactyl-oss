@@ -36,7 +36,17 @@ class SyncPowerStateService
                         $this->daemonServerRepository->setServer($server)->setNode($server->node);
 
                         $details = $this->daemonServerRepository->getDetails();
-                        $state = $details['attributes']['current_state'] ?? $details['attributes']['state'] ?? null;
+
+                        // Wings/Elytra may return different shapes; normalise here.
+                        $attributes = $details['attributes'] ?? $details;
+                        $state = $attributes['current_state']
+                            ?? $attributes['state']
+                            ?? null;
+
+                        // Fallback: derive from boolean is_running if present.
+                        if ($state === null && array_key_exists('is_running', $attributes)) {
+                            $state = $attributes['is_running'] ? 'running' : 'offline';
+                        }
 
                         if ($state !== null) {
                             $this->serverRepository->withoutFreshModel()->update($server->id, [
