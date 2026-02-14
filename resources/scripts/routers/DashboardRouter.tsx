@@ -247,13 +247,16 @@ const DashboardRouter = () => {
                             {!isSidebarCollapsed && <p>Settings</p>}
                         </NavLink>
 
+                        {/* Separator above bottom icon actions */}
+                        <div className='mt-4 mb-3 h-px w-full bg-white/10' />
+
                         {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
                         <Tooltip.Provider delayDuration={150}>
                             <div
-                                className={`pt-3 flex ${
+                                className={`pt-2 flex ${
                                     isSidebarCollapsed
-                                        ? 'flex-col items-center justify-end gap-4'
-                                        : 'flex-row items-center justify-between gap-3'
+                                        ? 'flex-col items-center justify-end gap-6 pb-2'
+                                        : 'flex-row items-center justify-between gap-4'
                                 }`}
                             >
                                 <Tooltip.Root>
