@@ -282,10 +282,10 @@ const DashboardRouter = () => {
                                         <Tooltip.Content
                                             side='top'
                                             sideOffset={6}
-                                            className='px-2 py-1 text-xs rounded bg-gray-800 text-gray-100 shadow-lg z-50'
+                                            className='px-3 py-2 text-sm rounded-lg border border-white/10 bg-[#050608] text-white shadow-[0_14px_40px_rgba(0,0,0,0.85)] z-50 opacity-0 scale-95 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:scale-100 transition-all duration-150 ease-out'
                                         >
                                             Billing
-                                            <Tooltip.Arrow className='fill-gray-800' />
+                                            <Tooltip.Arrow className='fill-[#050608]' />
                                         </Tooltip.Content>
                                     </Tooltip.Portal>
                                 </Tooltip.Root>
@@ -305,10 +305,10 @@ const DashboardRouter = () => {
                                         <Tooltip.Content
                                             side='top'
                                             sideOffset={6}
-                                            className='px-2 py-1 text-xs rounded bg-gray-800 text-gray-100 shadow-lg z-50'
+                                            className='px-3 py-2 text-sm rounded-lg border border-white/10 bg-[#050608] text-white shadow-[0_14px_40px_rgba(0,0,0,0.85)] z-50 opacity-0 scale-95 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:scale-100 transition-all duration-150 ease-out'
                                         >
                                             Support
-                                            <Tooltip.Arrow className='fill-gray-800' />
+                                            <Tooltip.Arrow className='fill-[#050608]' />
                                         </Tooltip.Content>
                                     </Tooltip.Portal>
                                 </Tooltip.Root>
@@ -327,10 +327,10 @@ const DashboardRouter = () => {
                                         <Tooltip.Content
                                             side='top'
                                             sideOffset={6}
-                                            className='px-2 py-1 text-xs rounded bg-gray-800 text-gray-100 shadow-lg z-50'
+                                            className='px-3 py-2 text-sm rounded-lg border border-white/10 bg-[#050608] text-white shadow-[0_14px_40px_rgba(0,0,0,0.85)] z-50 opacity-0 scale-95 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:scale-100 transition-all duration-150 ease-out'
                                         >
                                             Log out
-                                            <Tooltip.Arrow className='fill-gray-800' />
+                                            <Tooltip.Arrow className='fill-[#050608]' />
                                         </Tooltip.Content>
                                     </Tooltip.Portal>
                                 </Tooltip.Root>
