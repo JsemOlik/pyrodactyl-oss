@@ -248,6 +248,48 @@ const BillingContainer = () => {
 
     return (
         <PageContentBlock title={'Billing'} showFlashKey={'billing'}>
+            {/* Purchase server CTA */}
+            <div
+                className='transform-gpu skeleton-anim-2 mb-4'
+                style={{
+                    animationDelay: '0ms',
+                    animationTimingFunction:
+                        'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
+                }}
+            >
+                <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+                    <div>
+                        <h3 className='text-sm font-semibold uppercase tracking-[0.14em] text-white/60 mb-1'>Need more capacity?</h3>
+                        <p className='text-sm text-white/80'>Purchase a new server in a few clicks. Billing is handled right here.</p>
+                    </div>
+                    <button
+                        type='button'
+                        onClick={() => {
+                            window.location.href = '/hosting';
+                        }}
+                        className='inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-black hover:bg-brand/90 transition-colors'
+                    >
+                        <svg
+                            xmlns='http://www.w3.org/2000/svg'
+                            width='18'
+                            height='18'
+                            viewBox='0 0 24 24'
+                            fill='none'
+                            stroke='currentColor'
+                            strokeWidth='2'
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                        >
+                            <path d='M6 6h15l-1.5 9h-12z' />
+                            <circle cx='9' cy='19' r='1' />
+                            <circle cx='18' cy='19' r='1' />
+                            <path d='M6 6l-2-3' />
+                        </svg>
+                        <span>Purchase Server</span>
+                    </button>
+                </div>
+            </div>
+
             {creditsEnabled && (
                 <div
                     className='transform-gpu skeleton-anim-2 mb-6'

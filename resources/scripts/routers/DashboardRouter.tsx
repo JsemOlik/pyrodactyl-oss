@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, CircleDollar, CircleQuestion, House, Shield, ShoppingBasket } from '@gravity-ui/icons';
+import { ChevronLeft, ChevronRight, CircleDollar, CircleQuestion, House, Shield } from '@gravity-ui/icons';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState } from 'react';
@@ -210,7 +210,7 @@ const DashboardRouter = () => {
                         {/* Spacer pushes the following links to the bottom */}
                         <div className='pyro-subnav-spacer' />
 
-                        {/* Admin / Website / Settings full-width items above the bottom icon row */}
+                        {/* Admin / Settings full-width items above the bottom icon row */}
                         {rootAdmin && (
                             <div
                                 onClick={onSelectAdminPanel}
@@ -222,15 +222,6 @@ const DashboardRouter = () => {
                                 {!isSidebarCollapsed && <p>Admin Panel</p>}
                             </div>
                         )}
-                        <div
-                            onClick={onTriggerReturnToWebsite}
-                            className={`flex flex-row items-center cursor-pointer ${
-                                isSidebarCollapsed ? 'justify-center' : ''
-                            }`}
-                        >
-                            <ShoppingBasket width={22} height={22} />
-                            {!isSidebarCollapsed && <p>Purchase Server</p>}
-                        </div>
                         <NavLink
                             to={'/account'}
                             end
