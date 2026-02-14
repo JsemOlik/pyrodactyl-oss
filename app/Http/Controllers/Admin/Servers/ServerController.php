@@ -29,29 +29,13 @@ class ServerController extends Controller
         // Calculate statistics
         $totalServers = Server::count();
         
-        // Online servers: installed and not suspended, and not installing/failed
-        // A server is "online" if: has installed_at AND status is NULL (normal installed) OR status is not in bad states
-        // NULL status means the server is installed and operational (based on migration history)
-        $onlineServers = Server::query()
-            ->whereNotNull('installed_at')
-            ->where(function ($query) {
-                // Status is NULL (normal installed server) OR status is not in any bad state
-                $query->whereNull('status')
-                    ->orWhereNotIn('status', [
-                        Server::STATUS_SUSPENDED,
-                        Server::STATUS_INSTALLING,
-                        Server::STATUS_INSTALL_FAILED,
-                        Server::STATUS_REINSTALL_FAILED
-                    ]);
-            })
-            ->count();
+        // Online/offline servers: prefer cached power_state from Wings/Elytra.
+        // We treat "running" as online; everything else is offline for the dashboard stats.
+        $onlineServers = Server::where('power_state', 'running')->count();
         
-        // Offline servers: suspended, not installed, or installing/failed
-        $offlineServers = Server::query()
-            ->where(function ($query) {
-                $query->where('status', Server::STATUS_SUSPENDED)
-                    ->orWhereNull('installed_at')
-                    ->orWhereIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
+        $offlineServers = Server::where(function ($query) {
+                $query->whereNull('power_state')
+                    ->orWhere('power_state', '!=', 'running');
             })
             ->count();
         
@@ -79,22 +63,11 @@ class ServerController extends Controller
         // Apply filters based on request
         $filterType = $request->input('filter_type');
         if ($filterType === 'online') {
-            $baseQuery->whereNotNull('installed_at')
-                ->where(function ($query) {
-                    // Status is NULL (normal installed server) OR status is not in any bad state
-                    $query->whereNull('status')
-                        ->orWhereNotIn('status', [
-                            Server::STATUS_SUSPENDED,
-                            Server::STATUS_INSTALLING,
-                            Server::STATUS_INSTALL_FAILED,
-                            Server::STATUS_REINSTALL_FAILED
-                        ]);
-                });
+            $baseQuery->where('power_state', 'running');
         } elseif ($filterType === 'offline') {
             $baseQuery->where(function ($query) {
-                $query->where('status', Server::STATUS_SUSPENDED)
-                    ->orWhereNull('installed_at')
-                    ->orWhereIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
+                $query->whereNull('power_state')
+                    ->orWhere('power_state', '!=', 'running');
             });
         } elseif ($filterType === 'active_subscription') {
             $baseQuery->whereHas('subscription', function ($query) {
