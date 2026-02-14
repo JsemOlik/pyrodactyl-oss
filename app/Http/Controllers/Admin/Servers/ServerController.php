@@ -10,13 +10,17 @@ use Spatie\QueryBuilder\AllowedFilter;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Models\Filters\AdminServerFilter;
 use Illuminate\Contracts\View\Factory as ViewFactory;
+use Pterodactyl\Services\Servers\SyncPowerStateService;
 
 class ServerController extends Controller
 {
     /**
      * ServerController constructor.
      */
-    public function __construct(private ViewFactory $view) {}
+    public function __construct(
+        private ViewFactory $view,
+        private SyncPowerStateService $syncPowerStateService,
+    ) {}
 
     /**
      * Returns all the servers that exist on the system using a paginated result set. If
@@ -29,30 +33,12 @@ class ServerController extends Controller
         // Calculate statistics
         $totalServers = Server::count();
         
-        // Online servers: installed and not suspended, and not installing/failed
-        // A server is "online" if: has installed_at AND status is NULL (normal installed) OR status is not in bad states
-        // NULL status means the server is installed and operational (based on migration history)
-        $onlineServers = Server::query()
-            ->whereNotNull('installed_at')
-            ->where(function ($query) {
-                // Status is NULL (normal installed server) OR status is not in any bad state
-                $query->whereNull('status')
-                    ->orWhereNotIn('status', [
-                        Server::STATUS_SUSPENDED,
-                        Server::STATUS_INSTALLING,
-                        Server::STATUS_INSTALL_FAILED,
-                        Server::STATUS_REINSTALL_FAILED
-                    ]);
-            })
-            ->count();
+        // Online/offline servers: prefer cached power_state from Wings/Elytra.
+        // We treat "running" as online. Offline is any known non-running state.
+        $onlineServers = Server::where('power_state', 'running')->count();
         
-        // Offline servers: suspended, not installed, or installing/failed
-        $offlineServers = Server::query()
-            ->where(function ($query) {
-                $query->where('status', Server::STATUS_SUSPENDED)
-                    ->orWhereNull('installed_at')
-                    ->orWhereIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
-            })
+        $offlineServers = Server::whereNotNull('power_state')
+            ->where('power_state', '!=', 'running')
             ->count();
         
         // Count active subscriptions (subscription status is active, but exclude pending cancellation)
@@ -79,23 +65,10 @@ class ServerController extends Controller
         // Apply filters based on request
         $filterType = $request->input('filter_type');
         if ($filterType === 'online') {
-            $baseQuery->whereNotNull('installed_at')
-                ->where(function ($query) {
-                    // Status is NULL (normal installed server) OR status is not in any bad state
-                    $query->whereNull('status')
-                        ->orWhereNotIn('status', [
-                            Server::STATUS_SUSPENDED,
-                            Server::STATUS_INSTALLING,
-                            Server::STATUS_INSTALL_FAILED,
-                            Server::STATUS_REINSTALL_FAILED
-                        ]);
-                });
+            $baseQuery->where('power_state', 'running');
         } elseif ($filterType === 'offline') {
-            $baseQuery->where(function ($query) {
-                $query->where('status', Server::STATUS_SUSPENDED)
-                    ->orWhereNull('installed_at')
-                    ->orWhereIn('status', [Server::STATUS_INSTALLING, Server::STATUS_INSTALL_FAILED, Server::STATUS_REINSTALL_FAILED]);
-            });
+            $baseQuery->whereNotNull('power_state')
+                ->where('power_state', '!=', 'running');
         } elseif ($filterType === 'active_subscription') {
             $baseQuery->whereHas('subscription', function ($query) {
                 $query->whereIn('stripe_status', ['active', 'trialing'])
@@ -134,5 +107,17 @@ class ServerController extends Controller
             ],
             'current_filter' => $filterType,
         ]);
+    }
+
+    /**
+     * Manually refresh cached power_state for all servers from Wings/Elytra.
+     */
+    public function refreshPowerStates(Request $request)
+    {
+        $this->syncPowerStateService->handle();
+
+        return redirect()
+            ->route('admin.servers', $request->only('filter_type', 'filter'))
+            ->with('status', 'Server power states are being refreshed.');
     }
 }

@@ -1,4 +1,5 @@
-import { CircleDollar, CircleQuestion, Ellipsis, House } from '@gravity-ui/icons';
+import { ChevronLeft, ChevronRight, CircleDollar, CircleQuestion, House, Shield } from '@gravity-ui/icons';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { useStoreState } from 'easy-peasy';
 import { Fragment, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
@@ -10,13 +11,6 @@ import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import SupportContainer from '@/components/dashboard/SupportContainer';
 import TicketDetailContainer from '@/components/dashboard/TicketDetailContainer';
 import TicketsContainer from '@/components/dashboard/TicketsContainer';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/elements/DropdownMenu';
 import MainSidebar from '@/components/elements/MainSidebar';
 import MainWrapper from '@/components/elements/MainWrapper';
 import { DashboardMobileMenu } from '@/components/elements/MobileFullScreenMenu';
@@ -38,6 +32,7 @@ const DashboardRouter = () => {
     // Mobile menu state
     const [isMobileMenuVisible, setMobileMenuVisible] = useState(false);
     const [accountData, setAccountData] = useState<AccountData | null>(null);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const toggleMobileMenu = () => {
         setMobileMenuVisible(!isMobileMenuVisible);
@@ -55,7 +50,8 @@ const DashboardRouter = () => {
     };
 
     const onTriggerReturnToWebsite = () => {
-        window.location.href = '/hosting';
+        // Scroll directly to the plans section on the hosting page when possible.
+        window.location.href = '/hosting#plans';
     };
 
     const onSelectAdminPanel = () => {
@@ -156,7 +152,9 @@ const DashboardRouter = () => {
 
             <div className='flex flex-row w-full lg:pt-0 pt-16'>
                 {/* Desktop Sidebar */}
-                <MainSidebar className='hidden lg:flex lg:relative lg:shrink-0 w-[300px] bg-[#1a1a1a]'>
+                <MainSidebar
+                    className={`hidden lg:flex lg:relative lg:shrink-0 bg-[#1a1a1a]${isSidebarCollapsed ? ' collapsed' : ''}`}
+                >
                     <div
                         className='absolute bg-brand w-[3px] h-10 left-0 rounded-full pointer-events-none '
                         style={{
@@ -180,35 +178,29 @@ const DashboardRouter = () => {
                         <NavLink to={'/'} className='flex shrink-0 h-8 w-fit'>
                             <Logo uniqueId='desktop-sidebar' />
                         </NavLink>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className='w-10 h-10 flex items-center justify-center rounded-md text-white hover:bg-white/10 p-2 cursor-pointer'>
-                                    {' '}
-                                    <Ellipsis fill='currentColor' width={26} height={22} />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className='z-99999' sideOffset={8}>
-                                {rootAdmin && (
-                                    <DropdownMenuItem onSelect={onSelectAdminPanel}>
-                                        Admin Panel
-                                        <span className='ml-2 z-10 rounded-full bg-brand px-2 py-1 text-xs text-white'>
-                                            Staff
-                                        </span>
-                                    </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onSelect={onTriggerReturnToWebsite}>
-                                    Return to Website
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={onTriggerLogout}>Log Out</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
                     </div>
+                    <button
+                        type='button'
+                        aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                        className='hidden lg:flex items-center justify-center w-7 h-12 rounded-full bg-[#ffffff11] hover:bg-[#ffffff1f] text-white/70 hover:text-white cursor-pointer transition-colors absolute -right-[14px] top-1/2 -translate-y-1/2 shadow-md border border-white/10'
+                    >
+                        {isSidebarCollapsed ? (
+                            <ChevronRight width={18} height={18} fill='currentColor' />
+                        ) : (
+                            <ChevronLeft width={18} height={18} fill='currentColor' />
+                        )}
+                    </button>
                     <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-6'></div>
                     <ul data-pyro-subnav-routes-wrapper='' className='pyro-subnav-routes-wrapper'>
-                        <NavLink to={'/'} end className='flex flex-row items-center' ref={NavigationHome}>
+                        <NavLink
+                            to={'/'}
+                            end
+                            className={`flex flex-row items-center ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                            ref={NavigationHome}
+                        >
                             <House width={22} height={22} fill='currentColor' />
-                            <p>Your Servers</p>
+                            {!isSidebarCollapsed && <p>Your Servers</p>}
                         </NavLink>
                         {/* NOT FINISHED YET
                         <NavLink to={'/vps-servers'} end className='flex flex-row items-center'>
@@ -217,28 +209,113 @@ const DashboardRouter = () => {
                         </NavLink> */}
                         {/* Spacer pushes the following links to the bottom */}
                         <div className='pyro-subnav-spacer' />
-                        {/* Bottom links */}
+
+                        {/* Admin / Settings full-width items above the bottom icon row */}
+                        {rootAdmin && (
+                            <div
+                                onClick={onSelectAdminPanel}
+                                className={`flex flex-row items-center cursor-pointer ${
+                                    isSidebarCollapsed ? 'justify-center' : ''
+                                }`}
+                            >
+                                <Shield width={22} height={22} />
+                                {!isSidebarCollapsed && <p>Admin Panel</p>}
+                            </div>
+                        )}
                         <NavLink
-                            to={'/billing'}
+                            to={'/account'}
                             end
-                            className='flex flex-row items-center'
-                            ref={NavigationSettingsBilling}
+                            className={`flex flex-row items-center ${
+                                isSidebarCollapsed ? 'justify-center' : ''
+                            }`}
+                            ref={NavigationSettings}
                         >
-                            <CircleDollar width={22} height={22} fill='currentColor' />
-                            <p>Billing</p>
-                        </NavLink>
-                        <NavLink to={'/support'} end className='flex flex-row items-center' ref={NavigationSupport}>
-                            <CircleQuestion width={22} height={22} fill='currentColor' />
-                            <p>Support</p>
-                        </NavLink>
-                        <NavLink to={'/account'} end className='flex flex-row items-center' ref={NavigationSettings}>
                             {userAvatarUrl ? (
-                                <img src={userAvatarUrl} alt='Account' className='w-[22px] h-[22px] rounded-full' />
+                                <img src={userAvatarUrl} alt='Settings' className='w-[22px] h-[22px] rounded-full' />
                             ) : (
                                 <div className='w-[22px] h-[22px] rounded-full bg-zinc-600' />
                             )}
-                            <p>Account</p>
+                            {!isSidebarCollapsed && <p>Settings</p>}
                         </NavLink>
+
+                        {/* Bottom links as icon-only row; stack vertically when collapsed to avoid clipping */}
+                        <Tooltip.Provider delayDuration={0}>
+                            <div
+                                className={`flex ${
+                                    isSidebarCollapsed
+                                        ? 'flex-col items-center justify-end gap-8 pt-4 pb-4'
+                                        : 'flex-row items-center justify-between gap-4 pt-2 pb-2'
+                                }`}
+                            >
+                                <Tooltip.Root>
+                                    <Tooltip.Trigger asChild>
+                                        <NavLink
+                                            to={'/billing'}
+                                            end
+                                            className='flex flex-row items-center justify-center'
+                                            ref={NavigationSettingsBilling}
+                                        >
+                                            <CircleDollar width={22} height={22} fill='currentColor' />
+                                        </NavLink>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Portal>
+                                        <Tooltip.Content
+                                            side='top'
+                                            sideOffset={6}
+                                            className='px-3 py-2 text-sm rounded-lg border border-white/10 bg-[#050608] text-white shadow-[0_14px_40px_rgba(0,0,0,0.85)] z-50 opacity-0 scale-95 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:scale-100 transition-all duration-150 ease-out'
+                                        >
+                                            Billing
+                                            <Tooltip.Arrow className='fill-[#050608]' />
+                                        </Tooltip.Content>
+                                    </Tooltip.Portal>
+                                </Tooltip.Root>
+
+                                <Tooltip.Root>
+                                    <Tooltip.Trigger asChild>
+                                        <NavLink
+                                            to={'/support'}
+                                            end
+                                            className='flex flex-row items-center justify-center'
+                                            ref={NavigationSupport}
+                                        >
+                                            <CircleQuestion width={22} height={22} fill='currentColor' />
+                                        </NavLink>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Portal>
+                                        <Tooltip.Content
+                                            side='top'
+                                            sideOffset={6}
+                                            className='px-3 py-2 text-sm rounded-lg border border-white/10 bg-[#050608] text-white shadow-[0_14px_40px_rgba(0,0,0,0.85)] z-50 opacity-0 scale-95 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:scale-100 transition-all duration-150 ease-out'
+                                        >
+                                            Support
+                                            <Tooltip.Arrow className='fill-[#050608]' />
+                                        </Tooltip.Content>
+                                    </Tooltip.Portal>
+                                </Tooltip.Root>
+
+                                <Tooltip.Root>
+                                    <Tooltip.Trigger asChild>
+                                        <button
+                                            type='button'
+                                            onClick={onTriggerLogout}
+                                            className='flex flex-row items-center justify-center text-white/80 hover:text-white cursor-pointer'
+                                        >
+                                            <span className='text-lg leading-none'>&#x21AA;</span>
+                                        </button>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Portal>
+                                        <Tooltip.Content
+                                            side='top'
+                                            sideOffset={6}
+                                            className='px-3 py-2 text-sm rounded-lg border border-white/10 bg-[#050608] text-white shadow-[0_14px_40px_rgba(0,0,0,0.85)] z-50 opacity-0 scale-95 data-[state=delayed-open]:opacity-100 data-[state=delayed-open]:scale-100 transition-all duration-150 ease-out'
+                                        >
+                                            Log out
+                                            <Tooltip.Arrow className='fill-[#050608]' />
+                                        </Tooltip.Content>
+                                    </Tooltip.Portal>
+                                </Tooltip.Root>
+                            </div>
+                        </Tooltip.Provider>
                     </ul>
                 </MainSidebar>
 

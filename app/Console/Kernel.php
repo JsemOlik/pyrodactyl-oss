@@ -43,5 +43,8 @@ class Kernel extends ConsoleKernel
 
         // Process credits-based recurring billing daily
         $schedule->command('billing:process-credits-recurring')->daily();
+
+        // Keep cached power_state in sync with Wings/Elytra
+        $schedule->command('servers:sync-power-state')->everyMinute()->withoutOverlapping();
     }
 }
