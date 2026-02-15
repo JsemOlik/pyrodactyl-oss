@@ -1,6 +1,6 @@
 'use client';
 
-import { Ellipsis } from '@gravity-ui/icons';
+import { ChevronLeft, ChevronRight, Ellipsis } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import type { RefObject } from 'react';
 import { Fragment, Suspense, createRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -60,6 +60,7 @@ const ServerRouter = () => {
 
     // Mobile menu state
     const [isMobileMenuVisible, setMobileMenuVisible] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     // Scroll tracking for highlight indicator
     const navContainerRef = useRef<HTMLUListElement>(null);
@@ -290,7 +291,9 @@ const ServerRouter = () => {
 
                     <div className='flex flex-row w-full lg:pt-0 pt-16'>
                         {/* Desktop Sidebar */}
-                        <MainSidebar className='hidden lg:flex lg:relative lg:shrink-0 w-[300px] bg-[#1a1a1a] flex flex-col h-screen'>
+                        <MainSidebar
+                            className={`hidden lg:flex lg:relative lg:shrink-0 w-[300px] bg-[#1a1a1a] flex flex-col h-screen${isSidebarCollapsed ? ' collapsed' : ''}`}
+                        >
                             <div className='flex flex-row items-center justify-between h-8'>
                                 <NavLink to={'/'} className='flex shrink-0 h-8 w-fit'>
                                     <Logo uniqueId='server-desktop-sidebar' />
@@ -315,6 +318,18 @@ const ServerRouter = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
+                            <button
+                                type='button'
+                                aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                                onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                                className='hidden lg:flex items-center justify-center w-7 h-12 rounded-full bg-[#ffffff11] hover:bg-[#ffffff1f] text-white/70 hover:text-white cursor-pointer transition-colors absolute -right-[14px] top-1/2 -translate-y-1/2 shadow-md border border-white/10'
+                            >
+                                {isSidebarCollapsed ? (
+                                    <ChevronRight width={18} height={18} fill='currentColor' />
+                                ) : (
+                                    <ChevronLeft width={18} height={18} fill='currentColor' />
+                                )}
+                            </button>
                             <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-6'></div>
                             {/* Highlight */}
                             <div
@@ -348,26 +363,12 @@ const ServerRouter = () => {
                                         ref={getRefForRoute(route)}
                                         route={route}
                                         serverId={id}
+                                        isSidebarCollapsed={isSidebarCollapsed}
                                         onClick={() => {}}
                                     />
                                 ))}
                             </ul>
-                            <div className='shrink-0'>
-                                <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-full'></div>
-
-                                <StatBlock
-                                    title='server'
-                                    className='p-4 bg-[#ffffff09] border-[1px] border-[#ffffff11] shadow-xs rounded-xl text-center hover:cursor-default'
-                                >
-                                    {serverName}
-                                </StatBlock>
-                                <button
-                                    onClick={onOpenBilling}
-                                    className='p-4 bg-[#ffffff09] border-[1px] border-[#ffffff11] shadow-xs rounded-xl text-center hover:cursor-pointer hover:bg-[#ffffff12] hover:border-[#ffffff20] transition-colors mt-2 w-full'
-                                >
-                                    <div className='text-sm font-semibold text-white'>Open in Billing</div>
-                                </button>
-                            </div>
+                            {/* bottom spacer removed */}
                         </MainSidebar>
 
                         <MainWrapper className='w-full'>

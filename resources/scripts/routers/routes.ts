@@ -9,6 +9,7 @@ import {
     House,
     PencilToLine,
     Persons,
+    Shield,
     Terminal,
 } from '@gravity-ui/icons';
 import type { ComponentType, SVGProps } from 'react';
@@ -172,7 +173,7 @@ const routes: Routes = {
             permission: 'user.*',
             name: 'Users',
             component: UsersContainer,
-            icon: Persons,
+            icon: Shield,
             end: true,
         },
         {
@@ -255,6 +256,8 @@ const routes: Routes = {
             permission: 'control.console',
             name: 'Players',
             component: PlayersContainer,
+            icon: Persons,
+            end: true,
         },
         {
             route: 'properties/*',

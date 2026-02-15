@@ -53,3 +53,16 @@
 .chart_container {
     @apply relative rounded-xl border-[1px] border-[#ffffff11] bg-[#131313];
 }
+
+/* Highlight search matches in xterm like a browser find-in-page */
+.xterm .xterm-find-match,
+.xterm .xterm-search-match {
+    background-color: rgba(250, 240, 137, 0.35); /* soft yellow */
+}
+
+.xterm .xterm-find-match.selected,
+.xterm .xterm-find-match.xterm-find-match--selected,
+.xterm .xterm-search-match.selected,
+.xterm .xterm-search-match.xterm-search-match--selected {
+    background-color: #faf089; /* brighter yellow for current match */
+}
