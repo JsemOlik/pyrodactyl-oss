@@ -88,7 +88,7 @@ const StatGraphs = () => {
     }, [windowLabel]);
 
     return (
-        <>
+        <Tooltip.Provider>
             <div className='flex justify-between items-center mb-3'>
                 <h2 className='text-xs font-semibold tracking-wide text-zinc-300 uppercase'>Resource Metrics</h2>
                 <div className='flex items-center gap-1 text-[11px] text-zinc-300'>
@@ -203,7 +203,7 @@ const StatGraphs = () => {
                 </ChartBlock>
             </div>
         </div>
-        </>
+        </Tooltip.Provider>
     );
 };
 
