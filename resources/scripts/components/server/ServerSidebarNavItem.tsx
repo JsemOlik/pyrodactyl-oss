@@ -82,7 +82,14 @@ const ServerSidebarNavItem = forwardRef<HTMLAnchorElement, ServerSidebarNavItemP
                     isSidebarCollapsed ? 'justify-center' : ''
                 }`}
             >
-                {Icon && <Icon className='ml-3' width={22} height={22} fill='currentColor' />}
+                {Icon && (
+                    <Icon
+                        className={isSidebarCollapsed ? '' : 'ml-3'}
+                        width={22}
+                        height={22}
+                        fill='currentColor'
+                    />
+                )}
                 {!isSidebarCollapsed && <p>{name}</p>}
             </NavLink>
         );
