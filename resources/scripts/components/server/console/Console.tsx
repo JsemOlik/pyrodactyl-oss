@@ -267,22 +267,24 @@ const Console = () => {
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
                 <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
-                    <div
-                        className='mb-4 flex items-center gap-3 rounded-lg bg-[#1b1b1b] px-4 py-2 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33]'
-                    >
-                        <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
-                        <input
-                            type='text'
-                            value={searchQuery}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                setSearchQuery(value);
-                                handleSearch(value);
-                            }}
-                            placeholder='Search all logs...'
-                            className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
-                        />
-                        <div className='flex items-center gap-1 text-xs text-zinc-400 shrink-0'>
+                    <div className='mb-4 flex items-center justify-between gap-3'>
+                        <div
+                            className='flex items-center gap-3 rounded-lg bg-[#1b1b1b] px-4 py-2 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'
+                        >
+                            <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
+                            <input
+                                type='text'
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSearchQuery(value);
+                                    handleSearch(value);
+                                }}
+                                placeholder='Search all logs...'
+                                className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
+                            />
+                        </div>
+                        <div className='flex items-center gap-2 text-sm text-zinc-300 pl-1'>
                             <button
                                 type='button'
                                 onClick={() => {
@@ -298,9 +300,9 @@ const Console = () => {
                                 className='inline-flex items-center justify-center rounded-md px-1.5 py-0.5 hover:bg-[#ffffff11] disabled:opacity-40 disabled:cursor-default'
                                 disabled={!matchCount}
                             >
-                                <ChevronLeft width={14} height={14} className='text-zinc-200' />
+                                <ChevronLeft width={18} height={18} className='text-zinc-200' />
                             </button>
-                            <span className='min-w-[1.5rem] text-center tabular-nums'>{matchCount}</span>
+                            <span className='min-w-[1.75rem] text-center tabular-nums'>{matchCount}</span>
                             <button
                                 type='button'
                                 onClick={() => {
@@ -316,7 +318,7 @@ const Console = () => {
                                 className='inline-flex items-center justify-center rounded-md px-1.5 py-0.5 hover:bg-[#ffffff11] disabled:opacity-40 disabled:cursor-default'
                                 disabled={!matchCount}
                             >
-                                <ChevronRight width={14} height={14} className='text-zinc-200' />
+                                <ChevronRight width={18} height={18} className='text-zinc-200' />
                             </button>
                         </div>
                     </div>
