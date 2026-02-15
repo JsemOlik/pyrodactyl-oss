@@ -205,8 +205,8 @@ const Console = () => {
         <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'>
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
-                <div className='bg-[#131313] min-h-[340px] sm:min-h-[460px] p-3 sm:p-4 font-mono overflow-hidden flex'>
-                    <div className='h-full w-full flex-1'>
+                <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 font-mono overflow-hidden'>
+                    <div className='h-full w-full'>
                         <div ref={ref} className='h-full w-full' />
                     </div>
                 </div>
