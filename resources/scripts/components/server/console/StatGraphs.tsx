@@ -202,6 +202,7 @@ const StatGraphs = () => {
                     <Line aria-label='Network Activity. Download and upload activity' role='img' {...network.props} />
                 </ChartBlock>
             </div>
+        </div>
         </>
     );
 };
