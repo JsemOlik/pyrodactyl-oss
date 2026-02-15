@@ -267,7 +267,7 @@ const Console = () => {
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
                 <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
-                    <div className='mb-3 flex items-center justify-between gap-2'>
+                    <div className='mb-3 flex items-center gap-2'>
                         <div
                             className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-[0_1_70%]'
                         >
@@ -297,7 +297,7 @@ const Console = () => {
                                         regex: false,
                                     });
                                 }}
-                                className='inline-flex h-full w-8 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
+                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
                                 disabled={!matchCount}
                             >
                                 <ChevronLeft width={18} height={18} className='text-zinc-200' />
@@ -317,7 +317,7 @@ const Console = () => {
                                         regex: false,
                                     });
                                 }}
-                                className='inline-flex h-full w-8 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
+                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
                                 disabled={!matchCount}
                             >
                                 <ChevronRight width={18} height={18} className='text-zinc-200' />
