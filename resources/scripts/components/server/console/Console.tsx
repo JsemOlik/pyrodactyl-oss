@@ -349,58 +349,59 @@ const Console = () => {
                         <div className='flex h-10 items-center text-sm text-zinc-300'>
                             <div className='flex h-10 items-center gap-1 rounded-lg bg-[#1b1b1b] px-2 border border-[#ffffff11]'>
                                 <button
-                                type='button'
-                                onClick={() => {
-                                    const term = lastSearchTerm.current.trim();
-                                    const addon = searchAddonRef.current;
-                                    if (!addon || !term) return;
-                                    addon.findPrevious(term, {
-                                        incremental: true,
-                                        caseSensitive: false,
-                                        regex: false,
-                                    });
-                                }}
-                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
-                                disabled={!matchCount}
-                            >
-                                <ChevronLeft width={18} height={18} className='text-zinc-200' />
-                            </button>
-                            <span className='min-w-[2.1rem] text-center text-sm tabular-nums'>
-                                {matchCount}
-                            </span>
-                            <button
-                                type='button'
-                                onClick={() => {
-                                    const term = lastSearchTerm.current.trim();
-                                    const addon = searchAddonRef.current;
-                                    if (!addon || !term) return;
-                                    addon.findNext(term, {
-                                        incremental: true,
-                                        caseSensitive: false,
-                                        regex: false,
-                                    });
-                                }}
-                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
-                                disabled={!matchCount}
-                            >
-                                <ChevronRight width={18} height={18} className='text-zinc-200' />
-                            </button>
-                            <button
-                                type='button'
-                                onClick={copyConsole}
-                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
-                            >
-                                <Copy width={18} height={18} className='text-zinc-200' />
-                            </button>
-                            <button
-                                type='button'
-                                onClick={downloadConsole}
-                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
-                            >
-                                <ArrowDownToLine width={18} height={18} className='text-zinc-200' />
-                            </button>
+                                    type='button'
+                                    onClick={() => {
+                                        const term = lastSearchTerm.current.trim();
+                                        const addon = searchAddonRef.current;
+                                        if (!addon || !term) return;
+                                        addon.findPrevious(term, {
+                                            incremental: true,
+                                            caseSensitive: false,
+                                            regex: false,
+                                        });
+                                    }}
+                                    className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
+                                    disabled={!matchCount}
+                                >
+                                    <ChevronLeft width={18} height={18} className='text-zinc-200' />
+                                </button>
+                                <span className='min-w-[2.1rem] text-center text-sm tabular-nums'>
+                                    {matchCount}
+                                </span>
+                                <button
+                                    type='button'
+                                    onClick={() => {
+                                        const term = lastSearchTerm.current.trim();
+                                        const addon = searchAddonRef.current;
+                                        if (!addon || !term) return;
+                                        addon.findNext(term, {
+                                            incremental: true,
+                                            caseSensitive: false,
+                                            regex: false,
+                                        });
+                                    }}
+                                    className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
+                                    disabled={!matchCount}
+                                >
+                                    <ChevronRight width={18} height={18} className='text-zinc-200' />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={copyConsole}
+                                    className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
+                                >
+                                    <Copy width={18} height={18} className='text-zinc-200' />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={downloadConsole}
+                                    className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
+                                >
+                                    <ArrowDownToLine width={18} height={18} className='text-zinc-200' />
+                                </button>
                             </div>
                         </div>
+                    </div>
                     <div className='h-full w-full'>
                         <div ref={ref} className='h-full w-full' />
                     </div>
