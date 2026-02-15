@@ -207,9 +207,9 @@ const Console = () => {
                 <SpinnerOverlay visible={!connected} size={'large'} />
                 <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
                     <div
-                        className='mb-3 flex items-center gap-2 rounded-md bg-[#1b1b1b] px-3 py-1.5 text-xs text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33]'
+                        className='mb-4 flex items-center gap-3 rounded-lg bg-[#1b1b1b] px-4 py-2 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33]'
                     >
-                        <Magnifier width={14} height={14} className='text-white/80 shrink-0' />
+                        <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
                         <input
                             type='text'
                             value={searchQuery}
@@ -219,7 +219,7 @@ const Console = () => {
                                 handleSearch(value);
                             }}
                             placeholder='Search all logs...'
-                            className='w-full bg-transparent text-xs text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
+                            className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
                         />
                     </div>
                     <div className='h-full w-full'>
