@@ -4,6 +4,7 @@ namespace Pterodactyl\Services\Servers;
 
 use Illuminate\Support\Facades\Log;
 use Pterodactyl\Models\Server;
+use Pterodactyl\Models\ServerMetric;
 use Pterodactyl\Repositories\Wings\DaemonServerRepository;
 use Pterodactyl\Contracts\Repository\ServerRepositoryInterface;
 
@@ -51,6 +52,41 @@ class SyncPowerStateService
                         if ($state !== null) {
                             $this->serverRepository->withoutFreshModel()->update($server->id, [
                                 'power_state' => $state,
+                            ]);
+                        }
+
+                        // Persist resource metrics snapshot for this server.
+                        // Best-effort: if keys are missing or the daemon payload shape changes,
+                        // we simply skip writing a row for this iteration.
+                        try {
+                            $resources = $attributes['resources'] ?? null;
+
+                            if (is_array($resources)) {
+                                $cpu = $resources['cpu_absolute'] ?? $resources['cpu'] ?? null;
+
+                                $memoryBytes = $resources['memory_bytes']
+                                    ?? $resources['memory'] ?? null;
+
+                                $network = $resources['network'] ?? [];
+                                $rxBytes = $network['rx_bytes'] ?? null;
+                                $txBytes = $network['tx_bytes'] ?? null;
+
+                                if ($cpu !== null && $memoryBytes !== null && $rxBytes !== null && $txBytes !== null) {
+                                    ServerMetric::query()->create([
+                                        'server_id' => $server->id,
+                                        'timestamp' => now(),
+                                        'cpu' => (float) $cpu,
+                                        'memory_bytes' => (int) $memoryBytes,
+                                        'network_rx_bytes' => (int) $rxBytes,
+                                        'network_tx_bytes' => (int) $txBytes,
+                                    ]);
+                                }
+                            }
+                        } catch (\Throwable $metricEx) {
+                            Log::debug('Failed persisting server metrics snapshot', [
+                                'server_id' => $server->id,
+                                'uuid' => $server->uuid,
+                                'message' => $metricEx->getMessage(),
                             ]);
                         }
                     } catch (\Throwable $ex) {
