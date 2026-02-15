@@ -347,7 +347,7 @@ const Console = () => {
                             />
                         </div>
                         <div className='flex h-10 items-center text-sm text-zinc-300'>
-                            <div className='flex h-10 items-center gap-1 rounded-lg bg-[#1b1b1b] px-2 border border-[#ffffff11]'>
+                            <div className='flex h-10 items-center gap-1 rounded-lg bg-[#1b1b1b] border border-[#ffffff11]'>
                                 <button
                                     type='button'
                                     onClick={() => {
