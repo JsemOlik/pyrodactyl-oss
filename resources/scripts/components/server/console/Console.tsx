@@ -331,8 +331,8 @@ const Console = () => {
                 {canSendCommands && (
                     <div className='relative border-t-[1px] border-[#ffffff11] bg-[#0f0f0f]'>
                         <div className='flex items-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-zinc-100'>
-                            <span className='inline-flex h-7 w-7 items-center justify-center text-zinc-200'>
-                                <TerminalIcon width={18} height={18} />
+                            <span className='inline-flex h-8 w-8 items-center justify-center text-zinc-200'>
+                                <TerminalIcon width={22} height={22} />
                             </span>
                             <input
                                 className='w-full bg-transparent font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 border-0 outline-none focus:ring-0 focus:outline-none'
