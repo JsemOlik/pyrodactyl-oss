@@ -6,6 +6,7 @@ import '@xterm/xterm/css/xterm.css';
 import clsx from 'clsx';
 import debounce from 'debounce';
 import { ArrowDownToLine, ChevronLeft, ChevronRight, Copy, Magnifier, Terminal as TerminalIcon } from '@gravity-ui/icons';
+import { toast } from 'sonner';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
@@ -200,6 +201,8 @@ const Console = () => {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
+
+            toast.success('Console downloaded as text file.');
         } catch (e) {
             // Silently fail if buffer access is not available for some reason.
         }
@@ -220,6 +223,8 @@ const Console = () => {
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
             }
+
+            toast.success('Console copied to clipboard.');
         } catch (e) {
             // Silently ignore copy failures.
         }
