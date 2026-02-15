@@ -184,11 +184,9 @@ const ServerConsoleContainer = () => {
                         }}
                     >
                         <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl p-3 sm:p-4 hover:border-[#ffffff20] transition-all duration-150 shadow-sm'>
-                            <div className={'grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4'}>
-                                <Spinner.Suspense>
-                                    <StatGraphs />
-                                </Spinner.Suspense>
-                            </div>
+                            <Spinner.Suspense>
+                                <StatGraphs />
+                            </Spinner.Suspense>
                         </div>
                     </div>
 
