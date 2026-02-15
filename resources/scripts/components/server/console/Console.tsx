@@ -241,29 +241,6 @@ const Console = () => {
                                 setSearchQuery(value);
                                 handleSearch(value);
                             }}
-                            onKeyDown={(e) => {
-                                if (!searchReady.current || !lastSearchTerm.current) return;
-
-                                // Enter / ArrowDown → next match
-                                if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                                    e.preventDefault();
-                                    searchAddon.findNext(lastSearchTerm.current, {
-                                        incremental: true,
-                                        caseSensitive: false,
-                                        regex: false,
-                                    });
-                                }
-
-                                // Shift+Enter / ArrowUp → previous match
-                                if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) {
-                                    e.preventDefault();
-                                    searchAddon.findPrevious(lastSearchTerm.current, {
-                                        incremental: true,
-                                        caseSensitive: false,
-                                        regex: false,
-                                    });
-                                }
-                            }}
                             placeholder='Search all logs...'
                             className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
                         />
