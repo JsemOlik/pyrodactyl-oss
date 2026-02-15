@@ -68,6 +68,7 @@ const Console = () => {
     const { connected, instance } = ServerContext.useStoreState((state) => state.socket);
     const [canSendCommands] = usePermissions(['control.console']);
     const [searchQuery, setSearchQuery] = useState('');
+    const lastSearchTerm = useRef<string>('');
     const serverId = ServerContext.useStoreState((state) => state.server.data!.id);
     const isTransferring = ServerContext.useStoreState((state) => state.server.data!.isTransferring);
     const [history, setHistory] = usePersistedState<string[]>(`${serverId}:command_history`, []);
@@ -155,8 +156,24 @@ const Console = () => {
     );
 
     const handleSearch = (value: string) => {
-        if (!value.trim()) return;
-        searchAddon.findNext(value.trim(), { incremental: false, caseSensitive: false, regex: false });
+        const term = value.trim();
+
+        if (!term) {
+            lastSearchTerm.current = '';
+            // Clear existing search highlights if supported by this SearchAddon version.
+            // @ts-expect-error - clearDecorations may not exist on older versions.
+            if (typeof (searchAddon as any).clearDecorations === 'function') {
+                (searchAddon as any).clearDecorations();
+            }
+            return;
+        }
+
+        lastSearchTerm.current = term;
+        searchAddon.findNext(term, {
+            incremental: true,
+            caseSensitive: false,
+            regex: false,
+        });
     };
 
     useEffect(() => {
@@ -217,6 +234,29 @@ const Console = () => {
                                 const value = e.target.value;
                                 setSearchQuery(value);
                                 handleSearch(value);
+                            }}
+                            onKeyDown={(e) => {
+                                if (!lastSearchTerm.current) return;
+
+                                // Enter / ArrowDown → next match
+                                if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    searchAddon.findNext(lastSearchTerm.current, {
+                                        incremental: true,
+                                        caseSensitive: false,
+                                        regex: false,
+                                    });
+                                }
+
+                                // Shift+Enter / ArrowUp → previous match
+                                if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) {
+                                    e.preventDefault();
+                                    searchAddon.findPrevious(lastSearchTerm.current, {
+                                        incremental: true,
+                                        caseSensitive: false,
+                                        regex: false,
+                                    });
+                                }
                             }}
                             placeholder='Search all logs...'
                             className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
