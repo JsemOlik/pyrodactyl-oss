@@ -269,7 +269,7 @@ const Console = () => {
                 <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
                     <div className='mb-3 flex items-center gap-2'>
                         <div
-                            className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-[0_1_70%]'
+                            className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'
                         >
                             <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
                             <input
