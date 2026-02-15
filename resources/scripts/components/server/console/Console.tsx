@@ -64,6 +64,7 @@ const Console = () => {
     );
     const fitAddon = new FitAddon();
     const searchAddon = new SearchAddon();
+    const searchReady = useRef(false);
     const webLinksAddon = new WebLinksAddon();
     const { connected, instance } = ServerContext.useStoreState((state) => state.socket);
     const [canSendCommands] = usePermissions(['control.console']);
@@ -127,6 +128,7 @@ const Console = () => {
         if (connected && ref.current && !terminal.element) {
             terminal.loadAddon(fitAddon);
             terminal.loadAddon(searchAddon);
+            searchReady.current = true;
             terminal.loadAddon(webLinksAddon);
 
             terminal.open(ref.current);
@@ -157,6 +159,10 @@ const Console = () => {
 
     const handleSearch = (value: string) => {
         const term = value.trim();
+
+        if (!searchReady.current) {
+            return;
+        }
 
         if (!term) {
             lastSearchTerm.current = '';
@@ -236,7 +242,7 @@ const Console = () => {
                                 handleSearch(value);
                             }}
                             onKeyDown={(e) => {
-                                if (!lastSearchTerm.current) return;
+                                if (!searchReady.current || !lastSearchTerm.current) return;
 
                                 // Enter / ArrowDown → next match
                                 if (e.key === 'Enter' || e.key === 'ArrowDown') {
