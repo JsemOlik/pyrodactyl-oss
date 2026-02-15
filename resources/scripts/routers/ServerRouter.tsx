@@ -363,6 +363,7 @@ const ServerRouter = () => {
                                         ref={getRefForRoute(route)}
                                         route={route}
                                         serverId={id}
+                                        isSidebarCollapsed={isSidebarCollapsed}
                                         onClick={() => {}}
                                     />
                                 ))}

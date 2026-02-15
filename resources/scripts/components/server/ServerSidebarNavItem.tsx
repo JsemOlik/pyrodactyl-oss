@@ -12,6 +12,7 @@ import { ServerContext } from '@/state/server';
 interface ServerSidebarNavItemProps {
     route: ServerRouteDefinition;
     serverId: string;
+    isSidebarCollapsed?: boolean;
     onClick?: () => void;
 }
 
@@ -22,7 +23,7 @@ interface ServerSidebarNavItemProps {
  * - Network feature with subdomain support check
  */
 const ServerSidebarNavItem = forwardRef<HTMLAnchorElement, ServerSidebarNavItemProps>(
-    ({ route, serverId, onClick }, ref) => {
+    ({ route, serverId, isSidebarCollapsed = false, onClick }, ref) => {
         const { icon: Icon, name, path, permission, featureLimit, end } = route;
 
         // Feature limits from server state
@@ -77,10 +78,12 @@ const ServerSidebarNavItem = forwardRef<HTMLAnchorElement, ServerSidebarNavItemP
                 to={to}
                 end={end}
                 onClick={onClick}
-                className='flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md'
+                className={`flex flex-row items-center transition-colors duration-200 hover:bg-[#ffffff11] rounded-md ${
+                    isSidebarCollapsed ? 'justify-center' : ''
+                }`}
             >
                 {Icon && <Icon className='ml-3' width={22} height={22} fill='currentColor' />}
-                <p>{name}</p>
+                {!isSidebarCollapsed && <p>{name}</p>}
             </NavLink>
         );
 
