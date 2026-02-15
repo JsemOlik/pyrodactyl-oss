@@ -5,7 +5,7 @@ import { ITerminalOptions, Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import clsx from 'clsx';
 import debounce from 'debounce';
-import { ArrowDownToLine, ChevronLeft, ChevronRight, Magnifier, Terminal as TerminalIcon } from '@gravity-ui/icons';
+import { ArrowDownToLine, ChevronLeft, ChevronRight, Copy, Magnifier, Terminal as TerminalIcon } from '@gravity-ui/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
@@ -168,18 +168,22 @@ const Console = () => {
         }, 100),
     );
 
+    const getConsoleText = () => {
+        const buffer = terminal.buffer.active;
+        const lines: string[] = [];
+
+        for (let y = 0; y < buffer.length; y++) {
+            const line = buffer.getLine(y);
+            if (!line) continue;
+            lines.push(line.translateToString());
+        }
+
+        return lines.join('\n');
+    };
+
     const downloadConsole = () => {
         try {
-            const buffer = terminal.buffer.active;
-            const lines: string[] = [];
-
-            for (let y = 0; y < buffer.length; y++) {
-                const line = buffer.getLine(y);
-                if (!line) continue;
-                lines.push(line.translateToString());
-            }
-
-            const content = lines.join('\n');
+            const content = getConsoleText();
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
 
             const now = new Date();
@@ -198,6 +202,26 @@ const Console = () => {
             URL.revokeObjectURL(url);
         } catch (e) {
             // Silently fail if buffer access is not available for some reason.
+        }
+    };
+
+    const copyConsole = async () => {
+        try {
+            const content = getConsoleText();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(content);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = content;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+        } catch (e) {
+            // Silently ignore copy failures.
         }
     };
 
@@ -354,6 +378,13 @@ const Console = () => {
                                 disabled={!matchCount}
                             >
                                 <ChevronRight width={18} height={18} className='text-zinc-200' />
+                            </button>
+                            <button
+                                type='button'
+                                onClick={copyConsole}
+                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
+                            >
+                                <Copy width={18} height={18} className='text-zinc-200' />
                             </button>
                             <button
                                 type='button'
