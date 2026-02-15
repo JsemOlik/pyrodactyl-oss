@@ -346,8 +346,9 @@ const Console = () => {
                                 className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
                             />
                         </div>
-                        <div className='flex h-10 items-center gap-1 text-sm text-zinc-300'>
-                            <button
+                        <div className='flex h-10 items-center text-sm text-zinc-300'>
+                            <div className='flex h-10 items-center gap-1 rounded-lg bg-[#1b1b1b] px-2 border border-[#ffffff11]'>
+                                <button
                                 type='button'
                                 onClick={() => {
                                     const term = lastSearchTerm.current.trim();
@@ -398,8 +399,8 @@ const Console = () => {
                             >
                                 <ArrowDownToLine width={18} height={18} className='text-zinc-200' />
                             </button>
+                            </div>
                         </div>
-                    </div>
                     <div className='h-full w-full'>
                         <div ref={ref} className='h-full w-full' />
                     </div>
