@@ -5,6 +5,7 @@ import { ITerminalOptions, Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import clsx from 'clsx';
 import debounce from 'debounce';
+import { Magnifier } from '@gravity-ui/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
@@ -153,10 +154,9 @@ const Console = () => {
         }, 100),
     );
 
-    const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!searchQuery.trim()) return;
-        searchAddon.findNext(searchQuery.trim(), { incremental: false, caseSensitive: false, regex: false });
+    const handleSearch = (value: string) => {
+        if (!value.trim()) return;
+        searchAddon.findNext(value.trim(), { incremental: false, caseSensitive: false, regex: false });
     };
 
     useEffect(() => {
@@ -205,25 +205,23 @@ const Console = () => {
         <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'>
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
-                <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 font-mono overflow-hidden flex flex-col'>
-                    <form
-                        onSubmit={handleSearch}
-                        className='mb-2 flex items-center gap-2 rounded-md bg-[#1b1b1b] px-3 py-1.5 text-xs text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33]'
+                <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
+                    <div
+                        className='mb-3 flex items-center gap-2 rounded-md bg-[#1b1b1b] px-3 py-1.5 text-xs text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33]'
                     >
+                        <Magnifier width={14} height={14} className='text-white/80 shrink-0' />
                         <input
                             type='text'
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder='Search all logs'
-                            className='w-full bg-transparent text-xs text-zinc-100 placeholder-zinc-500 outline-none border-0'
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setSearchQuery(value);
+                                handleSearch(value);
+                            }}
+                            placeholder='Search all logs...'
+                            className='w-full bg-transparent text-xs text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
                         />
-                        <button
-                            type='submit'
-                            className='text-[11px] px-2 py-0.5 rounded bg-[#272727] text-zinc-200 border border-[#ffffff18] hover:border-[#ffffff33] hover:bg-[#303030] transition-colors'
-                        >
-                            Find
-                        </button>
-                    </form>
+                    </div>
                     <div className='h-full w-full'>
                         <div ref={ref} className='h-full w-full' />
                     </div>
