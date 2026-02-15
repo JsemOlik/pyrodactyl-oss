@@ -11,6 +11,7 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Pterodactyl\Console\Commands\Schedule\ProcessRunnableCommand;
 use Pterodactyl\Console\Commands\Maintenance\PruneOrphanedBackupsCommand;
 use Pterodactyl\Console\Commands\Maintenance\CleanServiceBackupFilesCommand;
+use Pterodactyl\Console\Commands\PruneServerMetricsCommand;
 
 class Kernel extends ConsoleKernel
 {
@@ -40,6 +41,9 @@ class Kernel extends ConsoleKernel
         if (config('activity.prune_days')) {
             $schedule->command(PruneCommand::class, ['--model' => [ActivityLog::class]])->daily();
         }
+
+        // Prune server metrics older than 24 hours
+        $schedule->command(PruneServerMetricsCommand::class)->hourly();
 
         // Process credits-based recurring billing daily
         $schedule->command('billing:process-credits-recurring')->daily();

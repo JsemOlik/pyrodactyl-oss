@@ -125,6 +125,7 @@ Route::group([
     Route::get('/websocket', [Client\ServerController::class, 'websocket'])->name('api:client:server.ws');
     Route::get('/resources', [Client\ServerController::class, 'resources'])->name('api:client:server.resources');
     Route::get('/activity', [Client\ServerController::class, 'activityLog'])->name('api:client:server.activity');
+    Route::get('/metrics', [Client\Servers\ServerMetricsController::class, 'index']);
     Route::get('/billing-portal', [Client\Servers\ServerController::class, 'billingPortal'])->name('api:client:server.billing-portal');
 
     Route::post('/command', [Client\Servers\CommandController::class, 'index']);

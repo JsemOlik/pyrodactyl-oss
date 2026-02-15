@@ -13,10 +13,12 @@ import { hexToRgba } from '@/lib/helpers';
 import { ServerContext } from '@/state/server';
 
 import useWebsocketEvent from '@/plugins/useWebsocketEvent';
+import { getServerMetrics } from '@/api/server/getServerMetrics';
 
 const StatGraphs = () => {
     const status = ServerContext.useStoreState((state) => state.status.value);
     const limits = ServerContext.useStoreState((state) => state.server.data!.limits);
+    const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
     const previous = useRef<Record<'tx' | 'rx', number>>({ tx: -1, rx: -1 });
 
     const [windowLabel, setWindowLabel] = useState<'5m' | '15m' | '1h' | '6h' | '24h'>('5m');
@@ -80,12 +82,63 @@ const StatGraphs = () => {
         '24h': 240, // cap for now
     };
 
+    // Load historical metrics when the window changes.
     useEffect(() => {
-        const points = windowMap[windowLabel];
-        cpu.setWindow(points);
-        memory.setWindow(points);
-        network.setWindow(points);
-    }, [windowLabel]);
+        let isCancelled = false;
+
+        const loadHistory = async () => {
+            try {
+                const pointsCount = windowMap[windowLabel];
+                cpu.setWindow(pointsCount);
+                memory.setWindow(pointsCount);
+                network.setWindow(pointsCount);
+
+                cpu.clear();
+                memory.clear();
+                network.clear();
+
+                const data = await getServerMetrics(uuid, windowLabel);
+
+                if (isCancelled) return;
+
+                const pts = data.points || [];
+
+                let lastRx = -1;
+                let lastTx = -1;
+
+                pts.forEach((p, index) => {
+                    cpu.push(p.cpu ?? 0);
+                    memory.push(Math.floor((p.memory_bytes ?? 0) / 1024 / 1024));
+
+                    if (index === 0) {
+                        network.push([0, 0]);
+                    } else {
+                        const prev = pts[index - 1];
+                        network.push([
+                            Math.max(0, (p.network_tx_bytes ?? 0) - (prev.network_tx_bytes ?? 0)),
+                            Math.max(0, (p.network_rx_bytes ?? 0) - (prev.network_rx_bytes ?? 0)),
+                        ]);
+                    }
+
+                    lastTx = p.network_tx_bytes ?? lastTx;
+                    lastRx = p.network_rx_bytes ?? lastRx;
+                });
+
+                if (lastTx >= 0 && lastRx >= 0) {
+                    previous.current = { tx: lastTx, rx: lastRx };
+                }
+            } catch (e) {
+                // swallow for now; charts will just show live data
+                console.error('Failed to load server metrics history', e);
+            }
+        };
+
+        loadHistory();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [uuid, windowLabel]);
 
     return (
         <Tooltip.Provider>
