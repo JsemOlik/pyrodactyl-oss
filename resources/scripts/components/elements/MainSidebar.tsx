@@ -10,8 +10,8 @@ const MainSidebar = styled.nav`
     /* position: absolute; */
     margin-right: 8px;
     user-select: none;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--color-sidebar, rgba(0, 0, 0, 0.6));
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
 
     &.collapsed {
         width: 80px;

@@ -49,12 +49,22 @@
     <script>
         (function() {
             const primaryColor = '{{ config('theme.primary_color', '#fa4e49') }}';
+            const backgroundColor = '{{ config('theme.background_color', '#000000') }}';
+            const sidebarBackgroundColor = '{{ config('theme.sidebar_background_color', '#050505') }}';
+            const surfaceColor = '{{ config('theme.surface_color', '#131313') }}';
+            const surfaceMutedColor = '{{ config('theme.surface_muted_color', '#0f0f0f') }}';
+            const borderColor = '{{ config('theme.border_color', '#ffffff11') }}';
             const buttonBorderRadius = '{{ config('theme.button_border_radius', '0.5rem') }}';
             // Store border radius in data attribute for hosting page to use
             document.documentElement.setAttribute('data-hosting-button-radius', buttonBorderRadius);
             function applyThemeColor() {
                 const root = document.documentElement;
                 root.style.setProperty('--color-brand', primaryColor);
+                root.style.setProperty('--color-bg', backgroundColor);
+                root.style.setProperty('--color-sidebar', sidebarBackgroundColor);
+                root.style.setProperty('--color-surface', surfaceColor);
+                root.style.setProperty('--color-surface-muted', surfaceMutedColor);
+                root.style.setProperty('--color-border', borderColor);
                 // Don't set border radius globally - only for hosting page
                 // root.style.setProperty('--button-border-radius', buttonBorderRadius);
                 // Update brand gradient to use the new color

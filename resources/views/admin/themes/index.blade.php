@@ -63,6 +63,86 @@
 
         <div class="box">
           <div class="box-header with-border">
+            <h3 class="box-title">Layout Colors</h3>
+          </div>
+          <div class="box-body">
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label class="control-label">Background Color</label>
+                <div>
+                  <div class="input-group">
+                    <input type="color" class="form-control" name="theme:background_color" id="background-color"
+                      value="{{ old('theme:background_color', $backgroundColor) }}" style="width: 80px; height: 38px;" />
+                    <input type="text" class="form-control" id="background-color-text"
+                      value="{{ old('theme:background_color', $backgroundColor) }}" placeholder="#000000" />
+                  </div>
+                  <p class="text-muted"><small>The global background color behind the dashboard and server views.</small></p>
+                </div>
+              </div>
+              <div class="form-group col-md-6">
+                <label class="control-label">Sidebar Background Color</label>
+                <div>
+                  <div class="input-group">
+                    <input type="color" class="form-control" name="theme:sidebar_background_color" id="sidebar-background-color"
+                      value="{{ old('theme:sidebar_background_color', $sidebarBackgroundColor) }}" style="width: 80px; height: 38px;" />
+                    <input type="text" class="form-control" id="sidebar-background-color-text"
+                      value="{{ old('theme:sidebar_background_color', $sidebarBackgroundColor) }}" placeholder="#050505" />
+                  </div>
+                  <p class="text-muted"><small>The background color used for the main dashboard and server sidebars.</small></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="box-header with-border">
+            <h3 class="box-title">Surface & Card Colors</h3>
+          </div>
+          <div class="box-body">
+            <div class="row">
+              <div class="form-group col-md-4">
+                <label class="control-label">Surface Color</label>
+                <div>
+                  <div class="input-group">
+                    <input type="color" class="form-control" name="theme:surface_color" id="surface-color"
+                      value="{{ old('theme:surface_color', $surfaceColor) }}" style="width: 80px; height: 38px;" />
+                    <input type="text" class="form-control" id="surface-color-text"
+                      value="{{ old('theme:surface_color', $surfaceColor) }}" placeholder="#131313" />
+                  </div>
+                  <p class="text-muted"><small>The default background for cards and panels (e.g. console, metrics, stat cards).</small></p>
+                </div>
+              </div>
+              <div class="form-group col-md-4">
+                <label class="control-label">Muted Surface Color</label>
+                <div>
+                  <div class="input-group">
+                    <input type="color" class="form-control" name="theme:surface_muted_color" id="surface-muted-color"
+                      value="{{ old('theme:surface_muted_color', $surfaceMutedColor) }}" style="width: 80px; height: 38px;" />
+                    <input type="text" class="form-control" id="surface-muted-color-text"
+                      value="{{ old('theme:surface_muted_color', $surfaceMutedColor) }}" placeholder="#0f0f0f" />
+                  </div>
+                  <p class="text-muted"><small>A slightly darker or lighter surface used for nested areas like footers and toolbars.</small></p>
+                </div>
+              </div>
+              <div class="form-group col-md-4">
+                <label class="control-label">Border Color</label>
+                <div>
+                  <div class="input-group">
+                    <input type="color" class="form-control" name="theme:border_color" id="border-color"
+                      value="{{ old('theme:border_color', $borderColor) }}" style="width: 80px; height: 38px;" />
+                    <input type="text" class="form-control" id="border-color-text"
+                      value="{{ old('theme:border_color', $borderColor) }}" placeholder="#ffffff11" />
+                  </div>
+                  <p class="text-muted"><small>The default border color used for cards, sidebars, and other surfaces.</small></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="box-header with-border">
             <h3 class="box-title">Button Border Radius</h3>
           </div>
           <div class="box-body">

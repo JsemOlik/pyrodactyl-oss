@@ -325,10 +325,12 @@ const Console = () => {
     }, [connected, instance]);
 
     return (
-        <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'>
+        <div className='border-[1px] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'
+            style={{ background: 'var(--color-surface, #131313)', borderColor: 'var(--color-border, #ffffff12)' }}
+        >
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
-                <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
+                <div className='h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
                     <div className='mb-3 flex items-center gap-2'>
                         <div
                             className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'
