@@ -267,9 +267,9 @@ const Console = () => {
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
                 <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
-                    <div className='mb-4 flex items-center justify-between gap-3'>
+                    <div className='mb-3 flex items-center justify-between gap-2'>
                         <div
-                            className='flex items-center gap-3 rounded-lg bg-[#1b1b1b] px-4 py-2 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'
+                            className='flex items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 py-1.5 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'
                         >
                             <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
                             <input
@@ -284,7 +284,7 @@ const Console = () => {
                                 className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
                             />
                         </div>
-                        <div className='flex items-center gap-2 text-sm text-zinc-300 pl-1'>
+                        <div className='flex items-stretch gap-1 text-sm text-zinc-300'>
                             <button
                                 type='button'
                                 onClick={() => {
@@ -297,12 +297,14 @@ const Console = () => {
                                         regex: false,
                                     });
                                 }}
-                                className='inline-flex items-center justify-center rounded-md px-1.5 py-0.5 hover:bg-[#ffffff11] disabled:opacity-40 disabled:cursor-default'
+                                className='inline-flex h-full w-7 items-center justify-center rounded-md bg-[#1b1b1b] hover:bg-[#2a2a2a] border border-[#ffffff11] hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
                                 disabled={!matchCount}
                             >
                                 <ChevronLeft width={18} height={18} className='text-zinc-200' />
                             </button>
-                            <span className='min-w-[1.75rem] text-center tabular-nums'>{matchCount}</span>
+                            <div className='flex h-full min-w-[2.1rem] items-center justify-center rounded-md bg-[#1b1b1b] border border-[#ffffff11] text-sm font-medium tabular-nums'>
+                                {matchCount}
+                            </div>
                             <button
                                 type='button'
                                 onClick={() => {
@@ -315,7 +317,7 @@ const Console = () => {
                                         regex: false,
                                     });
                                 }}
-                                className='inline-flex items-center justify-center rounded-md px-1.5 py-0.5 hover:bg-[#ffffff11] disabled:opacity-40 disabled:cursor-default'
+                                className='inline-flex h-full w-7 items-center justify-center rounded-md bg-[#1b1b1b] hover:bg-[#2a2a2a] border border-[#ffffff11] hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
                                 disabled={!matchCount}
                             >
                                 <ChevronRight width={18} height={18} className='text-zinc-200' />
