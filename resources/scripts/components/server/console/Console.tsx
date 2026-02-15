@@ -66,6 +66,7 @@ const Console = () => {
     const webLinksAddon = new WebLinksAddon();
     const { connected, instance } = ServerContext.useStoreState((state) => state.socket);
     const [canSendCommands] = usePermissions(['control.console']);
+    const [searchQuery, setSearchQuery] = useState('');
     const serverId = ServerContext.useStoreState((state) => state.server.data!.id);
     const isTransferring = ServerContext.useStoreState((state) => state.server.data!.isTransferring);
     const [history, setHistory] = usePersistedState<string[]>(`${serverId}:command_history`, []);
@@ -135,13 +136,6 @@ const Console = () => {
                     document.execCommand('copy');
                     return false;
                 }
-                // } else if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                //     e.preventDefault();
-                //     searchBar.show();
-                //     return false;
-                // } else if (e.key === 'Escape') {
-                //     searchBar.hidden();
-                // }
                 return true;
             });
         }
@@ -158,6 +152,12 @@ const Console = () => {
             }
         }, 100),
     );
+
+    const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!searchQuery.trim()) return;
+        searchAddon.findNext(searchQuery.trim(), { incremental: false, caseSensitive: false, regex: false });
+    };
 
     useEffect(() => {
         const listeners: Record<string, (s: string) => void> = {
@@ -205,7 +205,25 @@ const Console = () => {
         <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'>
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
-                <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 font-mono overflow-hidden'>
+                <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 font-mono overflow-hidden flex flex-col'>
+                    <form
+                        onSubmit={handleSearch}
+                        className='mb-2 flex items-center gap-2 rounded-md bg-[#1b1b1b] px-3 py-1.5 text-xs text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33]'
+                    >
+                        <input
+                            type='text'
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder='Search all logs'
+                            className='w-full bg-transparent text-xs text-zinc-100 placeholder-zinc-500 outline-none border-0'
+                        />
+                        <button
+                            type='submit'
+                            className='text-[11px] px-2 py-0.5 rounded bg-[#272727] text-zinc-200 border border-[#ffffff18] hover:border-[#ffffff33] hover:bg-[#303030] transition-colors'
+                        >
+                            Find
+                        </button>
+                    </form>
                     <div className='h-full w-full'>
                         <div ref={ref} className='h-full w-full' />
                     </div>

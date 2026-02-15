@@ -110,30 +110,48 @@ function useChart(label: string, opts?: UseChartOptions) {
     );
     const [data, setData] = useState(getEmptyData(label, opts?.sets || 1, opts?.callback));
 
+    const setWindow = (points: number) => {
+        const clamped = Math.max(20, Math.min(points, 288));
+        // update x scale and labels length
+        // @ts-expect-error - partial options mutation for simplicity
+        options.scales.x.max = clamped - 1;
+        setData((state) => ({
+            ...state,
+            labels: Array(clamped)
+                .fill(0)
+                .map((_, index) => index),
+            datasets: state.datasets.map((dataset) => ({
+                ...dataset,
+                data: Array(clamped).fill(-5),
+            })),
+        }));
+    };
+
     const push = (items: number | null | (number | null)[]) =>
-        setData((state) =>
-            merge(state, {
+        setData((state) => {
+            const latestLength = state.labels.length || 20;
+            return merge(state, {
                 datasets: (Array.isArray(items) ? items : [items]).map((item, index) => ({
                     ...state.datasets[index],
                     data:
                         state.datasets[index]?.data
-                            ?.slice(1)
+                            ?.slice(-(latestLength - 1))
                             ?.concat(typeof item === 'number' ? Number(item.toFixed(2)) : item) ?? [],
                 })),
-            }),
-        );
+            });
+        });
 
     const clear = () =>
         setData((state) =>
             merge(state, {
                 datasets: state.datasets.map((value) => ({
                     ...value,
-                    data: Array(20).fill(-5),
+                    data: Array(state.labels.length || 20).fill(-5),
                 })),
             }),
         );
 
-    return { props: { data, options }, push, clear };
+    return { props: { data, options }, push, clear, setWindow };
 }
 
 function useChartTickLabel(label: string, max: number, tickLabel: string, roundTo?: number) {

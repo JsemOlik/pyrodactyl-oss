@@ -1,6 +1,6 @@
 import { ArrowDownToLine, ArrowUpToLine } from '@gravity-ui/icons';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 
 import ChartBlock from '@/components/server/console/ChartBlock';
@@ -18,6 +18,8 @@ const StatGraphs = () => {
     const status = ServerContext.useStoreState((state) => state.status.value);
     const limits = ServerContext.useStoreState((state) => state.server.data!.limits);
     const previous = useRef<Record<'tx' | 'rx', number>>({ tx: -1, rx: -1 });
+
+    const [windowLabel, setWindowLabel] = useState<'5m' | '15m' | '1h' | '6h' | '24h'>('5m');
 
     const cpu = useChartTickLabel('CPU', limits.cpu, '%', 2);
     const memory = useChartTickLabel('Memory', limits.memory, 'MiB');
@@ -69,8 +71,48 @@ const StatGraphs = () => {
         previous.current = { tx: values.network.tx_bytes, rx: values.network.rx_bytes };
     });
 
+    // Map label to number of points (assuming 15s per point)
+    const windowMap: Record<typeof windowLabel, number> = {
+        '5m': 20, // 5 * 60 / 15
+        '15m': 60,
+        '1h': 240,
+        '6h': 240, // cap for now
+        '24h': 240, // cap for now
+    };
+
+    useEffect(() => {
+        const points = windowMap[windowLabel];
+        cpu.setWindow(points);
+        memory.setWindow(points);
+        network.setWindow(points);
+    }, [windowLabel]);
+
     return (
         <Tooltip.Provider>
+            <div className='flex justify-end mb-3'>
+                <div className='inline-flex items-center gap-1 rounded-full bg-[#111111] border border-[#ffffff14] px-2 py-1 text-[11px] text-zinc-300'>
+                    {([
+                        ['5m', '5m'],
+                        ['15m', '15m'],
+                        ['1h', '1h'],
+                        ['6h', '6h'],
+                        ['24h', '24h'],
+                    ] as const).map(([value, label]) => (
+                        <button
+                            key={value}
+                            type='button'
+                            onClick={() => setWindowLabel(value)}
+                            className={`px-2 py-0.5 rounded-full transition-colors ${
+                                windowLabel === value
+                                    ? 'bg-[#ffffff22] text-white'
+                                    : 'text-zinc-400 hover:text-zinc-200'
+                            }`}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </div>
             <div
                 className='transform-gpu skeleton-anim-2'
                 style={{
