@@ -5,7 +5,7 @@ import { ITerminalOptions, Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import clsx from 'clsx';
 import debounce from 'debounce';
-import { Magnifier } from '@gravity-ui/icons';
+import { ChevronLeft, ChevronRight, Magnifier } from '@gravity-ui/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
@@ -68,6 +68,7 @@ const Console = () => {
     const { connected, instance } = ServerContext.useStoreState((state) => state.socket);
     const [canSendCommands] = usePermissions(['control.console']);
     const [searchQuery, setSearchQuery] = useState('');
+    const [matchCount, setMatchCount] = useState(0);
     const lastSearchTerm = useRef<string>('');
     const serverId = ServerContext.useStoreState((state) => state.server.data!.id);
     const isTransferring = ServerContext.useStoreState((state) => state.server.data!.isTransferring);
@@ -177,6 +178,7 @@ const Console = () => {
 
         if (!term) {
             lastSearchTerm.current = '';
+            setMatchCount(0);
             // Clear existing search highlights if supported by this SearchAddon version.
             // @ts-expect-error - clearDecorations may not exist on older versions.
             if (typeof (addon as any).clearDecorations === 'function') {
@@ -186,6 +188,31 @@ const Console = () => {
         }
 
         lastSearchTerm.current = term;
+
+        // Compute match count across the current buffer.
+        try {
+            const buffer = terminal.buffer.active;
+            const lowerTerm = term.toLowerCase();
+            let count = 0;
+
+            for (let y = 0; y < buffer.length; y++) {
+                const line = buffer.getLine(y);
+                if (!line) continue;
+                const text = line.translateToString().toLowerCase();
+                if (!text) continue;
+
+                let idx = text.indexOf(lowerTerm);
+                while (idx !== -1) {
+                    count += 1;
+                    idx = text.indexOf(lowerTerm, idx + lowerTerm.length || 1);
+                }
+            }
+
+            setMatchCount(count);
+        } catch (e) {
+            // If buffer iteration fails for any reason, just skip the count update.
+        }
+
         addon.findNext(term, {
             incremental: true,
             caseSensitive: false,
@@ -255,6 +282,43 @@ const Console = () => {
                             placeholder='Search all logs...'
                             className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
                         />
+                        <div className='flex items-center gap-1 text-xs text-zinc-400 shrink-0'>
+                            <button
+                                type='button'
+                                onClick={() => {
+                                    const term = lastSearchTerm.current.trim();
+                                    const addon = searchAddonRef.current;
+                                    if (!addon || !term) return;
+                                    addon.findPrevious(term, {
+                                        incremental: true,
+                                        caseSensitive: false,
+                                        regex: false,
+                                    });
+                                }}
+                                className='inline-flex items-center justify-center rounded-md px-1.5 py-0.5 hover:bg-[#ffffff11] disabled:opacity-40 disabled:cursor-default'
+                                disabled={!matchCount}
+                            >
+                                <ChevronLeft width={14} height={14} className='text-zinc-200' />
+                            </button>
+                            <span className='min-w-[1.5rem] text-center tabular-nums'>{matchCount}</span>
+                            <button
+                                type='button'
+                                onClick={() => {
+                                    const term = lastSearchTerm.current.trim();
+                                    const addon = searchAddonRef.current;
+                                    if (!addon || !term) return;
+                                    addon.findNext(term, {
+                                        incremental: true,
+                                        caseSensitive: false,
+                                        regex: false,
+                                    });
+                                }}
+                                className='inline-flex items-center justify-center rounded-md px-1.5 py-0.5 hover:bg-[#ffffff11] disabled:opacity-40 disabled:cursor-default'
+                                disabled={!matchCount}
+                            >
+                                <ChevronRight width={14} height={14} className='text-zinc-200' />
+                            </button>
+                        </div>
                     </div>
                     <div className='h-full w-full'>
                         <div ref={ref} className='h-full w-full' />
