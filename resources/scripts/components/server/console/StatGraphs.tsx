@@ -89,8 +89,9 @@ const StatGraphs = () => {
 
     return (
         <Tooltip.Provider>
-            <div className='flex justify-end mb-3'>
-                <div className='inline-flex items-center gap-1 rounded-full bg-[#111111] border border-[#ffffff14] px-2 py-1 text-[11px] text-zinc-300'>
+            <div className='flex justify-between items-center mb-3'>
+                <h2 className='text-xs font-semibold tracking-wide text-zinc-300 uppercase'>Resource Metrics</h2>
+                <div className='flex items-center gap-1 text-[11px] text-zinc-300'>
                     {([
                         ['5m', '5m'],
                         ['15m', '15m'],
@@ -102,10 +103,10 @@ const StatGraphs = () => {
                             key={value}
                             type='button'
                             onClick={() => setWindowLabel(value)}
-                            className={`px-2 py-0.5 rounded-full transition-colors ${
+                            className={`px-3 py-1 rounded-md border transition-colors ${
                                 windowLabel === value
-                                    ? 'bg-[#ffffff22] text-white'
-                                    : 'text-zinc-400 hover:text-zinc-200'
+                                    ? 'bg-[#ffffff10] border-[#ffffff33] text-white'
+                                    : 'bg-transparent border-transparent text-zinc-400 hover:text-zinc-100 hover:border-[#ffffff22]'
                             }`}
                         >
                             {label}
