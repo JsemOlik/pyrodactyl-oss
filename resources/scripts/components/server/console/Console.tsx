@@ -62,10 +62,9 @@ const Console = () => {
             }),
         [],
     );
-    const fitAddon = new FitAddon();
-    const searchAddon = new SearchAddon();
-    const searchReady = useRef(false);
-    const webLinksAddon = new WebLinksAddon();
+    const fitAddonRef = useRef<FitAddon | null>(null);
+    const searchAddonRef = useRef<SearchAddon | null>(null);
+    const webLinksAddonRef = useRef<WebLinksAddon | null>(null);
     const { connected, instance } = ServerContext.useStoreState((state) => state.socket);
     const [canSendCommands] = usePermissions(['control.console']);
     const [searchQuery, setSearchQuery] = useState('');
@@ -126,13 +125,24 @@ const Console = () => {
 
     useEffect(() => {
         if (connected && ref.current && !terminal.element) {
-            terminal.loadAddon(fitAddon);
-            terminal.loadAddon(searchAddon);
-            searchReady.current = true;
-            terminal.loadAddon(webLinksAddon);
+            // Lazily create and attach addons once per terminal instance.
+            if (!fitAddonRef.current) {
+                fitAddonRef.current = new FitAddon();
+                terminal.loadAddon(fitAddonRef.current);
+            }
+
+            if (!searchAddonRef.current) {
+                searchAddonRef.current = new SearchAddon();
+                terminal.loadAddon(searchAddonRef.current);
+            }
+
+            if (!webLinksAddonRef.current) {
+                webLinksAddonRef.current = new WebLinksAddon();
+                terminal.loadAddon(webLinksAddonRef.current);
+            }
 
             terminal.open(ref.current);
-            fitAddon.fit();
+            fitAddonRef.current.fit();
 
             // Add support for capturing keys
             terminal.attachCustomKeyEventHandler((e: KeyboardEvent) => {
@@ -148,19 +158,20 @@ const Console = () => {
     useEventListener(
         'resize',
         debounce(() => {
-            if (terminal.element) {
+            if (terminal.element && fitAddonRef.current) {
                 // Update font size based on window width
                 const newFontSize = window.innerWidth < 640 ? 11 : 12;
                 terminal.options.fontSize = newFontSize;
-                fitAddon.fit();
+                fitAddonRef.current.fit();
             }
         }, 100),
     );
 
     const handleSearch = (value: string) => {
         const term = value.trim();
+        const addon = searchAddonRef.current;
 
-        if (!searchReady.current) {
+        if (!addon) {
             return;
         }
 
@@ -168,14 +179,14 @@ const Console = () => {
             lastSearchTerm.current = '';
             // Clear existing search highlights if supported by this SearchAddon version.
             // @ts-expect-error - clearDecorations may not exist on older versions.
-            if (typeof (searchAddon as any).clearDecorations === 'function') {
-                (searchAddon as any).clearDecorations();
+            if (typeof (addon as any).clearDecorations === 'function') {
+                (addon as any).clearDecorations();
             }
             return;
         }
 
         lastSearchTerm.current = term;
-        searchAddon.findNext(term, {
+        addon.findNext(term, {
             incremental: true,
             caseSensitive: false,
             regex: false,
