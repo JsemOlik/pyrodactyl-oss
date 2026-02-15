@@ -269,7 +269,7 @@ const Console = () => {
                 <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
                     <div className='mb-3 flex items-center justify-between gap-2'>
                         <div
-                            className='flex items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 py-1.5 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'
+                            className='flex h-8 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'
                         >
                             <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
                             <input
@@ -284,7 +284,7 @@ const Console = () => {
                                 className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
                             />
                         </div>
-                        <div className='flex items-stretch gap-1 text-sm text-zinc-300'>
+                        <div className='flex h-8 items-center gap-1 text-sm text-zinc-300'>
                             <button
                                 type='button'
                                 onClick={() => {
@@ -297,14 +297,14 @@ const Console = () => {
                                         regex: false,
                                     });
                                 }}
-                                className='inline-flex h-full w-7 items-center justify-center rounded-md bg-[#1b1b1b] hover:bg-[#2a2a2a] border border-[#ffffff11] hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
+                                className='inline-flex h-full w-8 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
                                 disabled={!matchCount}
                             >
                                 <ChevronLeft width={18} height={18} className='text-zinc-200' />
                             </button>
-                            <div className='flex h-full min-w-[2.1rem] items-center justify-center rounded-md bg-[#1b1b1b] border border-[#ffffff11] text-sm font-medium tabular-nums'>
+                            <span className='min-w-[2.1rem] text-center text-sm tabular-nums'>
                                 {matchCount}
-                            </div>
+                            </span>
                             <button
                                 type='button'
                                 onClick={() => {
@@ -317,7 +317,7 @@ const Console = () => {
                                         regex: false,
                                     });
                                 }}
-                                className='inline-flex h-full w-7 items-center justify-center rounded-md bg-[#1b1b1b] hover:bg-[#2a2a2a] border border-[#ffffff11] hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
+                                className='inline-flex h-full w-8 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
                                 disabled={!matchCount}
                             >
                                 <ChevronRight width={18} height={18} className='text-zinc-200' />
