@@ -5,7 +5,7 @@ import { ITerminalOptions, Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import clsx from 'clsx';
 import debounce from 'debounce';
-import { ChevronLeft, ChevronRight, Magnifier, Terminal as TerminalIcon } from '@gravity-ui/icons';
+import { ArrowDownToLine, ChevronLeft, ChevronRight, Magnifier, Terminal as TerminalIcon } from '@gravity-ui/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
@@ -168,6 +168,39 @@ const Console = () => {
         }, 100),
     );
 
+    const downloadConsole = () => {
+        try {
+            const buffer = terminal.buffer.active;
+            const lines: string[] = [];
+
+            for (let y = 0; y < buffer.length; y++) {
+                const line = buffer.getLine(y);
+                if (!line) continue;
+                lines.push(line.translateToString());
+            }
+
+            const content = lines.join('\n');
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+
+            const now = new Date();
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            const filename = `Console-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(
+                now.getHours(),
+            )}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.txt`;
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            // Silently fail if buffer access is not available for some reason.
+        }
+    };
+
     const handleSearch = (value: string) => {
         const term = value.trim();
         const addon = searchAddonRef.current;
@@ -321,6 +354,13 @@ const Console = () => {
                                 disabled={!matchCount}
                             >
                                 <ChevronRight width={18} height={18} className='text-zinc-200' />
+                            </button>
+                            <button
+                                type='button'
+                                onClick={downloadConsole}
+                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
+                            >
+                                <ArrowDownToLine width={18} height={18} className='text-zinc-200' />
                             </button>
                         </div>
                     </div>
