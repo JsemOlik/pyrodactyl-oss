@@ -1,6 +1,6 @@
 'use client';
 
-import { Ellipsis } from '@gravity-ui/icons';
+import { ChevronLeft, ChevronRight, Ellipsis } from '@gravity-ui/icons';
 import { useStoreState } from 'easy-peasy';
 import type { RefObject } from 'react';
 import { Fragment, Suspense, createRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
