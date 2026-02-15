@@ -35,7 +35,8 @@ const ServerConsoleContainer = () => {
     const instance = ServerContext.useStoreState((state) => state.socket.instance);
     const eggFeatures = ServerContext.useStoreState((state) => state.server.data!.eggFeatures, isEqual);
     const isNodeUnderMaintenance = ServerContext.useStoreState((state) => state.server.data!.isNodeUnderMaintenance);
-    const nest_id = ServerContext.useStoreState((state) => state.server.data?.nest);
+    const rawNest = ServerContext.useStoreState((state) => state.server.data?.nest);
+    const nest_id = rawNest != null ? Number(rawNest) : null;
     const [uptime, setUptime] = useState<UptimeStat>({ uptime: 0 });
     const { playerData } = useMinecraftPlayers();
 
