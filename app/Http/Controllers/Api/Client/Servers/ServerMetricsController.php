@@ -6,7 +6,7 @@ use Carbon\CarbonImmutable;
 use Pterodactyl\Models\Server;
 use Pterodactyl\Models\ServerMetric;
 use Pterodactyl\Http\Controllers\Api\Client\ClientApiController;
-use Pterodactyl\Http\Requests\Api\Client\GetServerRequest;
+use Pterodactyl\Http\Requests\Api\Client\Servers\GetServerRequest;
 
 class ServerMetricsController extends ClientApiController
 {
