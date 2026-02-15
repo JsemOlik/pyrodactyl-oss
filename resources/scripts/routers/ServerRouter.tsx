@@ -352,9 +352,7 @@ const ServerRouter = () => {
                                     />
                                 ))}
                             </ul>
-                            <div className='shrink-0'>
-                                <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-full'></div>
-                            </div>
+                            {/* bottom spacer removed */}
                         </MainSidebar>
 
                         <MainWrapper className='w-full'>
