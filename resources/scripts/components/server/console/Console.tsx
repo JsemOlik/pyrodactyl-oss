@@ -5,7 +5,7 @@ import { ITerminalOptions, Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import clsx from 'clsx';
 import debounce from 'debounce';
-import { ChevronLeft, ChevronRight, Magnifier } from '@gravity-ui/icons';
+import { ChevronLeft, ChevronRight, Magnifier, Terminal as TerminalIcon } from '@gravity-ui/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
@@ -330,16 +330,21 @@ const Console = () => {
                 </div>
                 {canSendCommands && (
                     <div className='relative border-t-[1px] border-[#ffffff11] bg-[#0f0f0f]'>
-                        <input
-                            className='w-full bg-transparent px-3 py-2.5 sm:px-4 sm:py-3 font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 border-0 outline-none focus:ring-0 focus:outline-none focus:bg-[#1a1a1a] transition-colors duration-150'
-                            type='text'
-                            placeholder='Enter a command...'
-                            aria-label='Console command input.'
-                            disabled={!instance || !connected}
-                            onKeyDown={handleCommandKeyDown}
-                            autoCorrect='off'
-                            autoCapitalize='none'
-                        />
+                        <div className='flex items-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-zinc-100'>
+                            <span className='inline-flex h-6 w-6 items-center justify-center rounded border border-[#ffffff22] bg-transparent text-zinc-200'>
+                                <TerminalIcon width={14} height={14} />
+                            </span>
+                            <input
+                                className='w-full bg-transparent font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 border-0 outline-none focus:ring-0 focus:outline-none'
+                                type='text'
+                                placeholder='Enter a command...'
+                                aria-label='Console command input.'
+                                disabled={!instance || !connected}
+                                onKeyDown={handleCommandKeyDown}
+                                autoCorrect='off'
+                                autoCapitalize='none'
+                            />
+                        </div>
                     </div>
                 )}
             </div>
