@@ -27,11 +27,6 @@ class ThemeController extends Controller
     public function index(): View
     {
         $primaryColor = $this->settings->get('settings::theme:primary_color', '#fa4e49');
-        $backgroundColor = $this->settings->get('settings::theme:background_color', '#000000');
-        $sidebarBackgroundColor = $this->settings->get('settings::theme:sidebar_background_color', '#050505');
-        $surfaceColor = $this->settings->get('settings::theme:surface_color', '#131313');
-        $surfaceMutedColor = $this->settings->get('settings::theme:surface_muted_color', '#0f0f0f');
-        $borderColor = $this->settings->get('settings::theme:border_color', '#ffffff11');
         $buttonBorderRadius = $this->settings->get('settings::theme:button_border_radius', '0.5rem');
         $logoPath = $this->settings->get('settings::theme:logo_path');
         
@@ -49,11 +44,6 @@ class ThemeController extends Controller
         
         return $this->view->make('admin.themes.index', [
             'primaryColor' => $primaryColor ?: '#fa4e49',
-            'backgroundColor' => $backgroundColor ?: '#000000',
-            'sidebarBackgroundColor' => $sidebarBackgroundColor ?: '#050505',
-            'surfaceColor' => $surfaceColor ?: '#131313',
-            'surfaceMutedColor' => $surfaceMutedColor ?: '#0f0f0f',
-            'borderColor' => $borderColor ?: '#ffffff11',
             'buttonBorderRadius' => $buttonBorderRadius ?: '0.5rem',
             'logoPath' => $logoUrl,
         ]);

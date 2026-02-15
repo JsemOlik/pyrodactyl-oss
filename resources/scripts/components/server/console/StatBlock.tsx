@@ -18,14 +18,10 @@ const StatBlock = ({ title, copyOnClick, className, children, onClick }: StatBlo
             <div
                 onClick={onClick}
                 className={clsx(
-                    'border-[1px] rounded-xl p-3 sm:p-4 hover:border-[#ffffff20] transition-all duration-150 group shadow-sm',
+                    'bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl p-3 sm:p-4 hover:border-[#ffffff20] transition-all duration-150 group shadow-sm',
                     onClick ? 'cursor-pointer' : 'cursor-default',
                     className,
                 )}
-                style={{
-                    background: 'var(--color-surface, #131313)',
-                    borderColor: 'var(--color-border, #ffffff12)',
-                }}
             >
                 <div className={'flex flex-col justify-center overflow-hidden w-full cursor-default'}>
                     {title ? (
