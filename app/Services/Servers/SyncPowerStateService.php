@@ -59,15 +59,16 @@ class SyncPowerStateService
                         // Best-effort: if keys are missing or the daemon payload shape changes,
                         // we simply skip writing a row for this iteration.
                         try {
-                            $resources = $attributes['resources'] ?? null;
+                            // Wings/Elytra utilization stats are exposed under "utilization".
+                            $utilization = $attributes['utilization'] ?? null;
 
-                            if (is_array($resources)) {
-                                $cpu = $resources['cpu_absolute'] ?? $resources['cpu'] ?? null;
+                            if (is_array($utilization)) {
+                                $cpu = $utilization['cpu_absolute'] ?? $utilization['cpu'] ?? null;
 
-                                $memoryBytes = $resources['memory_bytes']
-                                    ?? $resources['memory'] ?? null;
+                                $memoryBytes = $utilization['memory_bytes']
+                                    ?? $utilization['memory'] ?? null;
 
-                                $network = $resources['network'] ?? [];
+                                $network = $utilization['network'] ?? [];
                                 $rxBytes = $network['rx_bytes'] ?? null;
                                 $txBytes = $network['tx_bytes'] ?? null;
 
