@@ -294,7 +294,7 @@ const ServerRouter = () => {
                         <MainSidebar
                             className={`hidden lg:flex lg:relative lg:shrink-0 w-[300px] bg-[#1a1a1a] flex flex-col h-screen${isSidebarCollapsed ? ' collapsed' : ''}`}
                         >
-                            <div className='relative flex flex-row items-center justify-between h-8'>
+                            <div className='flex flex-row items-center justify-between h-8'>
                                 <NavLink to={'/'} className='flex shrink-0 h-8 w-fit'>
                                     <Logo uniqueId='server-desktop-sidebar' />
                                 </NavLink>
@@ -304,19 +304,6 @@ const ServerRouter = () => {
                                             <Ellipsis fill='currentColor' width={26} height={22} />
                                         </button>
                                     </DropdownMenuTrigger>
-                                </DropdownMenu>
-                                <button
-                                    type='button'
-                                    aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                                    onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-                                    className='hidden lg:flex items-center justify-center w-7 h-12 rounded-full bg-[#ffffff11] hover:bg-[#ffffff1f] text-white/70 hover:text-white cursor-pointer transition-colors absolute -right-[14px] top-1/2 -translate-y-1/2 shadow-md border border-white/10'
-                                >
-                                    {isSidebarCollapsed ? (
-                                        <ChevronRight width={18} height={18} fill='currentColor' />
-                                    ) : (
-                                        <ChevronLeft width={18} height={18} fill='currentColor' />
-                                    )}
-                                </button>
                                     <DropdownMenuContent className='z-99999 select-none relative' sideOffset={8}>
                                         {rootAdmin && (
                                             <DropdownMenuItem onSelect={onSelectManageServer}>
@@ -331,6 +318,18 @@ const ServerRouter = () => {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
+                            <button
+                                type='button'
+                                aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                                onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                                className='hidden lg:flex items-center justify-center w-7 h-12 rounded-full bg-[#ffffff11] hover:bg-[#ffffff1f] text-white/70 hover:text-white cursor-pointer transition-colors absolute -right-[14px] top-1/2 -translate-y-1/2 shadow-md border border-white/10'
+                            >
+                                {isSidebarCollapsed ? (
+                                    <ChevronRight width={18} height={18} fill='currentColor' />
+                                ) : (
+                                    <ChevronLeft width={18} height={18} fill='currentColor' />
+                                )}
+                            </button>
                             <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-6'></div>
                             {/* Highlight */}
                             <div
