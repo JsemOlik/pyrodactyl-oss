@@ -354,19 +354,6 @@ const ServerRouter = () => {
                             </ul>
                             <div className='shrink-0'>
                                 <div aria-hidden className='mt-8 mb-4 bg-[#ffffff33] min-h-[1px] w-full'></div>
-
-                                <StatBlock
-                                    title='server'
-                                    className='p-4 bg-[#ffffff09] border-[1px] border-[#ffffff11] shadow-xs rounded-xl text-center hover:cursor-default'
-                                >
-                                    {serverName}
-                                </StatBlock>
-                                <button
-                                    onClick={onOpenBilling}
-                                    className='p-4 bg-[#ffffff09] border-[1px] border-[#ffffff11] shadow-xs rounded-xl text-center hover:cursor-pointer hover:bg-[#ffffff12] hover:border-[#ffffff20] transition-colors mt-2 w-full'
-                                >
-                                    <div className='text-sm font-semibold text-white'>Open in Billing</div>
-                                </button>
                             </div>
                         </MainSidebar>
 
