@@ -45,10 +45,7 @@ class NestSeeder extends Seeder
         $this->createVoiceServersNest(array_get($items, 'Voice Servers'));
         $this->createRustNest(array_get($items, 'Rust'));
         $this->createVintageStoryNest(array_get($items, 'Vintage Story'));
-<<<<<<< HEAD
         $this->createDatabasesNest(array_get($items, 'Databases'));
-=======
->>>>>>> upstream/main
     }
 
     /**
