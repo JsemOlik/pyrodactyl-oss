@@ -31,7 +31,11 @@ const getUsageBackground = (percent: number | null) => {
 
     const fill = percent.toFixed(2);
 
-    return `linear-gradient(to right, color-mix(in srgb, var(--color-brand) 40%, transparent) ${fill}%, rgba(255,255,255,0.05) ${fill}%), linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.05))`;
+    return {
+        backgroundImage: 'var(--color-brand-grad), linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.05))',
+        backgroundSize: `${fill}% 100%, 100% 100%`,
+        backgroundRepeat: 'no-repeat',
+    };
 };
 
 const ServerDetailsBlock = ({ className }: { className?: string }) => {
@@ -182,13 +186,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
             >
                 <StatBlock
                     title={'CPU'}
-                    style={
-                        status !== 'offline'
-                            ? {
-                                  background: getUsageBackground(usagePercents.cpu),
-                              }
-                            : undefined
-                    }
+                    style={status !== 'offline' ? getUsageBackground(usagePercents.cpu) : undefined}
                 >
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
@@ -209,13 +207,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
             >
                 <StatBlock
                     title={'RAM'}
-                    style={
-                        status !== 'offline'
-                            ? {
-                                  background: getUsageBackground(usagePercents.memory),
-                              }
-                            : undefined
-                    }
+                    style={status !== 'offline' ? getUsageBackground(usagePercents.memory) : undefined}
                 >
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
@@ -236,13 +228,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
             >
                 <StatBlock
                     title={'Storage'}
-                    style={
-                        status !== 'offline'
-                            ? {
-                                  background: getUsageBackground(usagePercents.disk),
-                              }
-                            : undefined
-                    }
+                    style={status !== 'offline' ? getUsageBackground(usagePercents.disk) : undefined}
                 >
                     <Limit
                         limit={textLimits.disk}
