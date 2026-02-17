@@ -32,7 +32,8 @@ const getUsageBackground = (percent: number | null) => {
     const fill = percent.toFixed(2);
 
     return {
-        backgroundImage: 'var(--color-brand-grad), linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.05))',
+        backgroundImage:
+            'linear-gradient(to right, rgba(255,52,60,0.45), rgba(240,111,83,0.45)), linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.05))',
         backgroundSize: `${fill}% 100%, 100% 100%`,
         backgroundRepeat: 'no-repeat',
     };
