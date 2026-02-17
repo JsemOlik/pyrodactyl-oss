@@ -413,7 +413,7 @@ const Console = () => {
                                 <TerminalIcon width={18} height={18} />
                             </span>
                             <input
-                                className='w-full bg-transparent font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 border-0 outline-none focus:ring-0 focus:outline-none'
+                                className='w-full h-full bg-transparent font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 border-0 outline-none focus:ring-0 focus:outline-none'
                                 type='text'
                                 placeholder='Enter a command...'
                                 aria-label='Console command input.'
