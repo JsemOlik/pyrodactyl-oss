@@ -109,7 +109,7 @@ const PowerButtons = ({ className }: PowerButtonProps) => {
                             ? {
                                   background:
                                       'radial-gradient(124.75% 124.75% at 50.01% -10.55%, rgb(36, 36, 36) 0%, rgb(20, 20, 20) 100%) 100%)',
-                                  opacity: 1,
+                                  opacity: 0.6,
                               }
                             : {
                                   background:
