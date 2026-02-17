@@ -1,47 +1,42 @@
 #!/usr/bin/env bash
+# update.sh – helper script for updating the Pyrodactyl panel
+# Usage: ./update.sh (run as root or a user with sudo privileges)
+
 set -euo pipefail
 
-APP_DIR="/var/www/pyrodactyl-oss"
-PHP_USER="www-data"        # adjust if your php-fpm runs as a different user
-PHP_GROUP="www-data"
+# Change to project directory
+cd /var/www/pyrodactyl-oss || exit 1
 
-echo "==> Updating app in $APP_DIR"
-cd "$APP_DIR"
+# Put application into maintenance mode
+php artisan down
 
-echo "==> Fetching & pulling latest changes (current branch)"
-git fetch origin
+# Pull latest code from GitHub
 git pull
 
-echo "==> Installing/updating dependencies with pnpm"
-pnpm install
+# Ensure cache and bootstrap directories have correct permissions before Composer installs
+chmod -R 755 storage/* bootstrap/cache
 
-echo "==> Building frontend (pnpm ship)"
-pnpm ship
+# Install PHP dependencies (without dev packages, optimized autoloader)
+composer install --no-dev --optimize-autoloader
 
-echo "==> Setting permissions on storage and bootstrap/cache for $PHP_USER:$PHP_GROUP"
-chown -R "$PHP_USER":"$PHP_GROUP" storage bootstrap/cache
+# Install Node dependencies and build frontend assets
+pnpm i
+pnpm build
 
-echo "==> Putting app into maintenance mode"
-php artisan down || true
-
-echo "==> Running database migrations"
-php artisan migrate --force || true
-
-echo "==> Clearing caches"
-php artisan config:clear
-php artisan route:clear    # do NOT route:cache right now due to duplicate route name
+# Clear compiled views and cached config
 php artisan view:clear
-php artisan cache:clear
+php artisan config:clear
 
-echo "==> Rebuilding config and view caches"
-php artisan config:cache
-php artisan view:cache
-# php artisan route:cache   # intentionally disabled until duplicate route name is fixed
+# Run migrations with seed data, forcing overwrite of existing data
+php artisan migrate --seed --force
 
-echo "==> Bringing app back up"
+# Re‑apply ownership for web server user (www-data)
+chown -R www-data:www-data /var/www/pyrodactyl-oss/*
+
+# Restart queue workers so they pick up any new code or config
+php artisan queue:restart
+
+# Bring application back online
 php artisan up
 
-echo "==> Restarting Nginx"
-systemctl restart nginx
-
-echo "==> Done."
+echo "Update completed successfully at $(date)"
