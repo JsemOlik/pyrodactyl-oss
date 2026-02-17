@@ -368,7 +368,6 @@ const ServerRouter = () => {
                                     />
                                 ))}
                             </ul>
-                            {/* bottom spacer removed */}
                         </MainSidebar>
 
                         <MainWrapper className='w-full'>

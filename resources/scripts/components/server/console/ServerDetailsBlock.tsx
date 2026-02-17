@@ -123,11 +123,6 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
 > 
                 <StatBlock
                     title={'Players'}
-                    onClick={() => {
-                        if (id) {
-                            window.location.href = `/server/${id}/players`;
-                        }
-                    }}
                 >
                     {playerData ? (
                         <span>
