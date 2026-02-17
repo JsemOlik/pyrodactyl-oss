@@ -16,6 +16,8 @@ git pull
 # Ensure cache and bootstrap directories have correct permissions before Composer installs
 chmod -R 755 storage/* bootstrap/cache
 
+composer update
+
 # Install PHP dependencies (without dev packages, optimized autoloader)
 composer install --no-dev --optimize-autoloader
 
