@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import type { CSSProperties } from 'react';
 
 import CopyOnClick from '@/components/elements/CopyOnClick';
 
@@ -9,14 +10,16 @@ interface StatBlockProps {
     copyOnClick?: string;
     children: React.ReactNode;
     className?: string;
+    style?: CSSProperties;
     onClick?: () => void;
 }
 
-const StatBlock = ({ title, copyOnClick, className, children, onClick }: StatBlockProps) => {
+const StatBlock = ({ title, copyOnClick, className, style, children, onClick }: StatBlockProps) => {
     return (
         <CopyOnClick text={copyOnClick}>
             <div
                 onClick={onClick}
+                style={style}
                 className={clsx(
                     'bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl p-3 sm:p-4 hover:border-[#ffffff20] transition-all duration-150 group shadow-sm',
                     onClick ? 'cursor-pointer' : 'cursor-default',

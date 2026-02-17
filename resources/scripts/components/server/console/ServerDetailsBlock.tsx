@@ -26,6 +26,14 @@ const getUsagePercent = (used: number, limit?: number | null) => {
     return Math.min(100, Math.max(0, (used / limit) * 100));
 };
 
+const getUsageBackground = (percent: number | null) => {
+    if (percent === null) return undefined;
+
+    const fill = percent.toFixed(2);
+
+    return `linear-gradient(to right, color-mix(in srgb, var(--color-brand) 40%, transparent) ${fill}%, rgba(255,255,255,0.05) ${fill}%), linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.05))`;
+};
+
 const ServerDetailsBlock = ({ className }: { className?: string }) => {
     const [stats, setStats] = useState<Stats>({ memory: 0, cpu: 0, disk: 0, uptime: 0, tx: 0, rx: 0 });
     const [subdomainInfo, setSubdomainInfo] = useState<SubdomainInfo | null>(null);
@@ -170,13 +178,18 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                     animationDelay: `100ms`,
                     animationTimingFunction:
                         'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
-                    background:
-                        status !== 'offline' && usagePercents.cpu !== null
-                            ? `linear-gradient(to right, var(--primary-color) ${usagePercents.cpu.toFixed(2)}%, var(--background-color) ${usagePercents.cpu.toFixed(2)}%)`
-                            : undefined,
                 }}
             >
-                <StatBlock title={'CPU'}>
+                <StatBlock
+                    title={'CPU'}
+                    style={
+                        status !== 'offline'
+                            ? {
+                                  background: getUsageBackground(usagePercents.cpu),
+                              }
+                            : undefined
+                    }
+                >
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
                     ) : (
@@ -192,13 +205,18 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                     animationDelay: `125ms`,
                     animationTimingFunction:
                         'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
-                    background:
-                        status !== 'offline' && usagePercents.memory !== null
-                            ? `linear-gradient(to right, var(--primary-color) ${usagePercents.memory.toFixed(2)}%, var(--background-color) ${usagePercents.memory.toFixed(2)}%)`
-                            : undefined,
                 }}
             >
-                <StatBlock title={'RAM'}>
+                <StatBlock
+                    title={'RAM'}
+                    style={
+                        status !== 'offline'
+                            ? {
+                                  background: getUsageBackground(usagePercents.memory),
+                              }
+                            : undefined
+                    }
+                >
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
                     ) : (
@@ -214,13 +232,18 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
                     animationDelay: `150ms`,
                     animationTimingFunction:
                         'linear(0,0.01,0.04 1.6%,0.161 3.3%,0.816 9.4%,1.046,1.189 14.4%,1.231,1.254 17%,1.259,1.257 18.6%,1.236,1.194 22.3%,1.057 27%,0.999 29.4%,0.955 32.1%,0.942,0.935 34.9%,0.933,0.939 38.4%,1 47.3%,1.011,1.017 52.6%,1.016 56.4%,1 65.2%,0.996 70.2%,1.001 87.2%,1)',
-                    background:
-                        status !== 'offline' && usagePercents.disk !== null
-                            ? `linear-gradient(to right, var(--primary-color) ${usagePercents.disk.toFixed(2)}%, var(--background-color) ${usagePercents.disk.toFixed(2)}%)`
-                            : undefined,
                 }}
             >
-                <StatBlock title={'Storage'}>
+                <StatBlock
+                    title={'Storage'}
+                    style={
+                        status !== 'offline'
+                            ? {
+                                  background: getUsageBackground(usagePercents.disk),
+                              }
+                            : undefined
+                    }
+                >
                     <Limit
                         limit={textLimits.disk}
                     >{`${bytesToString(stats.disk)} / ${textLimits.disk ?? 'Unlimited'}`}</Limit>
