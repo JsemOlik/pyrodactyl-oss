@@ -5,6 +5,12 @@ export interface SiteSettings {
     locale: string;
     timezone: string;
     logoUrl?: string | null;
+    captcha?: {
+        enabled: boolean;
+        provider: string;
+        siteKey: string;
+        scriptIncludes: string[];
+    };
 }
 
 export interface SettingsStore {
