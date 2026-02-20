@@ -17,7 +17,6 @@ import { DashboardMobileMenu } from '@/components/elements/MobileFullScreenMenu'
 import MobileTopBar from '@/components/elements/MobileTopBar';
 import Logo from '@/components/elements/PyroLogo';
 import { NotFound } from '@/components/elements/ScreenBlock';
-import VpsContainer from '@/components/vps/VpsContainer';
 
 import { GravatarStyle, getGravatarUrl } from '@/lib/gravatar';
 
@@ -225,9 +224,7 @@ const DashboardRouter = () => {
                         <NavLink
                             to={'/account'}
                             end
-                            className={`flex flex-row items-center ${
-                                isSidebarCollapsed ? 'justify-center' : ''
-                            }`}
+                            className={`flex flex-row items-center ${isSidebarCollapsed ? 'justify-center' : ''}`}
                             ref={NavigationSettings}
                         >
                             {userAvatarUrl ? (
@@ -342,8 +339,6 @@ const DashboardRouter = () => {
                                 <Route path='/support' element={<SupportContainer />} />
                                 <Route path='/support/tickets' element={<TicketsContainer />} />
                                 <Route path='/support/tickets/:id' element={<TicketDetailContainer />} />
-
-                                <Route path='/vps-servers' element={<VpsContainer />} />
 
                                 <Route path='*' element={<NotFound />} />
                             </Routes>

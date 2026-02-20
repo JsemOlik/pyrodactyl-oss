@@ -41,7 +41,6 @@ Route::prefix('/nests')->group(function () {
 Route::prefix('/hosting')->group(function () {
     Route::post('/checkout', [Client\Hosting\CheckoutController::class, 'store']);
     Route::get('/verify-payment', [Client\Hosting\PaymentVerificationController::class, 'check']);
-    Route::get('/vps-distributions', [Client\Hosting\VpsDistributionController::class, 'index']);
     Route::get('/subdomain/domains', [Client\Hosting\SubdomainController::class, 'getAvailableDomains']);
     Route::post('/subdomain/check-availability', [Client\Hosting\SubdomainController::class, 'checkAvailability']);
 });
@@ -67,14 +66,6 @@ Route::prefix('/tickets')->group(function () {
     Route::delete('/{ticket}', [Client\Tickets\TicketController::class, 'destroy']);
     Route::post('/{ticket}/resolve', [Client\Tickets\TicketController::class, 'resolve']);
     Route::post('/{ticket}/replies', [Client\Tickets\TicketReplyController::class, 'store']);
-});
-
-Route::prefix('/vps-servers')->group(function () {
-    Route::get('/', [Client\Vps\VpsController::class, 'index']);
-    Route::get('/{vps}', [Client\Vps\VpsController::class, 'view']);
-    Route::post('/{vps}/power', [Client\Vps\VpsPowerController::class, 'send']);
-    Route::get('/{vps}/metrics', [Client\Vps\VpsMetricsController::class, 'index']);
-    Route::get('/{vps}/activity', [Client\Vps\VpsActivityController::class, '__invoke']);
 });
 
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {
