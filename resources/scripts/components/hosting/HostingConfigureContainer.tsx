@@ -93,6 +93,7 @@ const HostingConfigureContainer = () => {
     const handleContinue = () => {
         if (hostingType === 'game-server' && (!selectedNest || !selectedEgg)) {
             return;
+        }
 
         // Navigate to billing/checkout with configuration
         const params = new URLSearchParams();
