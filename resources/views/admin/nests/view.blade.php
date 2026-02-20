@@ -1,16 +1,16 @@
 @extends('layouts.admin')
 
 @section('title')
-    Nests &rarr; {{ $nest->name }}
+Nests &rarr; {{ $nest->name }}
 @endsection
 
 @section('content-header')
-    <h1>{{ $nest->name }}<small>{{ str_limit($nest->description, 50) }}</small></h1>
-    <ol class="breadcrumb">
-        <li><a href="{{ route('admin.index') }}">Admin</a></li>
-        <li><a href="{{ route('admin.nests') }}">Nests</a></li>
-        <li class="active">{{ $nest->name }}</li>
-    </ol>
+<h1>{{ $nest->name }}<small>{{ str_limit($nest->description, 50) }}</small></h1>
+<ol class="breadcrumb">
+    <li><a href="{{ route('admin.index') }}">Admin</a></li>
+    <li><a href="{{ route('admin.nests') }}">Nests</a></li>
+    <li class="active">{{ $nest->name }}</li>
+</ol>
 @endsection
 
 @section('content')
@@ -36,14 +36,13 @@
                         <label class="control-label">Dashboard Type <span class="field-required"></span></label>
                         <div>
                             @php
-                                $currentDashboardType = $nest->getAttributes()['dashboard_type'] ?? 'game-server';
+                            $currentDashboardType = $nest->getAttributes()['dashboard_type'] ?? 'game-server';
                             @endphp
                             <select name="dashboard_type" class="form-control">
                                 <option value="game-server" {{ $currentDashboardType === 'game-server' ? 'selected' : '' }}>Game Server</option>
                                 <option value="database" {{ $currentDashboardType === 'database' ? 'selected' : '' }}>Database</option>
                                 <option value="website" {{ $currentDashboardType === 'website' ? 'selected' : '' }}>Website</option>
                                 <option value="s3-storage" {{ $currentDashboardType === 's3-storage' ? 'selected' : '' }}>S3 Storage</option>
-                                <option value="vps" {{ $currentDashboardType === 'vps' ? 'selected' : '' }}>VPS</option>
                             </select>
                             <p class="text-muted"><small>Determines which dashboard interface will be shown for servers using this nest.</small></p>
                         </div>
@@ -101,15 +100,15 @@
                         <th class="text-center"></th>
                     </tr>
                     @foreach($nest->eggs as $egg)
-                        <tr>
-                            <td class="align-middle"><code>{{ $egg->id }}</code></td>
-                            <td class="align-middle"><a href="{{ route('admin.nests.egg.view', $egg->id) }}" data-toggle="tooltip" data-placement="right" title="{{ $egg->author }}">{{ $egg->name }}</a></td>
-                            <td class="col-xs-8 align-middle">{{ $egg->description }}</td>
-                            <td class="text-center align-middle"><code>{{ $egg->servers->count() }}</code></td>
-                            <td class="align-middle">
-                                <a href="{{ route('admin.nests.egg.export', ['egg' => $egg->id]) }}"><i class="fa fa-download"></i></a>
-                            </td>
-                        </tr>
+                    <tr>
+                        <td class="align-middle"><code>{{ $egg->id }}</code></td>
+                        <td class="align-middle"><a href="{{ route('admin.nests.egg.view', $egg->id) }}" data-toggle="tooltip" data-placement="right" title="{{ $egg->author }}">{{ $egg->name }}</a></td>
+                        <td class="col-xs-8 align-middle">{{ $egg->description }}</td>
+                        <td class="text-center align-middle"><code>{{ $egg->servers->count() }}</code></td>
+                        <td class="align-middle">
+                            <a href="{{ route('admin.nests.egg.export', ['egg' => $egg->id]) }}"><i class="fa fa-download"></i></a>
+                        </td>
+                    </tr>
                     @endforeach
                 </table>
             </div>
@@ -122,12 +121,12 @@
 @endsection
 
 @section('footer-scripts')
-    @parent
-    <script>
-        $('#deleteButton').on('mouseenter', function (event) {
-            $(this).find('i').html(' Delete Nest');
-        }).on('mouseleave', function (event) {
-            $(this).find('i').html('');
-        });
-    </script>
+@parent
+<script>
+    $('#deleteButton').on('mouseenter', function(event) {
+        $(this).find('i').html(' Delete Nest');
+    }).on('mouseleave', function(event) {
+        $(this).find('i').html('');
+    });
+</script>
 @endsection

@@ -1,16 +1,16 @@
 @extends('layouts.admin')
 
 @section('title')
-    New Nest
+New Nest
 @endsection
 
 @section('content-header')
-    <h1>New Nest<small>Configure a new nest to deploy to all nodes.</small></h1>
-    <ol class="breadcrumb">
-        <li><a href="{{ route('admin.index') }}">Admin</a></li>
-        <li><a href="{{ route('admin.nests') }}">Nests</a></li>
-        <li class="active">New</li>
-    </ol>
+<h1>New Nest<small>Configure a new nest to deploy to all nodes.</small></h1>
+<ol class="breadcrumb">
+    <li><a href="{{ route('admin.index') }}">Admin</a></li>
+    <li><a href="{{ route('admin.nests') }}">Nests</a></li>
+    <li class="active">New</li>
+</ol>
 @endsection
 
 @section('content')
@@ -43,7 +43,6 @@
                                 <option value="database" {{ old('dashboard_type') === 'database' ? 'selected' : '' }}>Database</option>
                                 <option value="website" {{ old('dashboard_type') === 'website' ? 'selected' : '' }}>Website</option>
                                 <option value="s3-storage" {{ old('dashboard_type') === 's3-storage' ? 'selected' : '' }}>S3 Storage</option>
-                                <option value="vps" {{ old('dashboard_type') === 'vps' ? 'selected' : '' }}>VPS</option>
                             </select>
                             <p class="text-muted"><small>Determines which dashboard interface will be shown for servers using this nest. Defaults to "Game Server" for existing nests.</small></p>
                         </div>

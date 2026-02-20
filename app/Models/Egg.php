@@ -124,7 +124,7 @@ class Egg extends Model
         'uuid' => 'required|string|size:36',
         'name' => 'required|string|max:191',
         'description' => 'string|nullable',
-        'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage,vps',
+        'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage',
         'features' => 'array|nullable',
         'author' => 'required|string|email',
         'file_denylist' => 'array|nullable',
@@ -274,7 +274,7 @@ class Egg extends Model
     {
         // Check raw attribute first to avoid infinite recursion
         $eggDashboardType = $this->attributes['dashboard_type'] ?? null;
-        
+
         // If egg has its own dashboard_type, use it
         if (!is_null($eggDashboardType) && $eggDashboardType !== '') {
             return $eggDashboardType;
@@ -284,7 +284,7 @@ class Egg extends Model
         if (!$this->relationLoaded('nest')) {
             $this->load('nest');
         }
-        
+
         if (!$this->nest) {
             return 'game-server';
         }

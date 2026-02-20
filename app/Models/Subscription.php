@@ -23,8 +23,6 @@ use Laravel\Cashier\Subscription as CashierSubscription;
  * @property \Pterodactyl\Models\User $user
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Server[] $servers
  * @property int|null $servers_count
- * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\Vps[] $vpsServers
- * @property int|null $vps_servers_count
  * @property \Pterodactyl\Models\Plan|null $plan
  * @property \Illuminate\Database\Eloquent\Collection|\Pterodactyl\Models\CreditTransaction[] $creditTransactions
  */
@@ -59,14 +57,6 @@ class Subscription extends CashierSubscription
     public function servers(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Server::class);
-    }
-
-    /**
-     * Get all VPS servers associated with this subscription.
-     */
-    public function vpsServers(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(Vps::class);
     }
 
     /**
@@ -107,7 +97,7 @@ class Subscription extends CashierSubscription
         }
 
         $now = now();
-        $months = match($this->billing_interval) {
+        $months = match ($this->billing_interval) {
             'month' => 1,
             'quarter' => 3,
             'half-year' => 6,
@@ -128,7 +118,7 @@ class Subscription extends CashierSubscription
         // If we have a plan, use it
         if ($this->plan) {
             $plan = $this->plan;
-            $intervalMonths = match($plan->interval) {
+            $intervalMonths = match ($plan->interval) {
                 'month' => 1,
                 'quarter' => 3,
                 'half-year' => 6,
@@ -136,22 +126,22 @@ class Subscription extends CashierSubscription
                 default => 1,
             };
             $monthlyPrice = $plan->price / $intervalMonths;
-            
-            $billingCycle = match($plan->interval) {
+
+            $billingCycle = match ($plan->interval) {
                 'month' => 'Monthly',
                 'quarter' => 'Quarterly',
                 'half-year' => 'Half-Yearly',
                 'year' => 'Yearly',
                 default => $plan->interval,
             };
-            
+
             return [
                 'monthly_price' => (float) $monthlyPrice,
                 'currency' => strtoupper($plan->currency),
                 'billing_cycle' => $billingCycle,
             ];
         }
-        
+
         // If no plan but we have stripe_price, try to get from Stripe
         if ($this->stripe_price) {
             try {
@@ -159,15 +149,15 @@ class Subscription extends CashierSubscription
                 $stripePrice = \Stripe\Price::retrieve($this->stripe_price);
                 $priceAmount = $stripePrice->unit_amount / 100;
                 $currency = strtoupper($stripePrice->currency);
-                
+
                 // Determine interval from Stripe price
                 $interval = 'month';
                 $monthlyPrice = $priceAmount;
-                
+
                 if ($stripePrice->recurring) {
                     $stripeInterval = $stripePrice->recurring->interval;
                     $intervalCount = $stripePrice->recurring->interval_count ?? 1;
-                    
+
                     if ($stripeInterval === 'month' && $intervalCount === 1) {
                         $interval = 'month';
                         $monthlyPrice = $priceAmount;
@@ -181,8 +171,8 @@ class Subscription extends CashierSubscription
                         $interval = 'year';
                         $monthlyPrice = $priceAmount / 12;
                     }
-                    
-                    $billingCycle = match($interval) {
+
+                    $billingCycle = match ($interval) {
                         'month' => 'Monthly',
                         'quarter' => 'Quarterly',
                         'half-year' => 'Half-Yearly',
@@ -192,7 +182,7 @@ class Subscription extends CashierSubscription
                 } else {
                     $billingCycle = 'One-time';
                 }
-                
+
                 return [
                     'monthly_price' => (float) $monthlyPrice,
                     'currency' => $currency,
@@ -207,7 +197,7 @@ class Subscription extends CashierSubscription
                 ];
             }
         }
-        
+
         // No subscription info available
         return [
             'monthly_price' => null,
@@ -236,22 +226,22 @@ class Subscription extends CashierSubscription
         ];
 
         $billingStatus = $statusMap[$this->stripe_status] ?? 'incomplete';
-        
+
         // Check if subscription is pending cancellation
         $isPendingCancellation = false;
         $nextBillingDate = null;
-        
+
         if (in_array($this->stripe_status, ['active', 'trialing'])) {
             try {
                 \Stripe\Stripe::setApiKey(config('cashier.secret'));
                 $stripeSubscription = \Stripe\Subscription::retrieve($this->stripe_id);
-                
+
                 // Check if subscription is scheduled to cancel at period end
                 if ($stripeSubscription->cancel_at_period_end ?? false) {
                     $isPendingCancellation = true;
                     $billingStatus = 'pending_cancellation';
                 }
-                
+
                 // Get next billing date (current_period_end)
                 if ($stripeSubscription->current_period_end) {
                     $nextBillingDate = \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end);
@@ -265,7 +255,7 @@ class Subscription extends CashierSubscription
                 }
             }
         }
-        
+
         return [
             'status' => $billingStatus,
             'next_billing_date' => $nextBillingDate,
@@ -273,4 +263,3 @@ class Subscription extends CashierSubscription
         ];
     }
 }
-

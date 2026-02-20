@@ -11,7 +11,7 @@ class EggFormRequest extends AdminFormRequest
         $rules = [
             'name' => 'required|string|max:191',
             'description' => 'nullable|string',
-            'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage,vps',
+            'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage',
             'docker_images' => ['required', 'string', 'regex:/^[\w#\.\/\- ]*\|?~?[\w\.\/\-:@ ]*$/im'],
             'force_outgoing_ip' => 'sometimes|boolean',
             'file_denylist' => 'array',

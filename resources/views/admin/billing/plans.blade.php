@@ -357,7 +357,6 @@
           // Default categories
           categories = [
             { name: 'Game', slug: 'game-server' },
-            { name: 'VPS', slug: 'vps' }
           ];
           renderCategoryButtons();
           renderCategoriesList();
@@ -638,11 +637,11 @@
       '<div class="row">' +
       '<div class="col-md-5">' +
       '<label>Display Name</label>' +
-      '<input type="text" class="form-control category-name" placeholder="e.g., Game, VPS, Web" />' +
+      '<input type="text" class="form-control category-name" placeholder="e.g., Game, Web" />' +
       '</div>' +
       '<div class="col-md-5">' +
       '<label>Slug</label>' +
-      '<input type="text" class="form-control category-slug" placeholder="e.g., game-server, vps, web" />' +
+      '<input type="text" class="form-control category-slug" placeholder="e.g., game-server, web" />' +
       '</div>' +
       '<div class="col-md-2">' +
       '<label>&nbsp;</label><br />' +

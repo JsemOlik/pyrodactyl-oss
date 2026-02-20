@@ -17,7 +17,7 @@ class StripeWebhookController extends Controller
 {
     public function __construct(
         private ServerProvisioningService $serverProvisioningService,
-        
+
         private CreditTransactionService $creditTransactionService
     ) {
         Stripe::setApiKey(config('cashier.secret'));
@@ -70,33 +70,33 @@ class StripeWebhookController extends Controller
                     $this->handleSubscriptionCreated($event->data->object);
                     break;
 
-            case 'customer.subscription.updated':
-                $this->handleSubscriptionUpdated($event->data->object);
-                break;
+                case 'customer.subscription.updated':
+                    $this->handleSubscriptionUpdated($event->data->object);
+                    break;
 
-            case 'customer.subscription.deleted':
-                $this->handleSubscriptionDeleted($event->data->object);
-                break;
+                case 'customer.subscription.deleted':
+                    $this->handleSubscriptionDeleted($event->data->object);
+                    break;
 
-            case 'invoice.payment_succeeded':
-                Log::info('Stripe invoice payment succeeded', [
-                    'invoice_id' => $event->data->object->id,
-                ]);
-                $this->handleInvoicePaymentSucceeded($event->data->object);
-                break;
+                case 'invoice.payment_succeeded':
+                    Log::info('Stripe invoice payment succeeded', [
+                        'invoice_id' => $event->data->object->id,
+                    ]);
+                    $this->handleInvoicePaymentSucceeded($event->data->object);
+                    break;
 
-            case 'invoice.payment_failed':
-                Log::warning('Stripe invoice payment failed', [
-                    'invoice_id' => $event->data->object->id,
-                ]);
-                break;
+                case 'invoice.payment_failed':
+                    Log::warning('Stripe invoice payment failed', [
+                        'invoice_id' => $event->data->object->id,
+                    ]);
+                    break;
 
-            case 'payment_intent.succeeded':
-                Log::info('Received payment_intent.succeeded event', [
-                    'payment_intent_id' => $event->data->object->id ?? null,
-                ]);
-                $this->handlePaymentIntentSucceeded($event->data->object);
-                break;
+                case 'payment_intent.succeeded':
+                    Log::info('Received payment_intent.succeeded event', [
+                        'payment_intent_id' => $event->data->object->id ?? null,
+                    ]);
+                    $this->handlePaymentIntentSucceeded($event->data->object);
+                    break;
 
                 default:
                     Log::info('Unhandled Stripe webhook event', [
@@ -109,7 +109,7 @@ class StripeWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Return 200 to acknowledge receipt, but log the error
             // Stripe will retry on 5xx errors, but we've already logged the issue
             return response('Webhook received with errors', 200);
@@ -147,7 +147,7 @@ class StripeWebhookController extends Controller
 
         // Extract metadata from the session
         $metadata = $session->metadata ?? [];
-        
+
         if (empty($metadata['user_id'])) {
             Log::error('Checkout session missing user_id in metadata', [
                 'session_id' => $session->id,
@@ -157,22 +157,15 @@ class StripeWebhookController extends Controller
 
         // Determine provisioning type from metadata
         $type = $metadata['type'] ?? 'game-server';
-        
-        // Provision the server or VPS based on type
+
+        // Provision the server
         try {
-            if ($type === 'vps') {
-                $this->vpsProvisioningService->provisionVps($session);
-                Log::info('VPS provisioned successfully', [
-                    'session_id' => $session->id,
-                    'user_id' => $metadata['user_id'],
-                ]);
-            } else {
-                $this->serverProvisioningService->provisionServer($session);
-                Log::info('Server provisioned successfully', [
-                    'session_id' => $session->id,
-                    'user_id' => $metadata['user_id'],
-                ]);
-            }
+
+            $this->serverProvisioningService->provisionServer($session);
+            Log::info('Server provisioned successfully', [
+                'session_id' => $session->id,
+                'user_id' => $metadata['user_id'],
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to provision from webhook', [
                 'session_id' => $session->id,
@@ -181,10 +174,10 @@ class StripeWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Refund the payment since server creation failed
             $this->refundFailedProvisioning($session, $e);
-            
+
             // Re-throw to trigger webhook retry from Stripe (but refund is already processed)
             throw $e;
         }
@@ -206,7 +199,7 @@ class StripeWebhookController extends Controller
 
         // Check if server was already provisioned (idempotency check)
         $existingSubscription = \Pterodactyl\Models\Subscription::where('stripe_id', $subscription->id)->first();
-        
+
         if ($existingSubscription && $existingSubscription->servers()->exists()) {
             Log::info('Subscription already has servers, skipping provisioning', [
                 'subscription_id' => $subscription->id,
@@ -227,7 +220,7 @@ class StripeWebhookController extends Controller
 
         // Always try to get checkout session first (most reliable source of metadata)
         $provisioned = $this->tryProvisionFromCheckoutSession($subscription);
-        
+
         if ($provisioned) {
             return; // Successfully provisioned from checkout session
         }
@@ -235,7 +228,7 @@ class StripeWebhookController extends Controller
         // Fallback: Try to use subscription metadata
         $rawMetadata = $subscription->metadata ?? [];
         $metadata = $this->convertMetadataToArray($rawMetadata);
-        
+
         Log::info('Subscription metadata retrieved', [
             'subscription_id' => $subscription->id,
             'metadata_keys' => is_array($metadata) ? array_keys($metadata) : 'not_array',
@@ -246,27 +239,19 @@ class StripeWebhookController extends Controller
 
         // Determine provisioning type from metadata
         $type = $metadata['type'] ?? 'game-server';
-        
-        // Check required metadata based on type
-        if ($type === 'vps') {
-            if (empty($metadata['user_id']) || empty($metadata['server_name'])) {
-                Log::error('Cannot provision VPS: missing required metadata in subscription and checkout session', [
-                    'subscription_id' => $subscription->id,
-                    'metadata' => $metadata,
-                ]);
-                return;
-            }
-        } else {
-            if (empty($metadata['user_id']) || empty($metadata['nest_id']) || empty($metadata['egg_id'])) {
-                Log::error('Cannot provision server: missing required metadata in subscription and checkout session', [
-                    'subscription_id' => $subscription->id,
-                    'metadata' => $metadata,
-                ]);
-                return;
-            }
+
+        // Check required metadata
+
+        if (empty($metadata['user_id']) || empty($metadata['nest_id']) || empty($metadata['egg_id'])) {
+            Log::error('Cannot provision server: missing required metadata in subscription and checkout session', [
+                'subscription_id' => $subscription->id,
+                'metadata' => $metadata,
+            ]);
+            return;
         }
 
-        // Provision server or VPS using subscription metadata
+
+        // Provision server using subscription metadata
         Log::info('Attempting to provision using subscription metadata', [
             'subscription_id' => $subscription->id,
             'user_id' => $metadata['user_id'],
@@ -283,19 +268,12 @@ class StripeWebhookController extends Controller
                 'metadata' => $metadata,
             ];
 
-            if ($type === 'vps') {
-                $this->vpsProvisioningService->provisionVps($mockSession);
-                Log::info('VPS provisioned successfully from subscription metadata', [
-                    'subscription_id' => $subscription->id,
-                    'user_id' => $metadata['user_id'],
-                ]);
-            } else {
-                $this->serverProvisioningService->provisionServer($mockSession);
-                Log::info('Server provisioned successfully from subscription metadata', [
-                    'subscription_id' => $subscription->id,
-                    'user_id' => $metadata['user_id'],
-                ]);
-            }
+
+            $this->serverProvisioningService->provisionServer($mockSession);
+            Log::info('Server provisioned successfully from subscription metadata', [
+                'subscription_id' => $subscription->id,
+                'user_id' => $metadata['user_id'],
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to provision from subscription metadata', [
                 'subscription_id' => $subscription->id,
@@ -304,10 +282,10 @@ class StripeWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Refund the payment since server creation failed
             $this->refundFailedProvisioningFromSubscription($subscription, $e);
-            
+
             // Re-throw to trigger webhook retry
             throw $e;
         }
@@ -321,13 +299,13 @@ class StripeWebhookController extends Controller
     {
         try {
             \Stripe\Stripe::setApiKey(config('cashier.secret'));
-            
+
             // Find checkout sessions for this subscription
             $sessions = \Stripe\Checkout\Session::all([
                 'subscription' => $subscription->id,
                 'limit' => 1,
             ]);
-            
+
             if (!empty($sessions->data)) {
                 $session = $sessions->data[0];
                 Log::info('Found checkout session for subscription, provisioning from session', [
@@ -335,7 +313,7 @@ class StripeWebhookController extends Controller
                     'session_id' => $session->id,
                     'session_metadata' => $session->metadata ?? [],
                 ]);
-                
+
                 $this->handleCheckoutSessionCompleted($session);
                 return true;
             } else {
@@ -350,7 +328,7 @@ class StripeWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Don't re-throw - allow fallback to subscription metadata
             return false;
         }
@@ -368,12 +346,12 @@ class StripeWebhookController extends Controller
 
         // Update subscription status in database
         $subscriptionModel = \Pterodactyl\Models\Subscription::where('stripe_id', $subscription->id)->first();
-        
+
         if ($subscriptionModel) {
             $updateData = [
                 'stripe_status' => $subscription->status,
             ];
-            
+
             // Update ends_at if subscription is being canceled
             if ($subscription->cancel_at) {
                 $updateData['ends_at'] = \Carbon\Carbon::createFromTimestamp($subscription->cancel_at);
@@ -381,14 +359,14 @@ class StripeWebhookController extends Controller
                 // If cancel_at_period_end is true, use current_period_end as ends_at
                 $updateData['ends_at'] = \Carbon\Carbon::createFromTimestamp($subscription->current_period_end);
             }
-            
+
             // Update next_billing_at if available
             if ($subscription->current_period_end && $subscription->status === 'active') {
                 $updateData['next_billing_at'] = \Carbon\Carbon::createFromTimestamp($subscription->current_period_end);
             }
-            
+
             $subscriptionModel->update($updateData);
-            
+
             Log::info('Subscription status synced from Stripe webhook', [
                 'subscription_id' => $subscriptionModel->id,
                 'stripe_status' => $subscription->status,
@@ -408,7 +386,7 @@ class StripeWebhookController extends Controller
 
         // Update subscription status in database
         $subscriptionModel = \Pterodactyl\Models\Subscription::where('stripe_id', $subscription->id)->first();
-        
+
         if ($subscriptionModel) {
             $subscriptionModel->update([
                 'stripe_status' => $subscription->status,
@@ -432,13 +410,13 @@ class StripeWebhookController extends Controller
         // Convert metadata to array if it's an object
         $rawMetadata = $session->metadata ?? [];
         $metadata = $this->convertMetadataToArray($rawMetadata);
-        
+
         Log::info('Credits purchase metadata converted', [
             'session_id' => $session->id,
             'metadata' => $metadata,
             'metadata_type' => $metadata['type'] ?? null,
         ]);
-        
+
         // Check if this is a credits purchase
         if (($metadata['type'] ?? null) !== 'credits_purchase') {
             Log::warning('Payment session is not a credits purchase', [
@@ -472,7 +450,7 @@ class StripeWebhookController extends Controller
 
         try {
             $user = \Pterodactyl\Models\User::findOrFail($userId);
-            
+
             // Add credits using transaction service
             $this->creditTransactionService->recordPurchase(
                 $user,
@@ -483,7 +461,7 @@ class StripeWebhookController extends Controller
                     'payment_intent_id' => $session->payment_intent ?? null,
                 ]
             );
-            
+
             Log::info('Credits added to user account', [
                 'session_id' => $session->id,
                 'user_id' => $userId,
@@ -497,7 +475,7 @@ class StripeWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Re-throw to trigger webhook retry
             throw $e;
         }
@@ -532,7 +510,7 @@ class StripeWebhookController extends Controller
 
                 try {
                     $user = \Pterodactyl\Models\User::findOrFail($userId);
-                    
+
                     // Add credits using transaction service
                     $this->creditTransactionService->recordPurchase(
                         $user,
@@ -543,7 +521,7 @@ class StripeWebhookController extends Controller
                             'stripe_customer_id' => $paymentIntent->customer ?? null,
                         ]
                     );
-                    
+
                     Log::info('Credits added to user account from payment_intent', [
                         'payment_intent_id' => $paymentIntent->id,
                         'user_id' => $userId,
@@ -565,7 +543,7 @@ class StripeWebhookController extends Controller
         // Try to find the checkout session associated with this payment intent as fallback
         try {
             \Stripe\Stripe::setApiKey(config('cashier.secret'));
-            
+
             // Search for checkout sessions with this payment intent
             $sessions = \Stripe\Checkout\Session::all([
                 'payment_intent' => $paymentIntent->id,
@@ -595,7 +573,7 @@ class StripeWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Don't re-throw if we couldn't find session - credits might have been added via metadata
         }
     }
@@ -607,7 +585,7 @@ class StripeWebhookController extends Controller
     {
         try {
             $metadata = $this->convertMetadataToArray($session->metadata ?? []);
-            
+
             // Check if this is a credits-based purchase (no Stripe payment to refund)
             // Credits-based purchases use mock session IDs starting with 'credits_'
             if (str_starts_with($session->id ?? '', 'credits_')) {
@@ -621,7 +599,7 @@ class StripeWebhookController extends Controller
                             ->where('user_id', $user->id)
                             ->latest()
                             ->first();
-                        
+
                         if ($subscription && $subscription->billing_amount) {
                             $this->creditTransactionService->recordRefund(
                                 $user,
@@ -630,7 +608,7 @@ class StripeWebhookController extends Controller
                                 $subscription->id,
                                 ['error' => $error->getMessage(), 'session_id' => $session->id]
                             );
-                            
+
                             Log::info('Credits refunded for failed server provisioning', [
                                 'user_id' => $user->id,
                                 'amount' => $subscription->billing_amount,
@@ -641,7 +619,7 @@ class StripeWebhookController extends Controller
                 }
                 return;
             }
-            
+
             // Also check if subscription is credits-based by looking up the subscription
             if (!empty($session->subscription)) {
                 $subscriptionModel = \Pterodactyl\Models\Subscription::where('stripe_id', $session->subscription)->first();
@@ -657,7 +635,7 @@ class StripeWebhookController extends Controller
                                 $subscriptionModel->id,
                                 ['error' => $error->getMessage(), 'session_id' => $session->id]
                             );
-                            
+
                             Log::info('Credits refunded for failed server provisioning (credits-based subscription)', [
                                 'user_id' => $user->id,
                                 'amount' => $subscriptionModel->billing_amount,
@@ -668,18 +646,18 @@ class StripeWebhookController extends Controller
                     return;
                 }
             }
-            
+
             // Stripe payment - refund via Stripe API
             \Stripe\Stripe::setApiKey(config('cashier.secret'));
-            
+
             // Get payment intent from checkout session
             $checkoutSession = \Stripe\Checkout\Session::retrieve($session->id, [
                 'expand' => ['payment_intent'],
             ]);
-            
+
             if ($checkoutSession->payment_intent) {
                 $paymentIntent = $checkoutSession->payment_intent;
-                
+
                 // Create refund
                 $refund = \Stripe\Refund::create([
                     'payment_intent' => is_string($paymentIntent) ? $paymentIntent : $paymentIntent->id,
@@ -690,7 +668,7 @@ class StripeWebhookController extends Controller
                         'error' => $error->getMessage(),
                     ],
                 ]);
-                
+
                 Log::info('Stripe payment refunded for failed server provisioning', [
                     'session_id' => $session->id,
                     'payment_intent_id' => is_string($paymentIntent) ? $paymentIntent : $paymentIntent->id,
@@ -706,7 +684,7 @@ class StripeWebhookController extends Controller
                             'subscription' => $subscription->id,
                             'limit' => 1,
                         ]);
-                        
+
                         if (!empty($invoices->data)) {
                             $invoice = $invoices->data[0];
                             if ($invoice->payment_intent) {
@@ -719,7 +697,7 @@ class StripeWebhookController extends Controller
                                         'error' => $error->getMessage(),
                                     ],
                                 ]);
-                                
+
                                 Log::info('Stripe payment refunded via invoice for failed server provisioning', [
                                     'session_id' => $session->id,
                                     'refund_id' => $refund->id,
@@ -751,7 +729,7 @@ class StripeWebhookController extends Controller
         try {
             // Check if this is a credits-based subscription
             $subscriptionModel = \Pterodactyl\Models\Subscription::where('stripe_id', $subscription->id)->first();
-            
+
             if ($subscriptionModel && $subscriptionModel->is_credits_based) {
                 // Credits-based subscription - refund credits
                 $user = $subscriptionModel->user;
@@ -763,7 +741,7 @@ class StripeWebhookController extends Controller
                         $subscriptionModel->id,
                         ['error' => $error->getMessage(), 'subscription_id' => $subscription->id]
                     );
-                    
+
                     Log::info('Credits refunded for failed server provisioning (credits-based subscription)', [
                         'user_id' => $user->id,
                         'amount' => $subscriptionModel->billing_amount,
@@ -772,19 +750,19 @@ class StripeWebhookController extends Controller
                 }
                 return;
             }
-            
+
             // Stripe payment - refund via Stripe API
             \Stripe\Stripe::setApiKey(config('cashier.secret'));
-            
+
             // Get the latest invoice for this subscription
             $invoices = \Stripe\Invoice::all([
                 'subscription' => $subscription->id,
                 'limit' => 1,
             ]);
-            
+
             if (!empty($invoices->data)) {
                 $invoice = $invoices->data[0];
-                
+
                 if ($invoice->payment_intent && $invoice->status === 'paid') {
                     $refund = \Stripe\Refund::create([
                         'payment_intent' => is_string($invoice->payment_intent) ? $invoice->payment_intent : $invoice->payment_intent->id,
@@ -795,7 +773,7 @@ class StripeWebhookController extends Controller
                             'error' => $error->getMessage(),
                         ],
                     ]);
-                    
+
                     Log::info('Stripe payment refunded for failed server provisioning from subscription', [
                         'subscription_id' => $subscription->id,
                         'refund_id' => $refund->id,
@@ -826,7 +804,7 @@ class StripeWebhookController extends Controller
             if (method_exists($metadata, 'toArray')) {
                 return $metadata->toArray();
             }
-            
+
             // Fallback: convert object to array
             return json_decode(json_encode($metadata), true) ?? [];
         }
@@ -866,7 +844,7 @@ class StripeWebhookController extends Controller
 
             // Update next_billing_at based on billing_interval
             if ($subscriptionModel->billing_interval) {
-                $nextBillingAt = match($subscriptionModel->billing_interval) {
+                $nextBillingAt = match ($subscriptionModel->billing_interval) {
                     'month' => now()->addMonth(),
                     'quarter' => now()->addMonths(3),
                     'half-year' => now()->addMonths(6),

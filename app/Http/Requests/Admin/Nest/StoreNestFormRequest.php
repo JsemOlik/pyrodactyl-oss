@@ -11,7 +11,7 @@ class StoreNestFormRequest extends AdminFormRequest
         return [
             'name' => 'required|string|min:1|max:191|regex:/^[\w\- ]+$/',
             'description' => 'string|nullable',
-            'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage,vps',
+            'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage',
         ];
     }
 }

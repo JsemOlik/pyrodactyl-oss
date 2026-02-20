@@ -3,7 +3,6 @@
 namespace Pterodactyl\Http\Middleware\Api\Client;
 
 use Pterodactyl\Models\Server;
-use Pterodactyl\Models\Vps;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 
 class SubstituteClientBindings extends SubstituteBindings
@@ -17,10 +16,6 @@ class SubstituteClientBindings extends SubstituteBindings
         // column rather than the default 'id'.
         $this->router->bind('server', function ($value) {
             return Server::query()->where(strlen($value) === 8 ? 'uuidShort' : 'uuid', $value)->firstOrFail();
-        });
-
-        $this->router->bind('vps', function ($value) {
-            return Vps::query()->where(strlen($value) === 8 ? 'uuidShort' : 'uuid', $value)->firstOrFail();
         });
 
         $this->router->bind('user', function ($value, $route) {

@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('plans', function (Blueprint $table) {
-            $table->string('type')->default('game-server')->after('is_custom'); // 'game-server' or 'vps'
+            $table->string('type')->default('game-server')->after('is_custom');
         });
     }
 
@@ -25,4 +25,3 @@ return new class extends Migration {
         });
     }
 };
-

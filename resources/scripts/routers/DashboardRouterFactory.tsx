@@ -12,7 +12,6 @@ const ServerRouter = lazy(() => import('@/routers/ServerRouter'));
 const DatabaseRouter = lazy(() => import('@/routers/DatabaseRouter'));
 // const WebsiteRouter = lazy(() => import('@/routers/WebsiteRouter'));
 // const S3StorageRouter = lazy(() => import('@/routers/S3StorageRouter'));
-// const VpsRouter = lazy(() => import('@/routers/VpsRouter'));
 
 /**
  * DashboardRouterFactory determines which dashboard router to render
@@ -93,11 +92,6 @@ const DashboardRouterFactory = () => {
 
             case 's3-storage':
                 // TODO: Implement S3StorageRouter in future phase
-                return <NotFound />;
-
-            case 'vps':
-                // VpsRouter already exists, but uses different route structure
-                // For now, return NotFound - VPS servers use /vps-server/:id/* route
                 return <NotFound />;
 
             default:

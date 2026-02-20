@@ -1,17 +1,17 @@
 @extends('layouts.admin')
 
 @section('title')
-    Nests &rarr; Egg: {{ $egg->name }}
+Nests &rarr; Egg: {{ $egg->name }}
 @endsection
 
 @section('content-header')
-    <h1>{{ $egg->name }}<small>{{ str_limit($egg->description, 50) }}</small></h1>
-    <ol class="breadcrumb">
-        <li><a href="{{ route('admin.index') }}">Admin</a></li>
-        <li><a href="{{ route('admin.nests') }}">Nests</a></li>
-        <li><a href="{{ route('admin.nests.view', $egg->nest->id) }}">{{ $egg->nest->name }}</a></li>
-        <li class="active">{{ $egg->name }}</li>
-    </ol>
+<h1>{{ $egg->name }}<small>{{ str_limit($egg->description, 50) }}</small></h1>
+<ol class="breadcrumb">
+    <li><a href="{{ route('admin.index') }}">Admin</a></li>
+    <li><a href="{{ route('admin.nests') }}">Nests</a></li>
+    <li><a href="{{ route('admin.nests.view', $egg->nest->id) }}">{{ $egg->nest->name }}</a></li>
+    <li class="active">{{ $egg->name }}</li>
+</ol>
 @endsection
 
 @section('content')
@@ -112,7 +112,7 @@
                             <div class="form-group">
                                 <label for="pDashboardType" class="control-label">Dashboard Type</label>
                                 @php
-                                    $currentDashboardType = $egg->getAttributes()['dashboard_type'] ?? null;
+                                $currentDashboardType = $egg->getAttributes()['dashboard_type'] ?? null;
                                 @endphp
                                 <select name="dashboard_type" id="pDashboardType" class="form-control">
                                     <option value="">Inherit from Nest ({{ $egg->nest->dashboard_type ?? 'game-server' }})</option>
@@ -120,7 +120,6 @@
                                     <option value="database" {{ $currentDashboardType === 'database' ? 'selected' : '' }}>Database</option>
                                     <option value="website" {{ $currentDashboardType === 'website' ? 'selected' : '' }}>Website</option>
                                     <option value="s3-storage" {{ $currentDashboardType === 's3-storage' ? 'selected' : '' }}>S3 Storage</option>
-                                    <option value="vps" {{ $currentDashboardType === 'vps' ? 'selected' : '' }}>VPS</option>
                                 </select>
                                 <p class="text-muted small">Determines which dashboard interface will be shown for servers using this egg. If left empty, inherits from the nest's dashboard type.</p>
                             </div>
@@ -134,7 +133,7 @@
                                 <div>
                                     <select class="form-control" name="features[]" id="pConfigFeatures" multiple>
                                         @foreach(($egg->features ?? []) as $feature)
-                                            <option value="{{ $feature }}" selected>{{ $feature }}</option>
+                                        <option value="{{ $feature }}" selected>{{ $feature }}</option>
                                         @endforeach
                                     </select>
                                     <p class="text-muted small">Additional features belonging to the egg. Useful for configuring additional panel modifications.</p>
@@ -164,7 +163,7 @@
                                 <select name="config_from" id="pConfigFrom" class="form-control">
                                     <option value="">None</option>
                                     @foreach($egg->nest->eggs as $o)
-                                        <option value="{{ $o->id }}" {{ ($egg->config_from !== $o->id) ?: 'selected' }}>{{ $o->name }} &lt;{{ $o->author }}&gt;</option>
+                                    <option value="{{ $o->id }}" {{ ($egg->config_from !== $o->id) ?: 'selected' }}>{{ $o->name }} &lt;{{ $o->author }}&gt;</option>
                                     @endforeach
                                 </select>
                                 <p class="text-muted small">If you would like to default to settings from another Egg select it from the menu above.</p>
@@ -209,12 +208,12 @@
 @endsection
 
 @section('footer-scripts')
-    @parent
-    <script>
+@parent
+<script>
     $('#pConfigFrom').select2();
-    $('#deleteButton').on('mouseenter', function (event) {
+    $('#deleteButton').on('mouseenter', function(event) {
         $(this).find('i').html(' Delete Egg');
-    }).on('mouseleave', function (event) {
+    }).on('mouseleave', function(event) {
         $(this).find('i').html('');
     });
     $('textarea[data-action="handle-tabs"]').on('keydown', function(event) {
@@ -233,5 +232,5 @@
         selectOnClose: false,
         tokenSeparators: [',', ' '],
     });
-    </script>
+</script>
 @endsection

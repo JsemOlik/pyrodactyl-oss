@@ -69,12 +69,7 @@ const HostingContainer = () => {
         '/api/client/hosting/categories',
         async (url: string) => {
             const response = await http.get(url);
-            return (
-                response.data.data || [
-                    { name: 'Game', slug: 'game-server' },
-                    { name: 'VPS', slug: 'vps' },
-                ]
-            );
+            return response.data.data || [{ name: 'Game', slug: 'game-server' }];
         },
     );
 
@@ -86,10 +81,7 @@ const HostingContainer = () => {
         return response.data.data || {};
     });
 
-    const categories = categoriesData || [
-        { name: 'Game', slug: 'game-server' },
-        { name: 'VPS', slug: 'vps' },
-    ];
+    const categories = categoriesData || [{ name: 'Game', slug: 'game-server' }];
     const billingDiscounts = billingDiscountsData || {};
 
     const {

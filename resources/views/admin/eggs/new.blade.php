@@ -1,16 +1,16 @@
 @extends('layouts.admin')
 
 @section('title')
-    Nests &rarr; New Egg
+Nests &rarr; New Egg
 @endsection
 
 @section('content-header')
-    <h1>New Egg<small>Create a new Egg to assign to servers.</small></h1>
-    <ol class="breadcrumb">
-        <li><a href="{{ route('admin.index') }}">Admin</a></li>
-        <li><a href="{{ route('admin.nests') }}">Nests</a></li>
-        <li class="active">New Egg</li>
-    </ol>
+<h1>New Egg<small>Create a new Egg to assign to servers.</small></h1>
+<ol class="breadcrumb">
+    <li><a href="{{ route('admin.index') }}">Admin</a></li>
+    <li><a href="{{ route('admin.nests') }}">Nests</a></li>
+    <li class="active">New Egg</li>
+</ol>
 @endsection
 
 @section('content')
@@ -29,7 +29,7 @@
                                 <div>
                                     <select name="nest_id" id="pNestId">
                                         @foreach($nests as $nest)
-                                            <option value="{{ $nest->id }}" {{ old('nest_id') != $nest->id ?: 'selected' }}>{{ $nest->name }} &lt;{{ $nest->author }}&gt;</option>
+                                        <option value="{{ $nest->id }}" {{ old('nest_id') != $nest->id ?: 'selected' }}>{{ $nest->name }} &lt;{{ $nest->author }}&gt;</option>
                                         @endforeach
                                     </select>
                                     <p class="text-muted small">Think of a Nest as a category. You can put multiple Eggs in a nest, but consider putting only Eggs that are related to each other in each Nest.</p>
@@ -53,7 +53,6 @@
                                     <option value="database" {{ old('dashboard_type') === 'database' ? 'selected' : '' }}>Database</option>
                                     <option value="website" {{ old('dashboard_type') === 'website' ? 'selected' : '' }}>Website</option>
                                     <option value="s3-storage" {{ old('dashboard_type') === 's3-storage' ? 'selected' : '' }}>S3 Storage</option>
-                                    <option value="vps" {{ old('dashboard_type') === 'vps' ? 'selected' : '' }}>VPS</option>
                                 </select>
                                 <p class="text-muted small">Determines which dashboard interface will be shown for servers using this egg. If left empty, inherits from the nest's dashboard type.</p>
                             </div>
@@ -153,16 +152,16 @@
 @endsection
 
 @section('footer-scripts')
-    @parent
-    {!! Theme::js('vendor/lodash/lodash.js') !!}
-    <script>
+@parent
+{!! Theme::js('vendor/lodash/lodash.js') !!}
+<script>
     $(document).ready(function() {
         $('#pNestId').select2().change();
         $('#pConfigFrom').select2();
     });
-    $('#pNestId').on('change', function (event) {
+    $('#pNestId').on('change', function(event) {
         $('#pConfigFrom').html('<option value="">None</option>').select2({
-            data: $.map(_.get(Pyrodactyl.nests, $(this).val() + '.eggs', []), function (item) {
+            data: $.map(_.get(Pyrodactyl.nests, $(this).val() + '.eggs', []), function(item) {
                 return {
                     id: item.id,
                     text: item.name + ' <' + item.author + '>',
@@ -186,5 +185,5 @@
         selectOnClose: false,
         tokenSeparators: [',', ' '],
     });
-    </script>
+</script>
 @endsection

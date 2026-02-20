@@ -5,7 +5,6 @@ import useSWR from 'swr';
 import ActionButton from '@/components/elements/ActionButton';
 import { MainPageHeader } from '@/components/elements/MainPageHeader';
 
-import getVpsDistributions, { VpsDistribution } from '@/api/hosting/getVpsDistributions';
 import http, { httpErrorToHuman } from '@/api/http';
 import getNests from '@/api/nests/getNests';
 
@@ -16,7 +15,7 @@ interface SelectedPlan {
     interval?: string;
 }
 
-type HostingType = 'game-server' | 'vps';
+type HostingType = 'game-server';
 type FlowStep = 'select-nest' | 'select-egg';
 
 const HostingConfigureContainer = () => {
@@ -29,11 +28,6 @@ const HostingConfigureContainer = () => {
         error: nestsError,
         isLoading: nestsLoading,
     } = useSWR(hostingType === 'game-server' ? '/api/client/nests' : null, getNests);
-    const {
-        data: distributions,
-        error: distributionsError,
-        isLoading: distributionsLoading,
-    } = useSWR(hostingType === 'vps' ? '/api/client/hosting/vps-distributions' : null, getVpsDistributions);
 
     const [selectedPlan, setSelectedPlan] = useState<SelectedPlan | null>(null);
     const [selectedNest, setSelectedNest] = useState<number | null>(null);
@@ -99,10 +93,6 @@ const HostingConfigureContainer = () => {
     const handleContinue = () => {
         if (hostingType === 'game-server' && (!selectedNest || !selectedEgg)) {
             return;
-        }
-        if (hostingType === 'vps' && !selectedDistribution) {
-            return;
-        }
 
         // Navigate to billing/checkout with configuration
         const params = new URLSearchParams();
@@ -169,7 +159,7 @@ const HostingConfigureContainer = () => {
     return (
         <div className='h-full min-h-screen bg-[#0a0a0a] overflow-y-auto -mx-2 -my-2 w-[calc(100%+1rem)]'>
             <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-                <MainPageHeader title={`Configure Your ${hostingType === 'vps' ? 'VPS' : 'Server'}`} />
+                <MainPageHeader title={`Configure Your ${hostingType === 'game-server' ? 'Server' : ''}`} />
 
                 <div className='space-y-6'>
                     {hostingType === 'game-server' ? (
@@ -304,17 +294,6 @@ const HostingConfigureContainer = () => {
                                 size='lg'
                                 onClick={handleContinue}
                                 disabled={!selectedNest || !selectedEgg}
-                                className='flex-1'
-                            >
-                                Continue to Billing
-                            </ActionButton>
-                        )}
-                        {hostingType === 'vps' && (
-                            <ActionButton
-                                variant='primary'
-                                size='lg'
-                                onClick={handleContinue}
-                                disabled={!selectedDistribution}
                                 className='flex-1'
                             >
                                 Continue to Billing

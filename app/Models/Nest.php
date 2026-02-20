@@ -46,7 +46,7 @@ class Nest extends Model
         'author' => 'required|string|email',
         'name' => 'required|string|max:191',
         'description' => 'nullable|string',
-        'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage,vps',
+        'dashboard_type' => 'nullable|string|in:game-server,database,website,s3-storage',
     ];
 
     /**

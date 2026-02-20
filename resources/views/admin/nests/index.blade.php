@@ -1,15 +1,15 @@
 @extends('layouts.admin')
 
 @section('title')
-    Nests
+Nests
 @endsection
 
 @section('content-header')
-    <h1>Nests<small>All nests currently available on this system.</small></h1>
-    <ol class="breadcrumb">
-        <li><a href="{{ route('admin.index') }}">Admin</a></li>
-        <li class="active">Nests</li>
-    </ol>
+<h1>Nests<small>All nests currently available on this system.</small></h1>
+<ol class="breadcrumb">
+    <li><a href="{{ route('admin.index') }}">Admin</a></li>
+    <li class="active">Nests</li>
+</ol>
 @endsection
 
 @section('content')
@@ -42,34 +42,32 @@
                         <th class="text-center">Servers</th>
                     </tr>
                     @foreach($nests as $nest)
-                        <tr>
-                            <td class="middle"><code>{{ $nest->id }}</code></td>
-                            <td class="middle"><a href="{{ route('admin.nests.view', $nest->id) }}" data-toggle="tooltip" data-placement="right" title="{{ $nest->author }}">{{ $nest->name }}</a></td>
-                            <td class="col-xs-6 middle">{{ $nest->description }}</td>
-                            <td class="text-center middle">
-                                @php
-                                    $dashboardType = $nest->dashboard_type ?? 'game-server';
-                                    $badgeClass = match($dashboardType) {
-                                        'database' => 'label-info',
-                                        'website' => 'label-success',
-                                        's3-storage' => 'label-warning',
-                                        'vps' => 'label-primary',
-                                        default => 'label-default',
-                                    };
-                                    $displayName = match($dashboardType) {
-                                        'game-server' => 'Game Server',
-                                        'database' => 'Database',
-                                        'website' => 'Website',
-                                        's3-storage' => 'S3 Storage',
-                                        'vps' => 'VPS',
-                                        default => ucfirst(str_replace('-', ' ', $dashboardType)),
-                                    };
-                                @endphp
-                                <span class="label {{ $badgeClass }}">{{ $displayName }}</span>
-                            </td>
-                            <td class="text-center middle">{{ $nest->eggs_count }}</td>
-                            <td class="text-center middle">{{ $nest->servers_count }}</td>
-                        </tr>
+                    <tr>
+                        <td class="middle"><code>{{ $nest->id }}</code></td>
+                        <td class="middle"><a href="{{ route('admin.nests.view', $nest->id) }}" data-toggle="tooltip" data-placement="right" title="{{ $nest->author }}">{{ $nest->name }}</a></td>
+                        <td class="col-xs-6 middle">{{ $nest->description }}</td>
+                        <td class="text-center middle">
+                            @php
+                            $dashboardType = $nest->dashboard_type ?? 'game-server';
+                            $badgeClass = match($dashboardType) {
+                            'database' => 'label-info',
+                            'website' => 'label-success',
+                            's3-storage' => 'label-warning',
+                            default => 'label-default',
+                            };
+                            $displayName = match($dashboardType) {
+                            'game-server' => 'Game Server',
+                            'database' => 'Database',
+                            'website' => 'Website',
+                            's3-storage' => 'S3 Storage',
+                            default => ucfirst(str_replace('-', ' ', $dashboardType)),
+                            };
+                            @endphp
+                            <span class="label {{ $badgeClass }}">{{ $displayName }}</span>
+                        </td>
+                        <td class="text-center middle">{{ $nest->eggs_count }}</td>
+                        <td class="text-center middle">{{ $nest->servers_count }}</td>
+                    </tr>
                     @endforeach
                 </table>
             </div>
@@ -97,7 +95,7 @@
                         <div>
                             <select id="pImportToNest" name="import_to_nest">
                                 @foreach($nests as $nest)
-                                   <option value="{{ $nest->id }}">{{ $nest->name }} &lt;{{ $nest->author }}&gt;</option>
+                                <option value="{{ $nest->id }}">{{ $nest->name }} &lt;{{ $nest->author }}&gt;</option>
                                 @endforeach
                             </select>
                             <p class="small text-muted">Select the nest that this egg will be associated with from the dropdown. If you wish to associate it with a new nest you will need to create that nest before continuing.</p>
@@ -134,7 +132,7 @@
                         <div>
                             <select id="pImportToNest" name="import_to_nest">
                                 @foreach($nests as $nest)
-                                   <option value="{{ $nest->id }}">{{ $nest->name }} &lt;{{ $nest->author }}&gt;</option>
+                                <option value="{{ $nest->id }}">{{ $nest->name }} &lt;{{ $nest->author }}&gt;</option>
                                 @endforeach
                             </select>
                             <p class="small text-muted">Select the nest that this egg will be associated with from the dropdown. If you wish to associate it with a new nest you will need to create that nest before continuing.</p>
@@ -153,10 +151,10 @@
 @endsection
 
 @section('footer-scripts')
-    @parent
-    <script>
-        $(document).ready(function() {
-            $('#pImportToNest').select2();
-        });
-    </script>
+@parent
+<script>
+    $(document).ready(function() {
+        $('#pImportToNest').select2();
+    });
+</script>
 @endsection
