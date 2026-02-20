@@ -59,11 +59,11 @@ class CheckoutController extends Controller
         try {
             // Determine plan and pricing
             $plan = null;
-            $interval = $request->input('interval', 'month'); // Use selected interval from user
+            $interval = $request->input('interval', 'month');
             $priceAmount = 0;
 
-            // Determine type from request or plan
-            $type = $request->input('type', $plan?->type ?? 'game-server');
+            // Type is always game-server now
+            $type = 'game-server';
 
             // Get category-specific billing discounts
             $billingDiscounts = json_decode($this->settings->get('settings::billing:period_discounts', json_encode([])), true);
@@ -163,19 +163,14 @@ class CheckoutController extends Controller
                     'type' => $type,
                     'server_name' => $request->input('server_name'),
                     'server_description' => $request->input('server_description', ''),
+                    'nest_id' => (string) $request->input('nest_id'),
+                    'egg_id' => (string) $request->input('egg_id'),
                 ];
                 
                 // Add subdomain info if provided
                 if ($request->has('subdomain') && $request->has('domain_id')) {
                     $metadata['subdomain'] = $request->input('subdomain');
                     $metadata['domain_id'] = (string) $request->input('domain_id');
-                }
-
-                if ($type === 'vps') {
-                    $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
-                } else {
-                    $metadata['nest_id'] = (string) $request->input('nest_id');
-                    $metadata['egg_id'] = (string) $request->input('egg_id');
                 }
 
                 if ($plan) {
@@ -215,8 +210,8 @@ class CheckoutController extends Controller
                         'trial_ends_at' => null,
                         'ends_at' => null,
                         'next_billing_at' => $nextBillingAt,
-                        'billing_interval' => $interval, // Store selected interval
-                        'billing_amount' => $priceAmount, // Store discounted price for recurring billing
+                        'billing_interval' => $interval,
+                        'billing_amount' => $priceAmount,
                         'is_credits_based' => true,
                         'metadata' => !empty($subscriptionMetadata) ? $subscriptionMetadata : null,
                     ]);
@@ -236,8 +231,6 @@ class CheckoutController extends Controller
                 }
 
                 // Deduct credits and provision server
-                // Note: We don't wrap this in a transaction because ServerCreationService
-                // handles its own transaction. We'll handle rollback manually if needed.
                 try {
                     // Deduct credits using transaction service
                     $this->creditTransactionService->recordDeduction(
@@ -262,8 +255,7 @@ class CheckoutController extends Controller
                         'metadata' => $metadata,
                     ];
 
-                    // Provision server (this handles its own transaction and Wings call)
-                    // The server will be fully committed before Wings is called
+                    // Provision server
                     $server = $this->serverProvisioningService->provisionServer($mockSession);
                     
                     Log::info('Server purchased with credits', [
@@ -303,11 +295,10 @@ class CheckoutController extends Controller
                     
                     Log::error('Failed to provision server after credit deduction, credits refunded', [
                         'user_id' => $user->id,
-                        'error' => $e->getMessage(),
-                        'credits_refunded' => $priceAmount,
+                        'error' =>Message(),
+                        ' $e->getcredits_refunded' => $priceAmount,
                     ]);
                     
-                    // Return a user-friendly error message
                     return response()->json([
                         'errors' => [[
                             'code' => 'ServerProvisioningFailed',
@@ -322,17 +313,9 @@ class CheckoutController extends Controller
             // Get or create Stripe customer
             $stripeCustomer = $this->getOrCreateStripeCustomer($user);
 
-            // Calculate actual price to charge (with first month discount if applicable)
-            $actualPriceAmount = $priceAmount;
-            if ($plan && $plan->first_month_sales_percentage && $plan->first_month_sales_percentage > 0) {
-                $discount = $plan->first_month_sales_percentage / 100;
-                $actualPriceAmount = round($plan->price * (1 - $discount), 2);
-            }
-
             $stripePriceId = null;
             if ($plan) {
                 // Create Stripe Price with selected interval and discounted price
-                // We need to create a new price for the selected interval, not use plan's default interval
                 $stripePriceId = $this->stripePriceService->createPriceForPlanWithInterval(
                     $plan,
                     $interval,
@@ -341,7 +324,7 @@ class CheckoutController extends Controller
             } else {
                 // Create Stripe Price for custom plan
                 $stripePriceId = $this->stripePriceService->createPriceForCustomPlan(
-                    $priceAmount, // Use discounted price for recurring
+                    $priceAmount,
                     $interval,
                     $request->input('memory')
                 );
@@ -353,7 +336,7 @@ class CheckoutController extends Controller
                 try {
                     $coupon = Coupon::create([
                         'percent_off' => $plan->first_month_sales_percentage,
-                        'duration' => 'once', // Only applies to first invoice
+                        'duration' => 'once',
                         'name' => 'First Month Discount',
                         'metadata' => [
                             'plan_id' => (string) $plan->id,
@@ -366,7 +349,6 @@ class CheckoutController extends Controller
                         'plan_id' => $plan->id,
                         'error' => $e->getMessage(),
                     ]);
-                    // Continue without coupon - user will be charged full price
                 }
             }
             
@@ -376,20 +358,14 @@ class CheckoutController extends Controller
                 'type' => $type,
                 'server_name' => $request->input('server_name'),
                 'server_description' => $request->input('server_description', ''),
+                'nest_id' => (string) $request->input('nest_id'),
+                'egg_id' => (string) $request->input('egg_id'),
             ];
             
             // Add subdomain info if provided
             if ($request->has('subdomain') && $request->has('domain_id')) {
                 $metadata['subdomain'] = $request->input('subdomain');
                 $metadata['domain_id'] = (string) $request->input('domain_id');
-            }
-
-            // Add type-specific metadata
-            if ($type === 'vps') {
-                $metadata['distribution'] = $request->input('distribution', 'ubuntu-server');
-            } else {
-                $metadata['nest_id'] = (string) $request->input('nest_id');
-                $metadata['egg_id'] = (string) $request->input('egg_id');
             }
 
             if ($plan) {
@@ -485,7 +461,6 @@ class CheckoutController extends Controller
             try {
                 return \Stripe\Customer::retrieve($user->stripe_id);
             } catch (ApiErrorException $e) {
-                // Customer doesn't exist in Stripe, create a new one
                 Log::warning('Stripe customer ID exists but customer not found in Stripe', [
                     'user_id' => $user->id,
                     'stripe_id' => $user->stripe_id,

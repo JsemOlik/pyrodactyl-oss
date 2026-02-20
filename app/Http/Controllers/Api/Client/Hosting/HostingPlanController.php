@@ -156,14 +156,14 @@ class HostingPlanController extends Controller
     {
         $categories = $this->settings->get('settings::billing:plan_categories', json_encode([
             ['name' => 'Game', 'slug' => 'game-server'],
-            ['name' => 'VPS', 'slug' => 'vps'],
+            ,
         ]));
         
         $decoded = json_decode($categories, true);
         if (!is_array($decoded)) {
             $decoded = [
                 ['name' => 'Game', 'slug' => 'game-server'],
-                ['name' => 'VPS', 'slug' => 'vps'],
+                ,
             ];
         }
         

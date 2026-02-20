@@ -10,14 +10,14 @@ use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
 use Pterodactyl\Http\Controllers\Controller;
 use Pterodactyl\Services\Hosting\ServerProvisioningService;
-use Pterodactyl\Services\Hosting\VpsProvisioningService;
+
 use Pterodactyl\Services\Credits\CreditTransactionService;
 
 class StripeWebhookController extends Controller
 {
     public function __construct(
         private ServerProvisioningService $serverProvisioningService,
-        private VpsProvisioningService $vpsProvisioningService,
+        
         private CreditTransactionService $creditTransactionService
     ) {
         Stripe::setApiKey(config('cashier.secret'));
