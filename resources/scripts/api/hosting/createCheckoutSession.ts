@@ -1,14 +1,13 @@
 import http from '@/api/http';
 
 export interface CheckoutSessionData {
-    type?: 'game-server' | 'vps';
+    type: 'game-server';
     plan_id?: number;
     custom?: boolean;
     memory?: number;
     interval?: string;
-    nest_id?: number;
-    egg_id?: number;
-    distribution?: string;
+    nest_id: number;
+    egg_id: number;
     server_name: string;
     server_description?: string;
     subdomain?: string;

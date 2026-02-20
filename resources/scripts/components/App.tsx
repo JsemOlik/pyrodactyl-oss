@@ -31,13 +31,13 @@ const HostingPaymentVerifyingContainer = lazy(() => import('@/components/hosting
 const ServerCreationDisabled = lazy(() => import('@/components/hosting/ServerCreationDisabled'));
 const ServiceDetails = lazy(() => import('@/components/hosting/ServiceDetails'));
 
-interface ExtendedWindow extends Window {
+// Type for extended window properties - don't extend Window to avoid type conflicts
+interface ExtendedWindow {
     SiteConfiguration?: SiteSettings;
     PterodactylUser?: {
         uuid: string;
         username: string;
         email: string;
-
         root_admin: boolean;
         use_totp: boolean;
         language: string;
@@ -47,7 +47,8 @@ interface ExtendedWindow extends Window {
 }
 
 const App = () => {
-    const { PterodactylUser, SiteConfiguration } = window as ExtendedWindow;
+    const { PterodactylUser, SiteConfiguration } = window as unknown as ExtendedWindow;
+
     if (PterodactylUser && !store.getState().user.data) {
         store.getActions().user.setUserData({
             uuid: PterodactylUser.uuid,

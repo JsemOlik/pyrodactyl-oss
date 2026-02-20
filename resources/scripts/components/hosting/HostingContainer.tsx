@@ -1199,7 +1199,7 @@ const HostingContainer = () => {
                         </div>
                     </div>
                     <div className='text-center text-xs text-neutral-600 pt-8 border-t border-neutral-900'>
-                        © 2025 Oasis Technologies. Designed by Oliver.
+                        © 2026 Oasis Technologies. Designed by Oliver.
                     </div>
                 </footer>
             </div>
