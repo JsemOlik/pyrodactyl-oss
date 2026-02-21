@@ -60,6 +60,15 @@
     background-color: rgba(250, 240, 137, 0.35); /* soft yellow */
 }
 
+.xterm .xterm-viewport,
+.xterm .xterm-screen,
+.xterm .xterm-text-layer,
+.xterm .xterm-selection-layer,
+.xterm .xterm-link-layer,
+.xterm .xterm-cursor-layer {
+    background-color: transparent !important;
+}
+
 .xterm .xterm-find-match.selected,
 .xterm .xterm-find-match.xterm-find-match--selected,
 .xterm .xterm-search-match.selected,

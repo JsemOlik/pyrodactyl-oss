@@ -346,10 +346,7 @@ const Console = () => {
         <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'>
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
-                <div
-                    style={stripedBackgroundStyle}
-                    className='h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'
-                >
+                <div className='h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
                     <div className='mb-3 flex items-center gap-2'>
                         <div className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'>
                             <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
@@ -419,7 +416,7 @@ const Console = () => {
                             </div>
                         </div>
                     </div>
-                    <div className='h-full w-full'>
+                    <div style={stripedBackgroundStyle} className='h-full w-full overflow-hidden'>
                         <div ref={ref} className='h-full w-full' />
                     </div>
                 </div>
