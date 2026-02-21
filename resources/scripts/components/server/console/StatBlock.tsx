@@ -24,7 +24,7 @@ const StatBlock = ({ title, copyOnClick, className, style, progress, children, o
 
         return {
             ...style,
-            backgroundImage: `linear-gradient(to right, color-mix(in srgb, var(--color-brand) 35%, transparent), color-mix(in srgb, var(--color-brand) 35%, transparent)), linear-gradient(to bottom, #ffffff08, #ffffff05)`,
+            backgroundImage: `linear-gradient(to top, color-mix(in srgb, var(--color-brand) 35%, transparent), color-mix(in srgb, var(--color-brand) 35%, #ffffff15)), linear-gradient(to bottom, #ffffff08, #ffffff05)`,
             backgroundSize: `${fill}% 100%, 100% 100%`,
             backgroundRepeat: 'no-repeat',
         };
