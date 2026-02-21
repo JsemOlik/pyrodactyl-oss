@@ -1,4 +1,4 @@
-import { type LazyExoticComponent, type ReactElement, lazy } from 'react';
+import { lazy } from 'react';
 
 /**
  * Dashboard registry
@@ -10,26 +10,21 @@ import { type LazyExoticComponent, type ReactElement, lazy } from 'react';
  * - Keep keys stable (these are stored on eggs/nests in the database).
  */
 
-export type DashboardKey = 'game-server' | 'database' | 'docker' | string;
-
+/**
+ * Lightweight registry entry shape used at runtime.
+ *
+ * Use permissive types here so the registry remains flexible across different
+ * dashboards and build setups. More specific typing can be applied by callers.
+ */
 export interface DashboardRegistryEntry {
-    /**
-     * Human readable label for admin UIs / debugging.
-     */
-    label: string;
+    /** Human readable label for admin UIs / debugging. */
+    label?: string;
 
-    /**
-     * Lazy-loaded router component for this dashboard.
-     * Should default-export a Router component that follows the existing
-     * router contract (uses ServerContext, renders MainSidebar/MainWrapper, etc).
-     */
-    router: LazyExoticComponent<any>;
+    /** Lazy-loaded router component (renderable). May be undefined for placeholders. */
+    router?: any;
 
-    /**
-     * Optional icon element for admin lists. Kept optional so we don't force
-     * a JSX dependency or specific type in this registry file.
-     */
-    icon?: ReactElement | null;
+    /** Optional icon/metadata; kept permissive. */
+    icon?: any | null;
 }
 
 /**
@@ -38,8 +33,8 @@ export interface DashboardRegistryEntry {
  * Add new dashboard types here. Don’t attempt to dynamically import by
  * runtime string: Vite needs explicit imports so chunks are generated.
  */
-export const dashboardRegistry: Record<string, DashboardRegistryEntry> = {
-    'game-server': {
+export const dashboardRegistry: Record<string, any> = {
+    game-server: {
         label: 'Game Server',
         router: lazy(() => import('@/routers/ServerRouter')),
     },
@@ -49,11 +44,10 @@ export const dashboardRegistry: Record<string, DashboardRegistryEntry> = {
         router: lazy(() => import('@/routers/DatabaseRouter')),
     },
 
-    // Placeholder for container-style dashboards (optional).
-    // Keep this entry even if the router file is not implemented yet;
-    // DashboardRouterFactory should guard against missing entries at runtime.
+    // Placeholder for container-style dashboards (optional). This entry is intentionally permissive.
     docker: {
         label: 'Container',
+        // Router may not exist yet in some environments; keep as a lazy reference.
         router: lazy(() => import('@/routers/DockerRouter')),
     },
 };
@@ -62,7 +56,7 @@ export const dashboardRegistry: Record<string, DashboardRegistryEntry> = {
  * Helper: get registry entry for a dashboard type.
  * Returns undefined if not found.
  */
-export const getDashboardEntry = (key?: string): DashboardRegistryEntry | undefined => {
+export const getDashboardEntry = (key?: string): any => {
     if (!key) return undefined;
     return dashboardRegistry[key];
 };

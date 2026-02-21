@@ -165,17 +165,18 @@ const DatabaseOverviewContainer = () => {
                                             <label className='text-sm text-white/60'>Cluster (port)</label>
                                             <div className='flex items-center gap-2 mt-1'>
                                                 <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
-                                                    {allocMap.cluster.ip ??
-                                                        allocMap.cluster.address ??
-                                                        allocMap.cluster.host}
-                                                    :{allocMap.cluster.port ?? allocMap.cluster.port}
+                                                    {allocMap.cluster?.ip ??
+                                                        allocMap.cluster?.address ??
+                                                        allocMap.cluster?.host ??
+                                                        'unknown'}
+                                                    :{allocMap.cluster?.port ?? ''}
                                                 </code>
                                                 <ActionButton
                                                     variant='secondary'
                                                     size='sm'
                                                     onClick={() =>
                                                         copyToClipboard(
-                                                            `${allocMap.cluster.ip ?? allocMap.cluster.address ?? allocMap.cluster.host}:${allocMap.cluster.port}`,
+                                                            `${allocMap.cluster?.ip ?? allocMap.cluster?.address ?? allocMap.cluster?.host ?? ''}:${allocMap.cluster?.port ?? ''}`,
                                                         )
                                                     }
                                                 >
@@ -187,17 +188,18 @@ const DatabaseOverviewContainer = () => {
                                             <label className='text-sm text-white/60'>Driver (port)</label>
                                             <div className='flex items-center gap-2 mt-1'>
                                                 <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
-                                                    {allocMap.driver.ip ??
-                                                        allocMap.driver.address ??
-                                                        allocMap.driver.host}
-                                                    :{allocMap.driver.port}
+                                                    {allocMap.driver?.ip ??
+                                                        allocMap.driver?.address ??
+                                                        allocMap.driver?.host ??
+                                                        'unknown'}
+                                                    :{allocMap.driver?.port ?? ''}
                                                 </code>
                                                 <ActionButton
                                                     variant='secondary'
                                                     size='sm'
                                                     onClick={() =>
                                                         copyToClipboard(
-                                                            `${allocMap.driver.ip ?? allocMap.driver.address ?? allocMap.driver.host}:${allocMap.driver.port}`,
+                                                            `${allocMap.driver?.ip ?? allocMap.driver?.address ?? allocMap.driver?.host ?? ''}:${allocMap.driver?.port ?? ''}`,
                                                         )
                                                     }
                                                 >
@@ -209,15 +211,18 @@ const DatabaseOverviewContainer = () => {
                                             <label className='text-sm text-white/60'>HTTP (port)</label>
                                             <div className='flex items-center gap-2 mt-1'>
                                                 <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
-                                                    {allocMap.http.ip ?? allocMap.http.address ?? allocMap.http.host}:
-                                                    {allocMap.http.port}
+                                                    {allocMap.http?.ip ??
+                                                        allocMap.http?.address ??
+                                                        allocMap.http?.host ??
+                                                        'unknown'}
+                                                    :{allocMap.http?.port ?? ''}
                                                 </code>
                                                 <ActionButton
                                                     variant='secondary'
                                                     size='sm'
                                                     onClick={() =>
                                                         copyToClipboard(
-                                                            `${allocMap.http.ip ?? allocMap.http.address ?? allocMap.http.host}:${allocMap.http.port}`,
+                                                            `${allocMap.http?.ip ?? allocMap.http?.address ?? allocMap.http?.host ?? ''}:${allocMap.http?.port ?? ''}`,
                                                         )
                                                     }
                                                 >

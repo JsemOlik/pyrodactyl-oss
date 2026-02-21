@@ -35,8 +35,8 @@ import useFlash from '@/plugins/useFlash';
 interface CreateTableValues {
     name: string;
     columns: TableColumn[];
-    engine: string;
-    collation: string;
+    engine?: string;
+    collation?: string;
 }
 
 const tableSchema = object().shape({
@@ -61,9 +61,6 @@ const TableBrowserContainer = () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data?.uuid);
     const serverName = ServerContext.useStoreState((state) => state.server.data?.name);
 
-    // Egg/feature helper to adapt the UI per-egg (e.g. disable create table when feature not present)
-    const { hasFeature, featureLimits } = useServerEggFeatures();
-
     const { addError, clearFlashes } = useFlash();
     const [createModalVisible, setCreateModalVisible] = useState(false);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -72,7 +69,7 @@ const TableBrowserContainer = () => {
     const [selectedTable, setSelectedTable] = useState<TableInfo | null>(null);
     const [viewTable, setViewTable] = useState<TableInfo | null>(null);
     const [dataTable, setDataTable] = useState<TableInfo | null>(null);
-    const [dataPage, setDataPage] = useState(1);
+    const [dataPage, setDataPage] = useState<number>(1);
     const [editRowModalVisible, setEditRowModalVisible] = useState(false);
     const [addRowModalVisible, setAddRowModalVisible] = useState(false);
     const [editingRow, setEditingRow] = useState<Record<string, any> | null>(null);
@@ -83,6 +80,8 @@ const TableBrowserContainer = () => {
         uuid ? [`/api/client/servers/${uuid}/database/connection`, uuid] : null,
         () => getDatabaseConnectionInfo(uuid!),
     );
+
+    const { hasFeature, featureLimits } = useServerEggFeatures();
 
     const {
         data: tables,
@@ -312,194 +311,77 @@ const TableBrowserContainer = () => {
                 </p>
             </MainPageHeader>
 
-            {/* Create Table Modal */}
-            <Formik
-                onSubmit={submitTable}
-                initialValues={{
-                    name: '',
-                    columns: [
-                        {
-                            name: 'id',
-                            type: 'INT',
-                            length: 11,
-                            nullable: false,
-                            autoIncrement: true,
-                            primaryKey: true,
-                        },
-                    ],
-                    engine: 'InnoDB',
-                    collation: 'utf8mb4_unicode_ci',
+            <Modal
+                visible={createModalVisible}
+                dismissable={!false}
+                showSpinnerOverlay={false}
+                onDismissed={() => {
+                    setCreateModalVisible(false);
                 }}
-                validationSchema={tableSchema}
+                title='Create new table'
             >
-                {({ isSubmitting, resetForm, values }) => (
-                    <Modal
-                        visible={createModalVisible}
-                        dismissable={!isSubmitting}
-                        showSpinnerOverlay={isSubmitting}
-                        onDismissed={() => {
-                            resetForm();
-                            setCreateModalVisible(false);
-                        }}
-                        title='Create new table'
-                    >
-                        <div className='flex flex-col max-h-[80vh] overflow-y-auto'>
-                            <FlashMessageRender byKey={'table:create'} />
+                <FlashMessageRender byKey={'table:create'} />
+                <Formik
+                    onSubmit={submitTable}
+                    validationSchema={tableSchema}
+                    initialValues={{
+                        name: '',
+                        columns: [{ name: 'id', type: 'INT', autoIncrement: true }],
+                        engine: 'InnoDB',
+                        collation: 'utf8mb4_unicode_ci',
+                    }}
+                >
+                    {({ isSubmitting, resetForm }) => (
+                        <div className='flex flex-col'>
                             <Form>
-                                <Field
-                                    type={'string'}
-                                    id={'table_name'}
-                                    name={'name'}
-                                    label={'Table Name'}
-                                    description={
-                                        'A name for your table. Only alphanumeric characters and underscores allowed.'
-                                    }
-                                />
-                                <div className='mt-6'>
-                                    <label className='text-sm font-medium text-white mb-2 block'>Columns</label>
-                                    <FieldArray name='columns'>
-                                        {({ push, remove, form }) => (
-                                            <div className='space-y-4'>
-                                                {values.columns.map((column, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className='bg-[#ffffff09] border border-[#ffffff11] rounded-lg p-4'
-                                                    >
-                                                        <div className='grid grid-cols-2 gap-4 mb-4'>
-                                                            <Field
-                                                                type={'string'}
-                                                                name={`columns.${index}.name`}
-                                                                label={'Column Name'}
-                                                            />
-                                                            <FormikField name={`columns.${index}.type`}>
-                                                                {({ field }: any) => (
-                                                                    <div className='flex flex-col gap-2'>
-                                                                        <label className='text-sm text-[#ffffff77]'>
-                                                                            Type
-                                                                        </label>
-                                                                        <select
+                                <div className='grid gap-4 sm:grid-cols-2'>
+                                    <Field
+                                        type={'string'}
+                                        id={'table_name'}
+                                        name={'name'}
+                                        label={'Table Name'}
+                                        description={'A name for the table.'}
+                                    />
+                                    <div className='flex flex-col'>
+                                        <label className='text-sm text-white/60 mb-2'>Columns</label>
+                                        <FieldArray name='columns'>
+                                            {({ remove, push, form }) => (
+                                                <div className='space-y-2'>
+                                                    {form.values.columns &&
+                                                        form.values.columns.map((_: any, index: number) => (
+                                                            <div key={index} className='flex gap-2'>
+                                                                <FormikField name={`columns.${index}.name`}>
+                                                                    {({ field }: any) => (
+                                                                        <Input {...field} placeholder='column_name' />
+                                                                    )}
+                                                                </FormikField>
+                                                                <FormikField name={`columns.${index}.type`}>
+                                                                    {({ field }: any) => (
+                                                                        <Input
                                                                             {...field}
-                                                                            className='px-4 py-2 rounded-lg outline-hidden bg-[#ffffff17] text-sm text-white'
-                                                                        >
-                                                                            <option value='INT'>INT</option>
-                                                                            <option value='BIGINT'>BIGINT</option>
-                                                                            <option value='VARCHAR'>VARCHAR</option>
-                                                                            <option value='TEXT'>TEXT</option>
-                                                                            <option value='DATETIME'>DATETIME</option>
-                                                                            <option value='TIMESTAMP'>TIMESTAMP</option>
-                                                                            <option value='DECIMAL'>DECIMAL</option>
-                                                                            <option value='BOOLEAN'>BOOLEAN</option>
-                                                                        </select>
-                                                                    </div>
-                                                                )}
-                                                            </FormikField>
-                                                        </div>
-                                                        {(values.columns[index].type === 'VARCHAR' ||
-                                                            values.columns[index].type === 'CHAR') && (
-                                                            <Field
-                                                                type={'number'}
-                                                                name={`columns.${index}.length`}
-                                                                label={'Length'}
-                                                            />
-                                                        )}
-                                                        {values.columns[index].type === 'DECIMAL' && (
-                                                            <div className='grid grid-cols-2 gap-4'>
-                                                                <Field
-                                                                    type={'number'}
-                                                                    name={`columns.${index}.precision`}
-                                                                    label={'Precision'}
-                                                                />
-                                                                <Field
-                                                                    type={'number'}
-                                                                    name={`columns.${index}.scale`}
-                                                                    label={'Scale'}
-                                                                />
+                                                                            placeholder='type (VARCHAR(255))'
+                                                                        />
+                                                                    )}
+                                                                </FormikField>
+                                                                <button
+                                                                    type='button'
+                                                                    onClick={() => remove(index)}
+                                                                    className='bg-red-600 px-2 rounded'
+                                                                >
+                                                                    Remove
+                                                                </button>
                                                             </div>
-                                                        )}
-                                                        <div className='grid grid-cols-2 gap-4 mt-4'>
-                                                            <Field
-                                                                type={'checkbox'}
-                                                                name={`columns.${index}.nullable`}
-                                                                label={'Nullable'}
-                                                            />
-                                                            <Field
-                                                                type={'checkbox'}
-                                                                name={`columns.${index}.primaryKey`}
-                                                                label={'Primary Key'}
-                                                            />
-                                                        </div>
-                                                        <div className='grid grid-cols-2 gap-4 mt-4'>
-                                                            <Field
-                                                                type={'checkbox'}
-                                                                name={`columns.${index}.autoIncrement`}
-                                                                label={'Auto Increment'}
-                                                            />
-                                                            <Field
-                                                                type={'string'}
-                                                                name={`columns.${index}.defaultValue`}
-                                                                label={'Default Value'}
-                                                            />
-                                                        </div>
-                                                        {index > 0 && (
-                                                            <ActionButton
-                                                                variant='danger'
-                                                                size='sm'
-                                                                onClick={() => remove(index)}
-                                                                className='mt-4'
-                                                            >
-                                                                Remove Column
-                                                            </ActionButton>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                <ActionButton
-                                                    variant='secondary'
-                                                    onClick={() =>
-                                                        push({
-                                                            name: '',
-                                                            type: 'VARCHAR',
-                                                            length: 255,
-                                                            nullable: true,
-                                                        })
-                                                    }
-                                                >
-                                                    Add Column
-                                                </ActionButton>
-                                            </div>
-                                        )}
-                                    </FieldArray>
-                                </div>
-                                <div className='grid grid-cols-2 gap-4 mt-6'>
-                                    <FormikField name='engine'>
-                                        {({ field }: any) => (
-                                            <div className='flex flex-col gap-2'>
-                                                <label className='text-sm text-[#ffffff77]'>Engine</label>
-                                                <select
-                                                    {...field}
-                                                    className='px-4 py-2 rounded-lg outline-hidden bg-[#ffffff17] text-sm text-white'
-                                                >
-                                                    <option value='InnoDB'>InnoDB</option>
-                                                    <option value='MyISAM'>MyISAM</option>
-                                                    <option value='MEMORY'>MEMORY</option>
-                                                </select>
-                                            </div>
-                                        )}
-                                    </FormikField>
-                                    <FormikField name='collation'>
-                                        {({ field }: any) => (
-                                            <div className='flex flex-col gap-2'>
-                                                <label className='text-sm text-[#ffffff77]'>Collation</label>
-                                                <select
-                                                    {...field}
-                                                    className='px-4 py-2 rounded-lg outline-hidden bg-[#ffffff17] text-sm text-white'
-                                                >
-                                                    <option value='utf8mb4_unicode_ci'>utf8mb4_unicode_ci</option>
-                                                    <option value='utf8mb4_general_ci'>utf8mb4_general_ci</option>
-                                                    <option value='utf8_unicode_ci'>utf8_unicode_ci</option>
-                                                </select>
-                                            </div>
-                                        )}
-                                    </FormikField>
+                                                        ))}
+                                                    <ActionButton
+                                                        variant='secondary'
+                                                        onClick={() => push({ name: '', type: 'VARCHAR(255)' })}
+                                                    >
+                                                        Add Column
+                                                    </ActionButton>
+                                                </div>
+                                            )}
+                                        </FieldArray>
+                                    </div>
                                 </div>
                                 <div className='flex gap-3 justify-end my-6'>
                                     <ActionButton variant='primary' type={'submit'}>
@@ -508,9 +390,9 @@ const TableBrowserContainer = () => {
                                 </div>
                             </Form>
                         </div>
-                    </Modal>
-                )}
-            </Formik>
+                    )}
+                </Formik>
+            </Modal>
 
             {/* Delete Confirmation Modal */}
             <Modal
@@ -539,10 +421,47 @@ const TableBrowserContainer = () => {
                 </div>
             </Modal>
 
+            {/* View Table Modal */}
+            <Modal
+                visible={viewModalVisible}
+                title='Table structure'
+                closeButton={true}
+                onDismissed={() => {
+                    setViewModalVisible(false);
+                    setViewTable(null);
+                }}
+            >
+                {structureLoading ? (
+                    <Spinner />
+                ) : (
+                    tableStructure && (
+                        <div className='space-y-4'>
+                            <h3 className='text-lg font-semibold text-white'>{tableStructure.name}</h3>
+                            <div className='bg-[#ffffff09] border border-[#ffffff11] rounded-lg p-4'>
+                                <h4 className='text-sm text-white/60 mb-2'>Columns</h4>
+                                <div className='space-y-2'>
+                                    {tableStructure.columns.map((col) => (
+                                        <div key={col.name} className='flex justify-between'>
+                                            <div>
+                                                <div className='font-mono text-white/80'>{col.name}</div>
+                                                <div className='text-xs text-white/60'>{col.fullType}</div>
+                                            </div>
+                                            <div className='text-sm text-white/60'>
+                                                {col.nullable ? 'NULL' : 'NOT NULL'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )
+                )}
+            </Modal>
+
             {/* View Table Data Modal */}
             <Modal
                 visible={dataModalVisible}
-                title={`Table Data: ${dataTable?.name}`}
+                title={dataTable ? `Data — ${dataTable.name}` : 'Table Data'}
                 closeButton={true}
                 onDismissed={() => {
                     setDataModalVisible(false);
@@ -550,45 +469,21 @@ const TableBrowserContainer = () => {
                     setDataPage(1);
                 }}
             >
-                {dataLoading ? (
+                {dataLoading || !dataTable ? (
                     <Spinner />
-                ) : tableData ? (
-                    <div className='flex flex-col gap-4 max-h-[80vh] overflow-y-auto'>
-                        <div className='flex items-center justify-between mb-2'>
-                            <div className='flex items-center gap-4'>
-                                <p className='text-sm text-white/60'>
-                                    Showing {tableData.data.length} of {tableData.pagination.total} rows
-                                </p>
-                                <Can action={'database.*'} matchAny>
-                                    <ActionButton variant='primary' size='sm' onClick={handleAddRow}>
-                                        <Plus className='w-4 h-4 mr-2' fill='currentColor' />
-                                        Add Row
-                                    </ActionButton>
-                                </Can>
+                ) : dataTable && tableData ? (
+                    <div>
+                        <div className='mb-4 flex justify-between'>
+                            <div>
+                                <strong className='text-white'>{dataTable.name}</strong>
+                                <div className='text-sm text-white/60'>Rows: {tableData.pagination.total}</div>
                             </div>
                             <div className='flex gap-2'>
-                                <ActionButton
-                                    variant='secondary'
-                                    size='sm'
-                                    onClick={() => setDataPage(Math.max(1, dataPage - 1))}
-                                    disabled={dataPage === 1}
-                                >
-                                    Previous
-                                </ActionButton>
-                                <span className='px-4 py-2 text-sm text-white/80'>
-                                    Page {dataPage} of {tableData.pagination.lastPage}
-                                </span>
-                                <ActionButton
-                                    variant='secondary'
-                                    size='sm'
-                                    onClick={() => setDataPage(Math.min(tableData.pagination.lastPage, dataPage + 1))}
-                                    disabled={dataPage >= tableData.pagination.lastPage}
-                                >
-                                    Next
+                                <ActionButton variant='secondary' onClick={() => mutateData()}>
+                                    Refresh
                                 </ActionButton>
                             </div>
                         </div>
-                        <FlashMessageRender byKey='row:delete' />
                         <div className='overflow-x-auto'>
                             <table className='w-full border-collapse'>
                                 <thead>
@@ -598,11 +493,6 @@ const TableBrowserContainer = () => {
                                                 {col}
                                             </th>
                                         ))}
-                                        <Can action={'database.*'} matchAny>
-                                            <th className='text-left p-2 text-sm text-white/60 font-semibold'>
-                                                Actions
-                                            </th>
-                                        </Can>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -615,226 +505,38 @@ const TableBrowserContainer = () => {
                                                         : 'NULL'}
                                                 </td>
                                             ))}
-                                            <Can action={'database.*'} matchAny>
-                                                <td className='p-2'>
-                                                    <div className='flex gap-2'>
-                                                        <ActionButton
-                                                            variant='secondary'
-                                                            size='sm'
-                                                            onClick={() => handleEditRow(row)}
-                                                        >
-                                                            Edit
-                                                        </ActionButton>
-                                                        <ActionButton
-                                                            variant='danger'
-                                                            size='sm'
-                                                            onClick={() => handleDeleteRow(row)}
-                                                        >
-                                                            Delete
-                                                        </ActionButton>
-                                                    </div>
-                                                </td>
-                                            </Can>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                        {tableData.data.length === 0 && (
-                            <div className='text-center py-8 text-white/60'>No data found in this table</div>
-                        )}
-                    </div>
-                ) : null}
-            </Modal>
 
-            {/* Edit/Add Row Modal */}
-            {(editRowModalVisible || addRowModalVisible) && dataTableStructure && (
-                <Modal
-                    visible={editRowModalVisible || addRowModalVisible}
-                    title={addRowModalVisible ? `Add Row to ${dataTable?.name}` : `Edit Row in ${dataTable?.name}`}
-                    closeButton={true}
-                    onDismissed={() => {
-                        setEditRowModalVisible(false);
-                        setAddRowModalVisible(false);
-                        setEditingRow(null);
-                    }}
-                >
-                    <FlashMessageRender byKey='row:save' />
-                    <div className='flex flex-col gap-4 max-h-[80vh] overflow-y-auto'>
-                        <Formik
-                            initialValues={
-                                editingRow
-                                    ? { ...editingRow }
-                                    : dataTableStructure.columns.reduce(
-                                          (acc, col) => {
-                                              acc[col.name] = col.nullable ? null : '';
-                                              return acc;
-                                          },
-                                          {} as Record<string, any>,
-                                      )
-                            }
-                            onSubmit={(values) => {
-                                handleSaveRow(values, addRowModalVisible);
-                            }}
-                        >
-                            {({ isSubmitting, values }) => (
-                                <Form>
-                                    <div className='space-y-4'>
-                                        {dataTableStructure.columns.map((column) => {
-                                            const isPrimaryKey = column.key === 'PRI';
-                                            const isAutoIncrement = column.extra?.includes('auto_increment');
-                                            const isReadOnly = isPrimaryKey && !addRowModalVisible;
-
-                                            return (
-                                                <div key={column.name}>
-                                                    <Field
-                                                        type={
-                                                            column.type.includes('INT') ||
-                                                            column.type.includes('DECIMAL')
-                                                                ? 'number'
-                                                                : column.type.includes('TEXT')
-                                                                  ? 'textarea'
-                                                                  : 'string'
-                                                        }
-                                                        name={column.name}
-                                                        label={column.name}
-                                                        description={
-                                                            isPrimaryKey
-                                                                ? 'Primary Key'
-                                                                : column.nullable
-                                                                  ? 'Nullable'
-                                                                  : 'Required'
-                                                        }
-                                                        disabled={isReadOnly}
-                                                        readOnly={isReadOnly}
-                                                    />
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <div className='flex gap-3 justify-end mt-6'>
-                                        <ActionButton
-                                            variant='secondary'
-                                            onClick={() => {
-                                                setEditRowModalVisible(false);
-                                                setAddRowModalVisible(false);
-                                                setEditingRow(null);
-                                            }}
-                                        >
-                                            Cancel
-                                        </ActionButton>
-                                        <ActionButton variant='primary' type='submit' disabled={isSubmitting}>
-                                            {isSubmitting ? (
-                                                <Spinner size='small' />
-                                            ) : addRowModalVisible ? (
-                                                'Add Row'
-                                            ) : (
-                                                'Save Row'
-                                            )}
-                                        </ActionButton>
-                                    </div>
-                                </Form>
-                            )}
-                        </Formik>
-                    </div>
-                </Modal>
-            )}
-
-            {/* View Table Structure Modal */}
-            <Modal
-                visible={viewModalVisible}
-                title={`Table: ${viewTable?.name}`}
-                closeButton={true}
-                onDismissed={() => {
-                    setViewModalVisible(false);
-                    setViewTable(null);
-                }}
-            >
-                {structureLoading ? (
-                    <Spinner />
-                ) : tableStructure ? (
-                    <div className='flex flex-col gap-6 max-h-[80vh] overflow-y-auto'>
-                        {/* Table Info */}
-                        <div className='grid grid-cols-2 gap-4'>
-                            <div>
-                                <label className='text-sm text-white/60 mb-1 block'>Engine</label>
-                                <p className='text-white'>{tableStructure.engine}</p>
+                        {/* Pagination */}
+                        <div className='flex items-center justify-between mt-4'>
+                            <div className='text-sm text-white/60'>
+                                Page {tableData.pagination.currentPage} of {tableData.pagination.lastPage}
                             </div>
-                            <div>
-                                <label className='text-sm text-white/60 mb-1 block'>Collation</label>
-                                <p className='text-white'>{tableStructure.collation}</p>
-                            </div>
-                            <div>
-                                <label className='text-sm text-white/60 mb-1 block'>Size</label>
-                                <p className='text-white'>{tableStructure.sizeFormatted}</p>
-                            </div>
-                            <div>
-                                <label className='text-sm text-white/60 mb-1 block'>Rows</label>
-                                <p className='text-white'>{tableStructure.rowCount.toLocaleString()}</p>
+                            <div className='flex gap-2'>
+                                <ActionButton
+                                    variant='secondary'
+                                    onClick={() => setDataPage(Math.max(1, dataPage - 1))}
+                                    disabled={dataPage <= 1}
+                                >
+                                    Prev
+                                </ActionButton>
+                                <ActionButton
+                                    variant='secondary'
+                                    onClick={() => setDataPage(Math.min(tableData.pagination.lastPage, dataPage + 1))}
+                                    disabled={dataPage >= tableData.pagination.lastPage}
+                                >
+                                    Next
+                                </ActionButton>
                             </div>
                         </div>
-
-                        {/* Columns */}
-                        <div>
-                            <h3 className='text-lg font-semibold text-white mb-4'>Columns</h3>
-                            <div className='overflow-x-auto'>
-                                <table className='w-full border-collapse'>
-                                    <thead>
-                                        <tr className='border-b border-white/10'>
-                                            <th className='text-left p-2 text-sm text-white/60'>Name</th>
-                                            <th className='text-left p-2 text-sm text-white/60'>Type</th>
-                                            <th className='text-left p-2 text-sm text-white/60'>Nullable</th>
-                                            <th className='text-left p-2 text-sm text-white/60'>Default</th>
-                                            <th className='text-left p-2 text-sm text-white/60'>Key</th>
-                                            <th className='text-left p-2 text-sm text-white/60'>Extra</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {tableStructure.columns.map((column, idx) => (
-                                            <tr key={idx} className='border-b border-white/5'>
-                                                <td className='p-2 text-white font-mono text-sm'>{column.name}</td>
-                                                <td className='p-2 text-white/80 font-mono text-sm'>
-                                                    {column.fullType}
-                                                </td>
-                                                <td className='p-2 text-white/80 text-sm'>
-                                                    {column.nullable ? 'YES' : 'NO'}
-                                                </td>
-                                                <td className='p-2 text-white/80 font-mono text-sm'>
-                                                    {column.defaultValue ?? 'NULL'}
-                                                </td>
-                                                <td className='p-2 text-white/80 text-sm'>{column.key || '-'}</td>
-                                                <td className='p-2 text-white/80 text-sm'>{column.extra || '-'}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Indexes */}
-                        {tableStructure.indexes.length > 0 && (
-                            <div>
-                                <h3 className='text-lg font-semibold text-white mb-4'>Indexes</h3>
-                                <div className='space-y-2'>
-                                    {tableStructure.indexes.map((index, idx) => (
-                                        <div key={idx} className='bg-[#ffffff09] border border-[#ffffff11] rounded p-3'>
-                                            <div className='flex items-center gap-2 mb-1'>
-                                                <span className='font-semibold text-white'>{index.name}</span>
-                                                {index.unique && (
-                                                    <span className='text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded'>
-                                                        UNIQUE
-                                                    </span>
-                                                )}
-                                                <span className='text-xs text-white/60'>{index.type}</span>
-                                            </div>
-                                            <p className='text-sm text-white/80'>Columns: {index.columns.join(', ')}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
-                ) : null}
+                ) : (
+                    <div className='text-center py-8'>No data available</div>
+                )}
             </Modal>
 
             {!tables || tables.length === 0 ? (
@@ -845,82 +547,33 @@ const TableBrowserContainer = () => {
                         </div>
                         <h3 className='text-lg font-medium text-zinc-200 mb-2'>No tables found</h3>
                         <p className='text-sm text-zinc-400 max-w-sm'>
-                            Your database does not have any tables. Create one to get started.
+                            There are no tables available for this database. Create a new table to get started.
                         </p>
                     </div>
                 </div>
             ) : (
-                <PageListContainer data-pyro-tables>
+                <PageListContainer>
                     {tables.map((table) => (
-                        <PageListItem key={table.name}>
-                            <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full'>
-                                <div className='flex-1 min-w-0'>
-                                    <div className='flex items-center gap-3 mb-2'>
-                                        <div className='flex-shrink-0 w-8 h-8 rounded-lg bg-[#ffffff11] flex items-center justify-center'>
-                                            <Table fill='currentColor' className='text-zinc-400 w-4 h-4' />
-                                        </div>
-                                        <div className='min-w-0 flex-1'>
-                                            <CopyOnClick text={table.name}>
-                                                <h3 className='text-base font-medium text-zinc-100 truncate'>
-                                                    {table.name}
-                                                </h3>
-                                            </CopyOnClick>
-                                        </div>
-                                    </div>
-
-                                    <div className='grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm'>
-                                        <div>
-                                            <p className='text-xs text-zinc-500 uppercase tracking-wide mb-1'>Size</p>
-                                            <p className='text-zinc-300'>{table.sizeFormatted}</p>
-                                        </div>
-                                        <div>
-                                            <p className='text-xs text-zinc-500 uppercase tracking-wide mb-1'>Rows</p>
-                                            <p className='text-zinc-300'>{table.rowCount.toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <p className='text-xs text-zinc-500 uppercase tracking-wide mb-1'>Engine</p>
-                                            <p className='text-zinc-300'>{table.engine}</p>
-                                        </div>
-                                        <div>
-                                            <p className='text-xs text-zinc-500 uppercase tracking-wide mb-1'>
-                                                Collation
-                                            </p>
-                                            <p className='text-zinc-300 font-mono text-xs'>{table.collation}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className='flex items-center gap-2 sm:flex-col sm:gap-3'>
-                                    <ActionButton
-                                        variant='secondary'
-                                        size='sm'
-                                        onClick={() => handleViewData(table)}
-                                        className='flex items-center gap-2'
-                                    >
-                                        <Database fill='currentColor' className='w-4 h-4' />
-                                        <span className='hidden sm:inline'>Data</span>
+                        <PageListItem
+                            key={table.name}
+                            title={table.name}
+                            subtitle={`${table.rowCount} rows • ${table.sizeFormatted}`}
+                        >
+                            <div className='flex items-center gap-2'>
+                                <ActionButton variant='secondary' onClick={() => handleView(table)}>
+                                    <Eye className='w-4 h-4 mr-2' fill='currentColor' />
+                                    View
+                                </ActionButton>
+                                <ActionButton variant='secondary' onClick={() => handleViewData(table)}>
+                                    <Database className='w-4 h-4 mr-2' fill='currentColor' />
+                                    Data
+                                </ActionButton>
+                                <Can action={'database.*'} matchAny>
+                                    <ActionButton variant='danger' onClick={() => handleDelete(table)}>
+                                        <TrashBin className='w-4 h-4 mr-2' fill='currentColor' />
+                                        Delete
                                     </ActionButton>
-                                    <ActionButton
-                                        variant='secondary'
-                                        size='sm'
-                                        onClick={() => handleView(table)}
-                                        className='flex items-center gap-2'
-                                    >
-                                        <Eye fill='currentColor' className='w-4 h-4' />
-                                        <span className='hidden sm:inline'>Structure</span>
-                                    </ActionButton>
-                                    <Can action={'database.delete'} matchAny>
-                                        <ActionButton
-                                            variant='danger'
-                                            size='sm'
-                                            onClick={() => handleDelete(table)}
-                                            className='flex items-center gap-2'
-                                        >
-                                            <TrashBin fill='currentColor' className='w-4 h-4' />
-                                            <span className='hidden sm:inline'>Delete</span>
-                                        </ActionButton>
-                                    </Can>
-                                </div>
+                                </Can>
                             </div>
                         </PageListItem>
                     ))}
