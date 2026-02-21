@@ -1,3 +1,11 @@
+import {
+    ArrowDownToLine,
+    ChevronLeft,
+    ChevronRight,
+    Copy,
+    Magnifier,
+    Terminal as TerminalIcon,
+} from '@gravity-ui/icons';
 import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -5,9 +13,8 @@ import { ITerminalOptions, Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import clsx from 'clsx';
 import debounce from 'debounce';
-import { ArrowDownToLine, ChevronLeft, ChevronRight, Copy, Magnifier, Terminal as TerminalIcon } from '@gravity-ui/icons';
-import { toast } from 'sonner';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import SpinnerOverlay from '@/components/elements/SpinnerOverlay';
 import { SocketEvent, SocketRequest } from '@/components/server/events';
@@ -330,9 +337,7 @@ const Console = () => {
                 <SpinnerOverlay visible={!connected} size={'large'} />
                 <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
                     <div className='mb-3 flex items-center gap-2'>
-                        <div
-                            className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'
-                        >
+                        <div className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'>
                             <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
                             <input
                                 type='text'
@@ -365,9 +370,7 @@ const Console = () => {
                                 >
                                     <ChevronLeft width={18} height={18} className='text-zinc-200' />
                                 </button>
-                                <span className='min-w-[2.1rem] text-center text-sm tabular-nums'>
-                                    {matchCount}
-                                </span>
+                                <span className='min-w-[2.1rem] text-center text-sm tabular-nums'>{matchCount}</span>
                                 <button
                                     type='button'
                                     onClick={() => {

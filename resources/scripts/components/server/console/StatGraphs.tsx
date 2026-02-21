@@ -10,10 +10,11 @@ import { SocketEvent } from '@/components/server/events';
 import { bytesToString } from '@/lib/formatters';
 import { hexToRgba } from '@/lib/helpers';
 
+import { getServerMetrics } from '@/api/server/getServerMetrics';
+
 import { ServerContext } from '@/state/server';
 
 import useWebsocketEvent from '@/plugins/useWebsocketEvent';
-import { getServerMetrics } from '@/api/server/getServerMetrics';
 
 const StatGraphs = () => {
     const status = ServerContext.useStoreState((state) => state.status.value);
@@ -145,13 +146,15 @@ const StatGraphs = () => {
             <div className='flex justify-between items-center mb-3'>
                 <h2 className='text-xs font-semibold tracking-wide text-zinc-300 uppercase'>Resource Metrics</h2>
                 <div className='flex items-center gap-1 text-[11px] text-zinc-300'>
-                    {([
-                        ['5m', '5m'],
-                        ['15m', '15m'],
-                        ['1h', '1h'],
-                        ['6h', '6h'],
-                        ['24h', '24h'],
-                    ] as const).map(([value, label]) => (
+                    {(
+                        [
+                            ['5m', '5m'],
+                            ['15m', '15m'],
+                            ['1h', '1h'],
+                            ['6h', '6h'],
+                            ['24h', '24h'],
+                        ] as const
+                    ).map(([value, label]) => (
                         <button
                             key={value}
                             type='button'
@@ -204,58 +207,62 @@ const StatGraphs = () => {
                         title={'Network Activity'}
                         legend={
                             <div className='flex gap-2'>
-                            <Tooltip.Root delayDuration={200}>
-                                <Tooltip.Trigger asChild>
-                                    <div className='flex items-center cursor-default'>
-                                        <ArrowDownToLine
-                                            width={22}
-                                            height={22}
-                                            fill='currentColor'
-                                            className='mr-2 text-yellow-400'
-                                        />
-                                    </div>
-                                </Tooltip.Trigger>
-                                <Tooltip.Portal>
-                                    <Tooltip.Content
-                                        side='top'
-                                        className='px-2 py-1 text-sm bg-gray-800 text-gray-100 rounded shadow-lg'
-                                        sideOffset={5}
-                                    >
-                                        Inbound
-                                        <Tooltip.Arrow className='fill-gray-800' />
-                                    </Tooltip.Content>
-                                </Tooltip.Portal>
-                            </Tooltip.Root>
+                                <Tooltip.Root delayDuration={200}>
+                                    <Tooltip.Trigger asChild>
+                                        <div className='flex items-center cursor-default'>
+                                            <ArrowDownToLine
+                                                width={22}
+                                                height={22}
+                                                fill='currentColor'
+                                                className='mr-2 text-yellow-400'
+                                            />
+                                        </div>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Portal>
+                                        <Tooltip.Content
+                                            side='top'
+                                            className='px-2 py-1 text-sm bg-gray-800 text-gray-100 rounded shadow-lg'
+                                            sideOffset={5}
+                                        >
+                                            Inbound
+                                            <Tooltip.Arrow className='fill-gray-800' />
+                                        </Tooltip.Content>
+                                    </Tooltip.Portal>
+                                </Tooltip.Root>
 
-                            <Tooltip.Root delayDuration={200}>
-                                <Tooltip.Trigger asChild>
-                                    <div className='flex items-center cursor-default'>
-                                        <ArrowUpToLine
-                                            width={22}
-                                            height={22}
-                                            fill='currentColor'
-                                            className='text-blue-400'
-                                        />
-                                    </div>
-                                </Tooltip.Trigger>
-                                <Tooltip.Portal>
-                                    <Tooltip.Content
-                                        side='top'
-                                        className='px-2 py-1 text-sm bg-gray-800 text-gray-100 rounded shadow-lg'
-                                        sideOffset={5}
-                                    >
-                                        Outbound
-                                        <Tooltip.Arrow className='fill-gray-800' />
-                                    </Tooltip.Content>
-                                </Tooltip.Portal>
-                            </Tooltip.Root>
-                        </div>
-                    }
-                >
-                    <Line aria-label='Network Activity. Download and upload activity' role='img' {...network.props} />
-                </ChartBlock>
+                                <Tooltip.Root delayDuration={200}>
+                                    <Tooltip.Trigger asChild>
+                                        <div className='flex items-center cursor-default'>
+                                            <ArrowUpToLine
+                                                width={22}
+                                                height={22}
+                                                fill='currentColor'
+                                                className='text-blue-400'
+                                            />
+                                        </div>
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Portal>
+                                        <Tooltip.Content
+                                            side='top'
+                                            className='px-2 py-1 text-sm bg-gray-800 text-gray-100 rounded shadow-lg'
+                                            sideOffset={5}
+                                        >
+                                            Outbound
+                                            <Tooltip.Arrow className='fill-gray-800' />
+                                        </Tooltip.Content>
+                                    </Tooltip.Portal>
+                                </Tooltip.Root>
+                            </div>
+                        }
+                    >
+                        <Line
+                            aria-label='Network Activity. Download and upload activity'
+                            role='img'
+                            {...network.props}
+                        />
+                    </ChartBlock>
+                </div>
             </div>
-        </div>
         </Tooltip.Provider>
     );
 };

@@ -293,14 +293,10 @@ importers:
         version: 3.7.4
       prettier-plugin-tailwindcss:
         specifier: ^0.6.14
-<<<<<<< HEAD
         version: 0.6.14(@trivago/prettier-plugin-sort-imports@5.2.2(prettier@3.7.4))(prettier@3.7.4)
-=======
-        version: 0.6.14(@trivago/prettier-plugin-sort-imports@5.2.2(prettier@3.6.2))(prettier@3.6.2)
       rollup-plugin-visualizer:
         specifier: ^6.0.5
-        version: 6.0.5(rollup@4.46.2)
->>>>>>> upstream/main
+        version: 6.0.5(rollup@4.53.3)
       tailwind-scrollbar:
         specifier: ^4.0.2
         version: 4.0.2(react@19.2.1)(tailwindcss@4.1.17)
@@ -2188,17 +2184,10 @@ packages:
     resolution: {integrity: sha512-GIjfiT9dbmHRiYi6Nl2yFCq7kkwdkp1W/lp2J99rX0yo9tgJGn3lKQATztIjb5tVtevcBtIdICNWqlq5+E8/Pw==}
     engines: {pnpm: '>=8'}
 
-<<<<<<< HEAD
-=======
-  chownr@3.0.0:
-    resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
-    engines: {node: '>=18'}
-
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
     engines: {node: '>=12'}
 
->>>>>>> upstream/main
   clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
@@ -2236,17 +2225,12 @@ packages:
   crelt@1.0.6:
     resolution: {integrity: sha512-VQ2MBenTq1fWZUH9DJNGti7kKv6EeAuYr3cLwxUWhIu1baTaXh4Ib5W2CqHVqib4/MqbYGJqiL3Zb8GJZr3l4g==}
 
-<<<<<<< HEAD
-  cross-env@10.1.0:
-    resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}
-=======
   cronstrue@3.9.0:
     resolution: {integrity: sha512-T3S35zmD0Ai2B4ko6+mEM+k9C6tipe2nB9RLiGT6QL2Wn0Vsn2cCZAC8Oeuf4CaE00GZWVdpYitbpWCNlIWqdA==}
     hasBin: true
 
-  cross-env@10.0.0:
-    resolution: {integrity: sha512-aU8qlEK/nHYtVuN4p7UQgAwVljzMg8hB4YK5ThRqD2l/ziSnryncPNn7bMLt5cFYsKVKBh8HqLqyCoTupEUu7Q==}
->>>>>>> upstream/main
+  cross-env@10.1.0:
+    resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -2366,16 +2350,11 @@ packages:
   electron-to-chromium@1.5.264:
     resolution: {integrity: sha512-1tEf0nLgltC3iy9wtlYDlQDc5Rg9lEKVjEmIHJ21rI9OcqkvD45K1oyNIRA4rR1z3LgJ7KeGzEBojVcV6m4qjA==}
 
-<<<<<<< HEAD
-  enhanced-resolve@5.18.3:
-    resolution: {integrity: sha512-d4lC8xfavMeBjzGr2vECC3fsGXziXZQyJxD868h2M/mBI3PwAuODxAkLkq5HYuvrPYcUtiLzsTo8U3PgX3Ocww==}
-=======
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
 
-  enhanced-resolve@5.18.2:
-    resolution: {integrity: sha512-6Jw4sE1maoRJo3q8MsSIn2onJFbLTOjY9hlx4DZXmOKvLRd1Ok2kXmAGXaafL2+ijsJZ1ClYbl/pmqr9+k4iUQ==}
->>>>>>> upstream/main
+  enhanced-resolve@5.18.3:
+    resolution: {integrity: sha512-d4lC8xfavMeBjzGr2vECC3fsGXziXZQyJxD868h2M/mBI3PwAuODxAkLkq5HYuvrPYcUtiLzsTo8U3PgX3Ocww==}
     engines: {node: '>=10.13.0'}
 
   es-abstract@1.24.0:
@@ -2756,17 +2735,12 @@ packages:
     resolution: {integrity: sha512-1pC6N8qWJbWoPtEjgcL2xyhQOP491EQjeUo3qTKcmV8YSDDJrOepfG8pcC7h/QgnQHYSv0mJ3Z/ZWxmatVrysg==}
     engines: {node: '>= 0.4'}
 
-<<<<<<< HEAD
-  is-generator-function@1.1.2:
-    resolution: {integrity: sha512-upqt1SkGkODW9tsGNG5mtXTXtECizwtS2kA161M+gJPc1xdb/Ax629af6YrTwcOeQHbewrPNlE5Dx7kzvXTizA==}
-=======
   is-fullwidth-code-point@3.0.0:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
     engines: {node: '>=8'}
 
-  is-generator-function@1.1.0:
-    resolution: {integrity: sha512-nPUB5km40q9e8UfN/Zc24eLlzdSf9OfKByBw9CIdw4H1giPMeA0OIJvbchsCu4npfI2QcMVBsGEBHKZ7wLTWmQ==}
->>>>>>> upstream/main
+  is-generator-function@1.1.2:
+    resolution: {integrity: sha512-upqt1SkGkODW9tsGNG5mtXTXtECizwtS2kA161M+gJPc1xdb/Ax629af6YrTwcOeQHbewrPNlE5Dx7kzvXTizA==}
     engines: {node: '>= 0.4'}
 
   is-glob@4.0.3:
@@ -3368,14 +3342,6 @@ packages:
     resolution: {integrity: sha512-U7WjGVG9sH8tvjW5SmGbQuui75FiyjAX72HX15DwBBwF9dNiQZRQAg9nnPhYy+TUnE0+VcrttuvNI8oSxZcocA==}
     hasBin: true
 
-<<<<<<< HEAD
-  rollup@4.53.3:
-    resolution: {integrity: sha512-w8GmOxZfBmKknvdXU1sdM9NHcoQejwF/4mNgj2JuEEdRaHwwF12K7e9eXn1nLZ07ad+du76mkVsyeb2rKGllsA==}
-=======
-  reusify@1.1.0:
-    resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
-    engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
-
   rollup-plugin-visualizer@6.0.5:
     resolution: {integrity: sha512-9+HlNgKCVbJDs8tVtjQ43US12eqaiHyyiLMdBwQ7vSZPiHMysGNo2E88TAp1si5wx8NAoYriI2A5kuKfIakmJg==}
     engines: {node: '>=18'}
@@ -3389,9 +3355,8 @@ packages:
       rollup:
         optional: true
 
-  rollup@4.46.2:
-    resolution: {integrity: sha512-WMmLFI+Boh6xbop+OAGo9cQ3OgX9MIg7xOQjn+pTCwOkk+FNDAeAemXkJ3HzDJrVXleLOFVa1ipuc1AmEx1Dwg==}
->>>>>>> upstream/main
+  rollup@4.53.3:
+    resolution: {integrity: sha512-w8GmOxZfBmKknvdXU1sdM9NHcoQejwF/4mNgj2JuEEdRaHwwF12K7e9eXn1nLZ07ad+du76mkVsyeb2rKGllsA==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
@@ -3814,10 +3779,6 @@ packages:
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
-
-  yallist@5.0.0:
-    resolution: {integrity: sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==}
-    engines: {node: '>=18'}
 
   yargs-parser@21.1.1:
     resolution: {integrity: sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==}
@@ -5895,17 +5856,12 @@ snapshots:
     dependencies:
       '@kurkle/color': 0.3.4
 
-<<<<<<< HEAD
-=======
-  chownr@3.0.0: {}
-
   cliui@8.0.1:
     dependencies:
       string-width: 4.2.3
       strip-ansi: 6.0.1
       wrap-ansi: 7.0.0
 
->>>>>>> upstream/main
   clsx@2.1.1: {}
 
   cmdk@1.1.1(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
@@ -5942,13 +5898,9 @@ snapshots:
 
   crelt@1.0.6: {}
 
-<<<<<<< HEAD
-  cross-env@10.1.0:
-=======
   cronstrue@3.9.0: {}
 
-  cross-env@10.0.0:
->>>>>>> upstream/main
+  cross-env@10.1.0:
     dependencies:
       '@epic-web/invariant': 1.0.0
       cross-spawn: 7.0.6
@@ -6054,13 +6006,9 @@ snapshots:
 
   electron-to-chromium@1.5.264: {}
 
-<<<<<<< HEAD
-  enhanced-resolve@5.18.3:
-=======
   emoji-regex@8.0.0: {}
 
-  enhanced-resolve@5.18.2:
->>>>>>> upstream/main
+  enhanced-resolve@5.18.3:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.0
@@ -6546,13 +6494,9 @@ snapshots:
     dependencies:
       call-bound: 1.0.4
 
-<<<<<<< HEAD
-  is-generator-function@1.1.2:
-=======
   is-fullwidth-code-point@3.0.0: {}
 
-  is-generator-function@1.1.0:
->>>>>>> upstream/main
+  is-generator-function@1.1.2:
     dependencies:
       call-bound: 1.0.4
       generator-function: 2.0.1
@@ -7113,22 +7057,16 @@ snapshots:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-<<<<<<< HEAD
-  rollup@4.53.3:
-=======
-  reusify@1.1.0: {}
-
-  rollup-plugin-visualizer@6.0.5(rollup@4.46.2):
+  rollup-plugin-visualizer@6.0.5(rollup@4.53.3):
     dependencies:
       open: 8.4.2
       picomatch: 4.0.3
       source-map: 0.7.6
       yargs: 17.7.2
     optionalDependencies:
-      rollup: 4.46.2
+      rollup: 4.53.3
 
-  rollup@4.46.2:
->>>>>>> upstream/main
+  rollup@4.53.3:
     dependencies:
       '@types/estree': 1.0.8
     optionalDependencies:
@@ -7599,10 +7537,6 @@ snapshots:
 
   yallist@3.1.1: {}
 
-<<<<<<< HEAD
-=======
-  yallist@5.0.0: {}
-
   yargs-parser@21.1.1: {}
 
   yargs@17.7.2:
@@ -7615,7 +7549,6 @@ snapshots:
       y18n: 5.0.8
       yargs-parser: 21.1.1
 
->>>>>>> upstream/main
   yocto-queue@0.1.0: {}
 
   yup@1.7.1:

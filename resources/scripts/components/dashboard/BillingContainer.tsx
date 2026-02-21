@@ -259,7 +259,9 @@ const BillingContainer = () => {
             >
                 <div className='bg-[#ffffff08] border border-[#ffffff12] rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
                     <div>
-                        <h3 className='text-sm font-semibold uppercase tracking-[0.14em] text-white/60 mb-1'>Need more capacity?</h3>
+                        <h3 className='text-sm font-semibold uppercase tracking-[0.14em] text-white/60 mb-1'>
+                            Need more capacity?
+                        </h3>
                         <p className='text-sm text-white/80'>Purchase a new server in a few clicks.</p>
                     </div>
                     <ActionButton
