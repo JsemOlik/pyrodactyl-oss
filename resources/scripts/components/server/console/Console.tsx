@@ -332,104 +332,104 @@ const Console = () => {
     }, [connected, instance]);
 
     return (
-        // <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'>
-        <div className='relative'>
-            <SpinnerOverlay visible={!connected} size={'large'} />
-            <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
-                <div className='mb-3 flex items-center gap-2'>
-                    <div className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'>
-                        <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
-                        <input
-                            type='text'
-                            value={searchQuery}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                setSearchQuery(value);
-                                handleSearch(value);
-                            }}
-                            placeholder='Search all logs...'
-                            className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
-                        />
-                    </div>
-                    <div className='flex h-10 items-center text-sm text-zinc-300'>
-                        <div className='flex h-10 items-center gap-1 rounded-lg bg-[#1b1b1b] border border-[#ffffff11]'>
-                            <button
-                                type='button'
-                                onClick={() => {
-                                    const term = lastSearchTerm.current.trim();
-                                    const addon = searchAddonRef.current;
-                                    if (!addon || !term) return;
-                                    addon.findPrevious(term, {
-                                        incremental: true,
-                                        caseSensitive: false,
-                                        regex: false,
-                                    });
+        <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'>
+            <div className='relative'>
+                <SpinnerOverlay visible={!connected} size={'large'} />
+                <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
+                    <div className='mb-3 flex items-center gap-2'>
+                        <div className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'>
+                            <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
+                            <input
+                                type='text'
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSearchQuery(value);
+                                    handleSearch(value);
                                 }}
-                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
-                                disabled={!matchCount}
-                            >
-                                <ChevronLeft width={18} height={18} className='text-zinc-200' />
-                            </button>
-                            <span className='min-w-[2.1rem] text-center text-sm tabular-nums'>{matchCount}</span>
-                            <button
-                                type='button'
-                                onClick={() => {
-                                    const term = lastSearchTerm.current.trim();
-                                    const addon = searchAddonRef.current;
-                                    if (!addon || !term) return;
-                                    addon.findNext(term, {
-                                        incremental: true,
-                                        caseSensitive: false,
-                                        regex: false,
-                                    });
-                                }}
-                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
-                                disabled={!matchCount}
-                            >
-                                <ChevronRight width={18} height={18} className='text-zinc-200' />
-                            </button>
-                            <button
-                                type='button'
-                                onClick={copyConsole}
-                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
-                            >
-                                <Copy width={18} height={18} className='text-zinc-200' />
-                            </button>
-                            <button
-                                type='button'
-                                onClick={downloadConsole}
-                                className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
-                            >
-                                <ArrowDownToLine width={18} height={18} className='text-zinc-200' />
-                            </button>
+                                placeholder='Search all logs...'
+                                className='w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none border-0 font-normal'
+                            />
+                        </div>
+                        <div className='flex h-10 items-center text-sm text-zinc-300'>
+                            <div className='flex h-10 items-center gap-1 rounded-lg bg-[#1b1b1b] border border-[#ffffff11]'>
+                                <button
+                                    type='button'
+                                    onClick={() => {
+                                        const term = lastSearchTerm.current.trim();
+                                        const addon = searchAddonRef.current;
+                                        if (!addon || !term) return;
+                                        addon.findPrevious(term, {
+                                            incremental: true,
+                                            caseSensitive: false,
+                                            regex: false,
+                                        });
+                                    }}
+                                    className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
+                                    disabled={!matchCount}
+                                >
+                                    <ChevronLeft width={18} height={18} className='text-zinc-200' />
+                                </button>
+                                <span className='min-w-[2.1rem] text-center text-sm tabular-nums'>{matchCount}</span>
+                                <button
+                                    type='button'
+                                    onClick={() => {
+                                        const term = lastSearchTerm.current.trim();
+                                        const addon = searchAddonRef.current;
+                                        if (!addon || !term) return;
+                                        addon.findNext(term, {
+                                            incremental: true,
+                                            caseSensitive: false,
+                                            regex: false,
+                                        });
+                                    }}
+                                    className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33] disabled:opacity-40 disabled:cursor-default'
+                                    disabled={!matchCount}
+                                >
+                                    <ChevronRight width={18} height={18} className='text-zinc-200' />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={copyConsole}
+                                    className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
+                                >
+                                    <Copy width={18} height={18} className='text-zinc-200' />
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={downloadConsole}
+                                    className='inline-flex h-full w-10 items-center justify-center rounded-md bg-transparent hover:bg-[#2a2a2a] border border-transparent hover:border-[#ffffff33]'
+                                >
+                                    <ArrowDownToLine width={18} height={18} className='text-zinc-200' />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className='h-full w-full'>
-                    <div ref={ref} className='h-full w-full' />
-                </div>
-            </div>
-            {canSendCommands && (
-                <div className='relative border-t-[1px] border-[#ffffff11] bg-[#0f0f0f]'>
-                    <div className='flex items-center gap-1.5 px-2.5 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm text-zinc-100'>
-                        <span className='inline-flex h-7 w-7 items-center justify-center text-zinc-200'>
-                            <TerminalIcon width={18} height={18} />
-                        </span>
-                        <input
-                            className='w-full h-full bg-transparent font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 border-0 outline-none focus:ring-0 focus:outline-none'
-                            type='text'
-                            placeholder='Enter a command...'
-                            aria-label='Console command input.'
-                            disabled={!instance || !connected}
-                            onKeyDown={handleCommandKeyDown}
-                            autoCorrect='off'
-                            autoCapitalize='none'
-                        />
+                    <div className='h-full w-full'>
+                        <div ref={ref} className='h-full w-full' />
                     </div>
                 </div>
-            )}
+                {canSendCommands && (
+                    <div className='relative border-t-[1px] border-[#ffffff11] bg-[#0f0f0f]'>
+                        <div className='flex items-center gap-1.5 px-2.5 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm text-zinc-100'>
+                            <span className='inline-flex h-7 w-7 items-center justify-center text-zinc-200'>
+                                <TerminalIcon width={18} height={18} />
+                            </span>
+                            <input
+                                className='w-full h-full bg-transparent font-mono text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 border-0 outline-none focus:ring-0 focus:outline-none'
+                                type='text'
+                                placeholder='Enter a command...'
+                                aria-label='Console command input.'
+                                disabled={!instance || !connected}
+                                onKeyDown={handleCommandKeyDown}
+                                autoCorrect='off'
+                                autoCapitalize='none'
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
-        // </div>
     );
 };
 
