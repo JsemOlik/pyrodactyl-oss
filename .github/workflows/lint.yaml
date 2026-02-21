@@ -3,12 +3,12 @@ name: Lint
 on:
   push:
     branches:
-      - "develop"
-      - "1.0-develop"
+      - "main"
+      - "master"
   pull_request:
     branches:
-      - "develop"
-      - "1.0-develop"
+      - "main"
+      - "master"
 
 jobs:
   lint:
