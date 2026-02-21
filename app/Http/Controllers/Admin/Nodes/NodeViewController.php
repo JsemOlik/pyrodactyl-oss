@@ -80,19 +80,19 @@ class NodeViewController extends Controller
     public function allocations(Request $request, Node $node): View
     {
         $node = $this->repository->loadNodeAllocations($node);
-        
+
         // Load allocations with their restrictions
         $allocationsQuery = $node->allocations()->with(['allowedNests', 'allowedEggs']);
-        
+
         $this->plainInject(['node' => Collection::wrap($node)->only(['id'])]);
 
         // Get all nests and eggs for the restriction UI
         $nests = $this->nestRepository->getWithEggs();
 
         $allocationsWithRestrictionsCollection = $allocationsQuery->get();
-        
+
         switch (DB::getPdo()->getAttribute(DB::getPdo()::ATTR_DRIVER_NAME)) {
-            default:
+            case 'mysql':
                 return $this->view->make('admin.nodes.view.allocation', [
                     'node' => $node,
                     'allocations' => Allocation::query()->where('node_id', $node->id)
