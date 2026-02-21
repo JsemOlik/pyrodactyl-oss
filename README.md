@@ -8,8 +8,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/pyrodactyl-oss/pyrodactyl/actions/workflows/dev-build.yaml">
-    <img src="https://github.com/pyrodactyl-oss/pyrodactyl/actions/workflows/dev-build.yaml/badge.svg" alt="Docker">
+  <a href="https://github.com/JsemOlik/pyrodactyl-oss/actions/workflows/dev-build.yaml">
+    <img src="https://github.com/JsemOlik/pyrodactyl-oss/actions/workflows/dev-build.yaml/badge.svg" alt="Docker">
+    <img src="https://github.com/JsemOlik/pyrodactyl-oss/actions/workflows/lint.yaml/badge.svg" alt="Lint">
   </a>
 </p>
 
