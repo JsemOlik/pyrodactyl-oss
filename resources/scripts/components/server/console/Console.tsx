@@ -66,7 +66,7 @@ const Console = () => {
         () =>
             new Terminal({
                 ...terminalProps,
-                rows: window.innerWidth < 640 ? 20 : 25,
+                rows: window.innerWidth < 640 ? 40 : 50,
             }),
         [],
     );
