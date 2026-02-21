@@ -218,3 +218,191 @@ Open questions for you
 Next step suggestion
 --------------------
 If you confirm the egg-driven approach and answer the open questions, I recommend starting Phase 0 (eggs review) and Phase 1 (API readiness). I can then produce a PR-style patch for Phase 2 (routing wiring) or Phase 3 (page skeletons) based on your preference.
+
+---
+
+Phase 0 — Deliverable: Egg Mapping Document
+===========================================
+
+Below is the complete mapping of all database eggs in `database/Seeders/eggs/databases` to their dashboard capabilities.
+
+Egg Inventory (5 total)
+-----------------------
+
+| Egg File | Engine | Type | Version | Variables | Default Creds | Multi-Image |
+|----------|--------|------|---------|-----------|---------------|-------------|
+| egg-maria-d-b10-3.json | MariaDB | SQL | 10.3 | None | No | No |
+| egg-mongo-d-b.json | MongoDB | NoSQL | 4/5 | MONGO_USER, MONGO_USER_PASS | Yes | Yes (4, 5) |
+| egg-postgres14.json | PostgreSQL | SQL | 14 | PGUSER, PGPASSWORD | Yes | No |
+| egg-postgres16.json | PostgreSQL | SQL | 16 | PGUSER, PGPASSWORD | Yes | No |
+| egg-rethinkdb.json | RethinkDB | NoSQL | 2.4.4 | VERSION, DRIVER_PORT, HTTP_PORT | No | No |
+
+Detailed Feature Mapping
+------------------------
+
+### 1. MariaDB 10.3 (egg-maria-d-b10-3.json)
+- **Engine Family**: SQL (MySQL-compatible)
+- **Dashboard Type**: `database` (SQL mode)
+- **Connection Info**:
+  - Image: `ghcr.io/parkervcp/yolks:mariadb_10.3`
+  - Startup: `{ /usr/sbin/mysqld & } && sleep 5 && mysql -u root`
+  - Ready Signal: `mysqld: ready for connections`
+- **Credentials Strategy**: No default variables; credentials created via server database endpoints
+- **UI Features to Enable**:
+  - ✅ Databases list (create/delete)
+  - ✅ SQL Query interface (read-only by default)
+  - ✅ Table browser
+  - ✅ Backups
+  - ✅ Logs (mysqld logs)
+  - ⚠️ Settings: Config file editing via `.my.cnf`
+- **Special Notes**: 
+  - Uses custom install script that downloads remote config files
+  - No explicit user variables; relies on root access during install
+
+### 2. MongoDB (egg-mongo-d-b.json)
+- **Engine Family**: NoSQL (Document)
+- **Dashboard Type**: `database` (NoSQL mode)
+- **Connection Info**:
+  - Images: MongoDB 4 (`ghcr.io/parkervcp/yolks:mongodb_4`) or MongoDB 5 (`ghcr.io/parkervcp/yolks:mongodb_5`)
+  - Startup: Complex fork-based startup with mongo shell
+  - Ready Signal: `child process started successfully`
+- **Credentials Strategy**: 
+  - `MONGO_USER` (default: "admin", editable)
+  - `MONGO_USER_PASS` (default: "", editable)
+- **UI Features to Enable**:
+  - ✅ Databases list (create/delete)
+  - ✅ NoSQL Query interface (mongo shell commands)
+  - ✅ Collection browser (instead of table browser)
+  - ✅ Backups
+  - ✅ Logs (mongo.log tail)
+  - ⚠️ Settings: Config via `mongod.conf`
+- **Special Notes**:
+  - Multi-image support (user can choose v4 or v5)
+  - Uses `$SERVER_PORT` variable in startup
+  - Fork-based startup pattern (different from SQL engines)
+
+### 3. PostgreSQL 14 (egg-postgres14.json)
+- **Engine Family**: SQL
+- **Dashboard Type**: `database` (SQL mode)
+- **Connection Info**:
+  - Image: `ghcr.io/parkervcp/yolks:postgres_14`
+  - Startup: `postgres -D /home/container/postgres_db/`
+  - Ready Signal: `database system is ready to accept connections`
+- **Credentials Strategy**:
+  - `PGUSER` (default: "pterodactyl", not editable)
+  - `PGPASSWORD` (default: "Pl3453Ch4n63M3!", not editable)
+- **UI Features to Enable**:
+  - ✅ Databases list (create/delete)
+  - ✅ SQL Query interface (read-only by default)
+  - ✅ Table browser
+  - ✅ Backups
+  - ✅ Logs (postgres logs)
+  - ⚠️ Settings: Config via `postgresql.conf` (parser already configured)
+- **Special Notes**:
+  - Config file editing pre-configured in egg (`postgres_db/postgresql.conf`)
+  - Parser replaces port, pid file, and socket directory
+
+### 4. PostgreSQL 16 (egg-postgres16.json)
+- **Engine Family**: SQL
+- **Dashboard Type**: `database` (SQL mode)
+- **Connection Info**:
+  - Image: `ghcr.io/parkervcp/yolks:postgres_16`
+  - Startup: `postgres -D /home/container/postgres_db/`
+  - Ready Signal: `database system is ready to accept connections`
+- **Credentials Strategy**:
+  - `PGUSER` (default: "pterodactyl", not editable)
+  - `PGPASSWORD` (default: "Pl3453Ch4n63M3!", not editable)
+- **UI Features to Enable**:
+  - ✅ Databases list (create/delete)
+  - ✅ SQL Query interface (read-only by default)
+  - ✅ Table browser
+  - ✅ Backups
+  - ✅ Logs (postgres logs)
+  - ⚠️ Settings: Config via `postgresql.conf` (parser already configured)
+- **Special Notes**:
+  - Identical structure to Postgres 14, just newer version
+  - Same config file editing setup
+
+### 5. RethinkDB (egg-rethinkdb.json)
+- **Engine Family**: NoSQL (Realtime)
+- **Dashboard Type**: `database` (NoSQL mode)
+- **Connection Info**:
+  - Image: `ghcr.io/parkervcp/yolks:debian`
+  - Startup: `./rethinkdb --bind 0.0.0.0 --cluster-port {{SERVER_PORT}} --driver-port {{DRIVER_PORT}} --http-port {{HTTP_PORT}} --initial-password auto --no-http-admin`
+  - Ready Signal: `Server ready`
+- **Credentials Strategy**:
+  - `VERSION` (default: "2.4.4", editable)
+  - `DRIVER_PORT` (default: "25568", not editable)
+  - `HTTP_PORT` (default: "25569", not editable)
+  - Auto-generated initial password (`--initial-password auto`)
+- **UI Features to Enable**:
+  - ✅ Databases list (create/delete) - via RethinkDB API
+  - ✅ NoSQL Query interface (ReQL)
+  - ✅ Table browser
+  - ✅ Backups
+  - ✅ Logs
+  - ⚠️ Settings: Multi-port configuration (3 ports: cluster, driver, HTTP)
+- **Special Notes**:
+  - **Multi-port server** (unique among DB eggs)
+  - Uses custom installation script that downloads .deb package
+  - No persistent admin password (auto-generated on first run)
+  - HTTP admin interface disabled (`--no-http-admin`)
+
+Dashboard UI Adaptations by Engine Type
+---------------------------------------
+
+### SQL Engines (MariaDB, PostgreSQL 14/16)
+- Query interface: SQL syntax highlighting
+- Table browser: Show tables, columns, indexes, row counts
+- Query results: Tabular display with pagination
+- Credentials: Standard username/password with connection string
+
+### NoSQL Engines (MongoDB, RethinkDB)
+- Query interface: JavaScript/ReQL syntax highlighting
+- Collection browser: Show collections/tables, document counts
+- Query results: JSON tree view or table view
+- Credentials: Varies (MongoDB has explicit user/pass, RethinkDB auto-generates)
+
+Recommended Egg Feature Flags
+-----------------------------
+Since all eggs currently have `"features": null`, I recommend adding explicit feature arrays:
+
+```json
+// For SQL databases (MariaDB, PostgreSQL)
+"features": ["databases", "backups", "query-interface", "table-browser", "config-editing"]
+
+// For NoSQL databases (MongoDB, RethinkDB)
+"features": ["databases", "backups", "query-interface", "collection-browser", "config-editing"]
+
+// For multi-port databases (RethinkDB)
+"features": ["databases", "backups", "query-interface", "collection-browser", "multi-port"]
+```
+
+UI Component Mapping
+--------------------
+| Component | MariaDB | PostgreSQL | MongoDB | RethinkDB |
+|-----------|---------|------------|---------|-----------|
+| OverviewContainer | ✅ | ✅ | ✅ | ✅ (show 3 ports) |
+| DatabaseListContainer | ✅ | ✅ | ✅ | ✅ |
+| TableBrowserContainer | ✅ (tables) | ✅ (tables) | ✅ (collections) | ✅ (tables) |
+| QueryInterfaceContainer | ✅ (SQL) | ✅ (SQL) | ✅ (mongo shell) | ✅ (ReQL) |
+| DatabaseLogsContainer | ✅ | ✅ | ✅ | ✅ |
+| DatabaseSettingsContainer | ✅ | ✅ | ✅ | ✅ (multi-port) |
+| BackupIntegration | ✅ | ✅ | ✅ | ✅ |
+
+Acceptance Criteria (Phase 0)
+-----------------------------
+- [x] All 5 database eggs inventoried and mapped
+- [x] Engine types classified (SQL vs NoSQL)
+- [x] Credential strategies documented
+- [x] UI features mapped per egg
+- [x] Multi-port requirements identified (RethinkDB)
+- [x] Special cases noted (MongoDB multi-image, RethinkDB auto-password)
+
+Next: Phase 1 — Backend API Readiness
+-------------------------------------
+With this mapping complete, Phase 1 should:
+1. Ensure API returns egg metadata (especially `variables`, `docker_images`, `features`)
+2. Verify database endpoints work for all engine types
+3. Add query endpoint that adapts SQL vs NoSQL based on egg type
+4. Handle multi-port allocations (RethinkDB) in connection info
