@@ -6,16 +6,9 @@ const UptimeDuration = ({ uptime }: { uptime: number }) => {
     const minutes = Math.floor((remainder / 60) % 60);
     const seconds = remainder % 60;
 
-    if (days > 0) {
-        return (
-            <>
-                {days}d {hours}h {minutes}m
-            </>
-        );
-    }
-
     return (
         <>
+            {days > 0 && `${days}d `}
             {hours}h {minutes}m {seconds}s
         </>
     );
