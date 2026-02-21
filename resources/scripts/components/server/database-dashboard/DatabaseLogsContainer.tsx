@@ -1,3 +1,4 @@
+import useServerEggFeatures from '@/hooks/useServerEggFeatures';
 import { ArrowRotateRight, FileText, Funnel } from '@gravity-ui/icons';
 import { useState } from 'react';
 import useSWR from 'swr';
@@ -56,6 +57,18 @@ const DatabaseLogsContainer = () => {
         }
     };
 
+    const { hasFeature, rawServer } = useServerEggFeatures();
+
+    // Determine if logs were explicitly disabled by the egg's feature list.
+    // We only show the "logs disabled" message if the egg explicitly provides a features array
+    // and does not include "logs". Eggs that don't declare features are treated as default-capable.
+    const eggExplicitlyDefinesFeatures =
+        rawServer &&
+        rawServer.egg &&
+        typeof rawServer.egg === 'object' &&
+        Array.isArray((rawServer.egg as any).features);
+    const logsExplicitlyDisabled = eggExplicitlyDefinesFeatures && !hasFeature('logs');
+
     return (
         <ServerContentBlock title='Logs'>
             <FlashMessageRender byKey='logs' />
@@ -89,13 +102,24 @@ const DatabaseLogsContainer = () => {
                         </div>
                     </div>
 
-                    {isLoading ? (
+                    {logsExplicitlyDisabled ? (
+                        <div className='text-center py-12'>
+                            <FileText className='w-12 h-12 mx-auto mb-4 text-white/40' fill='currentColor' />
+                            <h3 className='text-lg font-medium text-white/80 mb-2'>
+                                Logs are unavailable for this egg
+                            </h3>
+                            <p className='text-sm text-white/60 max-w-lg mx-auto'>
+                                The egg used by this server explicitly disables log access via the dashboard. If you
+                                need log access, please consult the egg documentation or contact support.
+                            </p>
+                        </div>
+                    ) : isLoading ? (
                         <div className='flex justify-center py-8'>
                             <Spinner />
                         </div>
                     ) : error ? (
                         <div className='text-center py-8 text-red-400'>
-                            Failed to load logs. Some log types may not be available on your MySQL server.
+                            Failed to load logs. Some log types may not be available on your database server.
                         </div>
                     ) : logsData && logsData.logs.length > 0 ? (
                         <div className='space-y-2 max-h-[70vh] overflow-y-auto'>
@@ -149,7 +173,7 @@ const DatabaseLogsContainer = () => {
                             <FileText className='w-12 h-12 mx-auto mb-4 text-white/40' fill='currentColor' />
                             <p>No logs found for this log type.</p>
                             <p className='text-sm mt-2'>
-                                Note: Some log types require specific MySQL configuration to be enabled.
+                                Note: Some log types require specific database configuration to be enabled.
                             </p>
                         </div>
                     )}

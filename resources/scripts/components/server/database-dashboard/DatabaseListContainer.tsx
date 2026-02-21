@@ -1,3 +1,4 @@
+import useServerEggFeatures from '@/hooks/useServerEggFeatures';
 import { Database, Eye, TrashBin } from '@gravity-ui/icons';
 import { Form, Formik, FormikHelpers } from 'formik';
 import { useEffect, useState } from 'react';
@@ -47,6 +48,9 @@ const databaseSchema = object().shape({
 const DatabaseListContainer = () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data?.uuid);
     const serverName = ServerContext.useStoreState((state) => state.server.data?.name);
+
+    // Feature/egg helper to adapt the UI per-egg (e.g. disable creation when feature not present)
+    const { hasFeature, featureLimits } = useServerEggFeatures();
 
     const { addError, clearFlashes } = useFlash();
     const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -144,11 +148,18 @@ const DatabaseListContainer = () => {
                 direction='column'
                 title='Databases'
                 titleChildren={
-                    <Can action={'database.create'}>
-                        <ActionButton variant='primary' onClick={() => setCreateModalVisible(true)}>
-                            New Database
-                        </ActionButton>
-                    </Can>
+                    <div className='flex items-center justify-end'>
+                        <Can action={'database.create'}>
+                            {hasFeature('databases') &&
+                            (featureLimits?.databases === null ||
+                                featureLimits?.databases === undefined ||
+                                featureLimits?.databases > 0) ? (
+                                <ActionButton variant='primary' onClick={() => setCreateModalVisible(true)}>
+                                    New Database
+                                </ActionButton>
+                            ) : null}
+                        </Can>
+                    </div>
                 }
             >
                 <p className='text-sm text-neutral-400 leading-relaxed'>

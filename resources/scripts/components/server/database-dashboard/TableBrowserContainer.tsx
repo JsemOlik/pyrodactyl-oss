@@ -1,3 +1,4 @@
+import useServerEggFeatures from '@/hooks/useServerEggFeatures';
 import { Database, Eye, LayoutHeaderCellsLarge, Plus, TrashBin } from '@gravity-ui/icons';
 import { FieldArray, Form, Formik, Field as FormikField, FormikHelpers } from 'formik';
 import { useEffect, useState } from 'react';
@@ -59,6 +60,9 @@ const tableSchema = object().shape({
 const TableBrowserContainer = () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data?.uuid);
     const serverName = ServerContext.useStoreState((state) => state.server.data?.name);
+
+    // Egg/feature helper to adapt the UI per-egg (e.g. disable create table when feature not present)
+    const { hasFeature, featureLimits } = useServerEggFeatures();
 
     const { addError, clearFlashes } = useFlash();
     const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -287,12 +291,19 @@ const TableBrowserContainer = () => {
                 direction='column'
                 title='Tables'
                 titleChildren={
-                    <Can action={'database.*'} matchAny>
-                        <ActionButton variant='primary' onClick={() => setCreateModalVisible(true)}>
-                            <Plus className='w-4 h-4 mr-2' fill='currentColor' />
-                            New Table
-                        </ActionButton>
-                    </Can>
+                    <div className='flex items-center justify-end'>
+                        <Can action={'database.*'} matchAny>
+                            {hasFeature('table-browser') &&
+                            (featureLimits?.databases === null ||
+                                featureLimits?.databases === undefined ||
+                                featureLimits?.databases > 0) ? (
+                                <ActionButton variant='primary' onClick={() => setCreateModalVisible(true)}>
+                                    <Plus className='w-4 h-4 mr-2' fill='currentColor' />
+                                    New Table
+                                </ActionButton>
+                            ) : null}
+                        </Can>
+                    </div>
                 }
             >
                 <p className='text-sm text-neutral-400 leading-relaxed'>
