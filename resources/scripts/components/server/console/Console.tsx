@@ -55,8 +55,9 @@ const terminalProps: ITerminalOptions = {
     cursorStyle: 'underline',
     allowTransparency: true,
     fontSize: window.innerWidth < 640 ? 11 : 12,
+    lineHeight: 1.5,
     fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-    theme: theme,
+    theme: { ...theme, background: 'transparent' },
 };
 
 const Console = () => {
@@ -82,6 +83,15 @@ const Console = () => {
     const isTransferring = ServerContext.useStoreState((state) => state.server.data!.isTransferring);
     const [history, setHistory] = usePersistedState<string[]>(`${serverId}:command_history`, []);
     const [historyIndex, setHistoryIndex] = useState(-1);
+    const [fontSize, setFontSize] = useState(window.innerWidth < 640 ? 11 : 12);
+
+    const stripedBackgroundStyle = useMemo(() => {
+        const stripeHeight = fontSize * 1.5;
+        return {
+            backgroundImage: `linear-gradient(to bottom, #131313 0px, #131313 ${stripeHeight}px, #1b1b1b ${stripeHeight}px, #1b1b1b ${stripeHeight * 2}px)`,
+            backgroundSize: `100% ${stripeHeight * 2}px`,
+        };
+    }, [fontSize]);
 
     const handleConsoleOutput = (line: string, prelude = false) =>
         terminal.writeln((prelude ? TERMINAL_PRELUDE : '') + line.replace(/(?:\r\n|\r|\n)$/im, '') + '\u001b[0m');
@@ -171,6 +181,7 @@ const Console = () => {
                 // Update font size based on window width
                 const newFontSize = window.innerWidth < 640 ? 11 : 12;
                 terminal.options.fontSize = newFontSize;
+                setFontSize(newFontSize);
                 fitAddonRef.current.fit();
             }
         }, 100),
@@ -335,7 +346,10 @@ const Console = () => {
         <div className='bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl hover:border-[#ffffff20] transition-all duration-150 overflow-hidden shadow-sm'>
             <div className='relative'>
                 <SpinnerOverlay visible={!connected} size={'large'} />
-                <div className='bg-[#131313] h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'>
+                <div
+                    style={stripedBackgroundStyle}
+                    className='h-[340px] sm:h-[460px] p-3 sm:p-4 overflow-hidden flex flex-col'
+                >
                     <div className='mb-3 flex items-center gap-2'>
                         <div className='flex h-10 items-center gap-2 rounded-lg bg-[#1b1b1b] px-3 text-sm text-zinc-300 border border-[#ffffff11] focus-within:border-[#ffffff33] flex-1'>
                             <Magnifier width={18} height={18} className='text-white/90 shrink-0' />
