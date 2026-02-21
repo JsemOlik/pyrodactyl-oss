@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import useServerEggFeatures from '@/hooks/useServerEggFeatures';
+import { useState } from 'react';
 import useSWR from 'swr';
 
 import ActionButton from '@/components/elements/ActionButton';
@@ -40,6 +41,10 @@ interface DatabaseMetrics {
 const DatabaseOverviewContainer = () => {
     const uuid = ServerContext.useStoreState((state) => state.server.data?.uuid);
     const serverName = ServerContext.useStoreState((state) => state.server.data?.name);
+
+    // Egg/feature helper (normalizes egg features, docker image hints, and allocations)
+    const { hasFeature, dockerImage, getAllocationMap } = useServerEggFeatures();
+    const allocMap = getAllocationMap();
 
     const [showPassword, setShowPassword] = useState(false);
     const [connectionTestResult, setConnectionTestResult] = useState<{
@@ -112,7 +117,41 @@ const DatabaseOverviewContainer = () => {
     return (
         <ServerContentBlock title='Overview'>
             <div className='w-full h-full min-h-full flex-1 flex flex-col px-2 sm:px-0'>
-                <MainPageHeader title={serverName || 'Database'} />
+                <MainPageHeader
+                    title={serverName || 'Database'}
+                    titleChildren={
+                        <div className='flex items-center gap-3'>
+                            {dockerImage && (
+                                <div className='text-sm text-zinc-400'>
+                                    Engine:
+                                    <code className='ml-2 px-2 py-1 bg-[#00000040] rounded text-xs'>{dockerImage}</code>
+                                </div>
+                            )}
+                            <div className='flex gap-2'>
+                                {hasFeature('databases') && (
+                                    <span className='px-2 py-1 text-xs rounded bg-[#ffffff0a] text-white/80'>
+                                        Databases
+                                    </span>
+                                )}
+                                {hasFeature('query-interface') && (
+                                    <span className='px-2 py-1 text-xs rounded bg-[#ffffff0a] text-white/80'>
+                                        Query
+                                    </span>
+                                )}
+                                {hasFeature('table-browser') && (
+                                    <span className='px-2 py-1 text-xs rounded bg-[#ffffff0a] text-white/80'>
+                                        Tables
+                                    </span>
+                                )}
+                                {hasFeature('backups') && (
+                                    <span className='px-2 py-1 text-xs rounded bg-[#ffffff0a] text-white/80'>
+                                        Backups
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    }
+                />
 
                 {/* Connection Information */}
                 {connectionInfo && (
@@ -120,36 +159,107 @@ const DatabaseOverviewContainer = () => {
                         <div className='bg-[#ffffff09] border border-[#ffffff11] rounded-lg p-6'>
                             <h3 className='text-xl font-bold text-white mb-4'>Connection Information</h3>
                             <div className='space-y-4'>
-                                <div>
-                                    <label className='text-sm text-white/60'>Host</label>
-                                    <div className='flex items-center gap-2 mt-1'>
-                                        <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
-                                            {connectionInfo.host}
-                                        </code>
-                                        <ActionButton
-                                            variant='secondary'
-                                            size='sm'
-                                            onClick={() => copyToClipboard(connectionInfo.host)}
-                                        >
-                                            Copy
-                                        </ActionButton>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className='text-sm text-white/60'>Port</label>
-                                    <div className='flex items-center gap-2 mt-1'>
-                                        <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
-                                            {connectionInfo.port}
-                                        </code>
-                                        <ActionButton
-                                            variant='secondary'
-                                            size='sm'
-                                            onClick={() => copyToClipboard(connectionInfo.port.toString())}
-                                        >
-                                            Copy
-                                        </ActionButton>
-                                    </div>
-                                </div>
+                                {allocMap && allocMap.cluster ? (
+                                    <>
+                                        <div>
+                                            <label className='text-sm text-white/60'>Cluster (port)</label>
+                                            <div className='flex items-center gap-2 mt-1'>
+                                                <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
+                                                    {allocMap.cluster.ip ??
+                                                        allocMap.cluster.address ??
+                                                        allocMap.cluster.host}
+                                                    :{allocMap.cluster.port ?? allocMap.cluster.port}
+                                                </code>
+                                                <ActionButton
+                                                    variant='secondary'
+                                                    size='sm'
+                                                    onClick={() =>
+                                                        copyToClipboard(
+                                                            `${allocMap.cluster.ip ?? allocMap.cluster.address ?? allocMap.cluster.host}:${allocMap.cluster.port}`,
+                                                        )
+                                                    }
+                                                >
+                                                    Copy
+                                                </ActionButton>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className='text-sm text-white/60'>Driver (port)</label>
+                                            <div className='flex items-center gap-2 mt-1'>
+                                                <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
+                                                    {allocMap.driver.ip ??
+                                                        allocMap.driver.address ??
+                                                        allocMap.driver.host}
+                                                    :{allocMap.driver.port}
+                                                </code>
+                                                <ActionButton
+                                                    variant='secondary'
+                                                    size='sm'
+                                                    onClick={() =>
+                                                        copyToClipboard(
+                                                            `${allocMap.driver.ip ?? allocMap.driver.address ?? allocMap.driver.host}:${allocMap.driver.port}`,
+                                                        )
+                                                    }
+                                                >
+                                                    Copy
+                                                </ActionButton>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className='text-sm text-white/60'>HTTP (port)</label>
+                                            <div className='flex items-center gap-2 mt-1'>
+                                                <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
+                                                    {allocMap.http.ip ?? allocMap.http.address ?? allocMap.http.host}:
+                                                    {allocMap.http.port}
+                                                </code>
+                                                <ActionButton
+                                                    variant='secondary'
+                                                    size='sm'
+                                                    onClick={() =>
+                                                        copyToClipboard(
+                                                            `${allocMap.http.ip ?? allocMap.http.address ?? allocMap.http.host}:${allocMap.http.port}`,
+                                                        )
+                                                    }
+                                                >
+                                                    Copy
+                                                </ActionButton>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className='text-sm text-white/60'>Host</label>
+                                            <div className='flex items-center gap-2 mt-1'>
+                                                <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
+                                                    {connectionInfo.host}
+                                                </code>
+                                                <ActionButton
+                                                    variant='secondary'
+                                                    size='sm'
+                                                    onClick={() => copyToClipboard(connectionInfo.host)}
+                                                >
+                                                    Copy
+                                                </ActionButton>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className='text-sm text-white/60'>Port</label>
+                                            <div className='flex items-center gap-2 mt-1'>
+                                                <code className='flex-1 bg-[#00000040] px-3 py-2 rounded text-white'>
+                                                    {connectionInfo.port}
+                                                </code>
+                                                <ActionButton
+                                                    variant='secondary'
+                                                    size='sm'
+                                                    onClick={() => copyToClipboard(connectionInfo.port.toString())}
+                                                >
+                                                    Copy
+                                                </ActionButton>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                                 <div>
                                     <label className='text-sm text-white/60'>Database</label>
                                     <div className='flex items-center gap-2 mt-1'>

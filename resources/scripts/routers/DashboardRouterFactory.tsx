@@ -75,7 +75,8 @@ const DashboardRouterFactory = () => {
     const entry = getDashboardEntry(dashboardType);
 
     if (entry && entry.router) {
-        const RouterComponent = entry.router;
+        // Cast to `any` to avoid JSX typing issues when rendering lazy-loaded routers
+        const RouterComponent: any = entry.router;
         return (
             <Suspense fallback={<Spinner />}>
                 <RouterComponent />

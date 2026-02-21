@@ -1,4 +1,4 @@
-import React, { lazy } from 'react';
+import { type LazyExoticComponent, type ReactElement, lazy } from 'react';
 
 /**
  * Dashboard registry
@@ -23,13 +23,13 @@ export interface DashboardRegistryEntry {
      * Should default-export a Router component that follows the existing
      * router contract (uses ServerContext, renders MainSidebar/MainWrapper, etc).
      */
-    router: React.LazyExoticComponent<any>;
+    router: LazyExoticComponent<any>;
 
     /**
-     * Optional JSX icon for admin lists. Kept optional so we don't force
-     * an icon dependency here.
+     * Optional icon element for admin lists. Kept optional so we don't force
+     * a JSX dependency or specific type in this registry file.
      */
-    icon?: JSX.Element;
+    icon?: ReactElement | null;
 }
 
 /**
@@ -44,7 +44,7 @@ export const dashboardRegistry: Record<string, DashboardRegistryEntry> = {
         router: lazy(() => import('@/routers/ServerRouter')),
     },
 
-    'database': {
+    database: {
         label: 'Database',
         router: lazy(() => import('@/routers/DatabaseRouter')),
     },
@@ -52,7 +52,7 @@ export const dashboardRegistry: Record<string, DashboardRegistryEntry> = {
     // Placeholder for container-style dashboards (optional).
     // Keep this entry even if the router file is not implemented yet;
     // DashboardRouterFactory should guard against missing entries at runtime.
-    'docker': {
+    docker: {
         label: 'Container',
         router: lazy(() => import('@/routers/DockerRouter')),
     },
