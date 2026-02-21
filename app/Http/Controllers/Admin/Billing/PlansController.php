@@ -17,8 +17,7 @@ class PlansController extends Controller
     public function __construct(
         private ViewFactory $view,
         private SettingsRepositoryInterface $settings
-    ) {
-    }
+    ) {}
 
     /**
      * Display the plans management page.
@@ -34,13 +33,13 @@ class PlansController extends Controller
     public function getPlans(Request $request): JsonResponse
     {
         $type = $request->input('type', 'game-server');
-        
+
         $plans = Plan::query()
             ->where('type', $type)
             ->orderBy('sort_order')
             ->orderBy('price')
             ->get();
-        
+
         return response()->json([
             'object' => 'list',
             'data' => $plans->map(function (Plan $plan) {
@@ -196,7 +195,7 @@ class PlansController extends Controller
                 'is_most_popular',
                 'sort_order',
             ]));
-            
+
             $plan->save();
 
             Log::info('Admin updated plan', [
@@ -280,18 +279,16 @@ class PlansController extends Controller
     public function getCategories(): JsonResponse
     {
         $categories = $this->settings->get('settings::billing:plan_categories', json_encode([
-            ['name' => 'Game', 'slug' => 'game-server'],
-            ,
+            ['name' => 'Game', 'slug' => 'game-server']
         ]));
-        
+
         $decoded = json_decode($categories, true);
         if (!is_array($decoded)) {
             $decoded = [
-                ['name' => 'Game', 'slug' => 'game-server'],
-                ,
+                ['name' => 'Game', 'slug' => 'game-server']
             ];
         }
-        
+
         return response()->json([
             'object' => 'list',
             'data' => $decoded,
@@ -345,12 +342,12 @@ class PlansController extends Controller
     public function getBillingDiscounts(): JsonResponse
     {
         $discounts = $this->settings->get('settings::billing:period_discounts', json_encode([]));
-        
+
         $decoded = json_decode($discounts, true);
         if (!is_array($decoded)) {
             $decoded = [];
         }
-        
+
         return response()->json([
             'object' => 'discounts',
             'data' => $decoded,

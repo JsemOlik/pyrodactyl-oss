@@ -1,64 +1,5 @@
 <form id="billingSettingsForm">
   {{ csrf_field() }}
-  
-  <!-- Stripe Configuration -->
-  <div class="row">
-    <div class="col-xs-12">
-      <div class="box">
-        <div class="box-header with-border">
-          <h3 class="box-title">Stripe Configuration</h3>
-        </div>
-        <div class="box-body">
-          <div class="row">
-            <div class="form-group col-md-6">
-              <label class="control-label">Stripe Publishable Key <span class="field-optional"></span></label>
-              <div>
-                <input type="text" class="form-control" name="cashier:key"
-                  value="{{ old('cashier:key', config('cashier.key')) }}" placeholder="pk_test_..." />
-                <p class="text-muted small">Your Stripe publishable key. This is safe to expose to the client-side.</p>
-              </div>
-            </div>
-            <div class="form-group col-md-6">
-              <label class="control-label">Stripe Secret Key <span class="field-optional"></span></label>
-              <div>
-                <input type="text" class="form-control" name="cashier:secret"
-                  value="{{ old('cashier:secret', config('cashier.secret')) }}" placeholder="sk_test_..." />
-                <p class="text-muted small">Your Stripe secret key. This will be encrypted and stored securely. Leave blank to keep existing value.</p>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="form-group col-md-6">
-              <label class="control-label">Webhook Secret <span class="field-optional"></span></label>
-              <div>
-                <input type="text" class="form-control" name="cashier:webhook:secret"
-                  value="{{ old('cashier:webhook:secret', config('cashier.webhook.secret')) }}" placeholder="whsec_..." />
-                <p class="text-muted small">The webhook signing secret from your Stripe dashboard. Leave blank to keep existing value.</p>
-              </div>
-            </div>
-            <div class="form-group col-md-3">
-              <label class="control-label">Currency <span class="field-optional"></span></label>
-              <div>
-                <input type="text" class="form-control" name="cashier:currency"
-                  value="{{ old('cashier:currency', config('cashier.currency', 'usd')) }}" placeholder="usd" maxlength="3" />
-                <p class="text-muted small">Three-letter ISO currency code (e.g., usd, eur, gbp).</p>
-              </div>
-            </div>
-            <div class="form-group col-md-3">
-              <label class="control-label">Currency Locale <span class="field-optional"></span></label>
-              <div>
-                <input type="text" class="form-control" name="cashier:currency_locale"
-                  value="{{ old('cashier:currency_locale', config('cashier.currency_locale', 'en')) }}" placeholder="en" maxlength="10" />
-                <p class="text-muted small">Locale for currency formatting (e.g., en, en_US).</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
 
   <!-- Subscription Settings -->
   <div class="row">
@@ -94,8 +35,8 @@
             <div class="form-group col-md-12">
               <div class="checkbox checkbox-primary">
                 @php
-                  $autoRenewal = old('billing:auto_renewal', config('billing.auto_renewal', true));
-                  $autoRenewalValue = is_bool($autoRenewal) ? $autoRenewal : ($autoRenewal === 'true' || $autoRenewal === true || $autoRenewal === '1');
+                $autoRenewal = old('billing:auto_renewal', config('billing.auto_renewal', true));
+                $autoRenewalValue = is_bool($autoRenewal) ? $autoRenewal : ($autoRenewal === 'true' || $autoRenewal === true || $autoRenewal === '1');
                 @endphp
                 <input id="billingAutoRenewal" type="checkbox" name="billing:auto_renewal" value="1"
                   {{ $autoRenewalValue ? 'checked' : '' }} />
@@ -108,8 +49,8 @@
             <div class="form-group col-md-12">
               <div class="checkbox checkbox-primary">
                 @php
-                  $proration = old('billing:enable_proration', config('billing.enable_proration', true));
-                  $prorationValue = is_bool($proration) ? $proration : ($proration === 'true' || $proration === true || $proration === '1');
+                $proration = old('billing:enable_proration', config('billing.enable_proration', true));
+                $prorationValue = is_bool($proration) ? $proration : ($proration === 'true' || $proration === true || $proration === '1');
                 @endphp
                 <input id="billingProration" type="checkbox" name="billing:enable_proration" value="1"
                   {{ $prorationValue ? 'checked' : '' }} />
@@ -163,8 +104,8 @@
             <div class="form-group col-md-12">
               <div class="checkbox checkbox-primary">
                 @php
-                  $lateFees = old('billing:enable_late_fees', config('billing.enable_late_fees', false));
-                  $lateFeesValue = is_bool($lateFees) ? $lateFees : ($lateFees === 'true' || $lateFees === true || $lateFees === '1');
+                $lateFees = old('billing:enable_late_fees', config('billing.enable_late_fees', false));
+                $lateFeesValue = is_bool($lateFees) ? $lateFees : ($lateFees === 'true' || $lateFees === true || $lateFees === '1');
                 @endphp
                 <input id="billingLateFees" type="checkbox" name="billing:enable_late_fees" value="1"
                   {{ $lateFeesValue ? 'checked' : '' }} />
@@ -188,6 +129,63 @@
                 <input type="number" min="1" class="form-control" name="billing:late_fee_days"
                   value="{{ old('billing:late_fee_days', config('billing.late_fee_days', 7)) }}" placeholder="7" />
                 <p class="text-muted small">Number of days after due date before late fee is applied.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stripe Configuration -->
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="box">
+        <div class="box-header with-border">
+          <h3 class="box-title">Stripe Configuration</h3>
+        </div>
+        <div class="box-body">
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label class="control-label">Stripe Publishable Key <span class="field-optional"></span></label>
+              <div>
+                <input type="text" class="form-control" name="cashier:key"
+                  value="{{ old('cashier:key', config('cashier.key')) }}" placeholder="pk_test_..." />
+                <p class="text-muted small">Your Stripe publishable key. This is safe to expose to the client-side.</p>
+              </div>
+            </div>
+            <div class="form-group col-md-6">
+              <label class="control-label">Stripe Secret Key <span class="field-optional"></span></label>
+              <div>
+                <input type="text" class="form-control" name="cashier:secret"
+                  value="{{ old('cashier:secret', config('cashier.secret')) }}" placeholder="sk_test_..." />
+                <p class="text-muted small">Your Stripe secret key. This will be encrypted and stored securely. Leave blank to keep existing value.</p>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label class="control-label">Webhook Secret <span class="field-optional"></span></label>
+              <div>
+                <input type="text" class="form-control" name="cashier:webhook:secret"
+                  value="{{ old('cashier:webhook:secret', config('cashier.webhook.secret')) }}" placeholder="whsec_..." />
+                <p class="text-muted small">The webhook signing secret from your Stripe dashboard. Leave blank to keep existing value.</p>
+              </div>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="control-label">Currency <span class="field-optional"></span></label>
+              <div>
+                <input type="text" class="form-control" name="cashier:currency"
+                  value="{{ old('cashier:currency', config('cashier.currency', 'usd')) }}" placeholder="usd" maxlength="3" />
+                <p class="text-muted small">Three-letter ISO currency code (e.g., usd, eur, gbp).</p>
+              </div>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="control-label">Currency Locale <span class="field-optional"></span></label>
+              <div>
+                <input type="text" class="form-control" name="cashier:currency_locale"
+                  value="{{ old('cashier:currency_locale', config('cashier.currency_locale', 'en')) }}" placeholder="en" maxlength="10" />
+                <p class="text-muted small">Locale for currency formatting (e.g., en, en_US).</p>
               </div>
             </div>
           </div>
