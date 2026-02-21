@@ -1,296 +1,220 @@
-# Pyrodactyl — Dashboard Modularization & Docker/Container Dashboard Plan
+# Pyrodactyl — Databases Dashboard (egg-driven) Implementation Plan
 
 Purpose
 -------
-This document captures the design and implementation plan we discussed for making dashboards modular and adding a reusable Docker/Container dashboard type that can be used for databases, WordPress, generic containers, and similar services.
+This document replaces the previous generic "docker" plan and describes a focused, phased implementation plan for a Databases dashboard. The dashboard will be egg-driven: it should surface and manage database servers created from the eggs in `database/Seeders/eggs/databases`. The goal is a focused UI that consolidates database operations (list databases, query, credentials, backups, logs, settings) and reuses existing components where possible.
 
-Goals
-- Make dashboard routing pluggable so new dashboard types are added with minimal edits.
-- Provide a small, consistent contract each dashboard implements (router + pages).
-- Reuse existing components where possible (console, stat blocks, backups, DB list, etc).
-- Keep backend changes minimal: accept the new dashboard type and show it in admin UIs.
-
-What I inspected
-- Frontend:
-  - `resources/scripts/routers/DashboardRouterFactory.tsx`
-  - `resources/scripts/routers/ServerRouter.tsx` (game server router)
-  - `resources/scripts/routers/DatabaseRouter.tsx` (database router example)
-  - `resources/scripts/components/dashboard/DashboardContainer.tsx` (account-level dashboard listing)
-  - server components under `resources/scripts/components/server/*` (console, database-dashboard)
-- Backend:
-  - Blade admin UI: `resources/views/admin/nests/*.blade.php`, `resources/views/admin/eggs/*.blade.php`
-  - Request validators: `app/Http/Requests/Admin/Nest/StoreNestFormRequest.php`, `app/Http/Requests/Admin/Egg/EggFormRequest.php`
-  - Models: `app/Models/Egg.php`, `app/Models/Nest.php`, `app/Models/Server.php` (dashboard type accessors already implemented)
-
-High-level design
------------------
-1. Dashboard registry (frontend)
-   - A single registry module mapping known dashboard_type keys to lazy-loaded router components and optional metadata (label, icon).
-   - This registry allows static imports that Vite can analyze, but centralizes registration so adding types is simply: add registry entry + router files.
-
-2. Dashboard router modules
-   - Each dashboard type gets its own router module (same pattern as `DatabaseRouter` and `ServerRouter`).
-   - Put routers under `resources/scripts/routers/` (top-level) or `resources/scripts/routers/dashboards/`.
-   - A router does:
-     - Use `ServerContext` to fetch the server on mount.
-     - Render `MainSidebar` + `MainWrapper` with NavLinks and `Routes` mapping to page components.
-     - Use `PermissionRoute` and `Can` components as needed.
-   - Page components live under `resources/scripts/components/server/<type>-dashboard/`.
-
-3. Dashboard contract (minimal)
-   - Export default route component (Router).
-   - Pages accept server data from `ServerContext`.
-   - Optional metadata export: { key, label, icon } helpful for admin UI or dashboard selector later.
-
-4. Reuse shared components
-   - Reuse existing `ServerConsoleContainer.tsx`, `StatBlock.tsx`, backup components, and database components where applicable.
-   - Create small shared components if multiple dashboard types need similar UI (CredentialsPanel, VolumeList, PortBindings).
-
-Concrete changes (files to add / update)
-----------------------------------------
-Frontend
-- Add registry
-  - `resources/scripts/routers/dashboardRegistry.ts`
-    - Exports typed map like:
-      - `'game-server'` -> `lazy(() => import('@/routers/ServerRouter'))`
-      - `'database'` -> `lazy(() => import('@/routers/DatabaseRouter'))`
-      - `'docker'` -> `lazy(() => import('@/routers/DockerRouter'))` (new)
-- Update factory
-  - `resources/scripts/routers/DashboardRouterFactory.tsx`
-    - Replace the switch with registry lookup. Still fallback to `ServerRouter` for unknown types.
-- New dashboard router(s)
-  - `resources/scripts/routers/DockerRouter.tsx` (copy/adapt `DatabaseRouter.tsx` style)
-  - `resources/scripts/routers/dockerRoutes.ts` (optional: route definitions array)
-- New components
-  - `resources/scripts/components/server/docker-dashboard/OverviewContainer.tsx`
-  - `resources/scripts/components/server/docker-dashboard/ConsoleContainer.tsx` (may reuse `ServerConsoleContainer.tsx`)
-  - `resources/scripts/components/server/docker-dashboard/LogsContainer.tsx`
-  - `resources/scripts/components/server/docker-dashboard/SettingsContainer.tsx` (envs, ports, volumes)
-  - Optional specific folders for specialized stacks, e.g. `docker-dashboard/wordpress/`
-
-Backend (minimal)
-- Add `docker` to allowlist for dashboard_type in validators:
-  - `app/Http/Requests/Admin/Nest/StoreNestFormRequest.php` — update `in:` list
-  - `app/Http/Requests/Admin/Egg/EggFormRequest.php` — update `in:` list
-- Add option to admin blades:
-  - `resources/views/admin/nests/new.blade.php`
-  - `resources/views/admin/nests/view.blade.php`
-  - `resources/views/admin/eggs/new.blade.php`
-  - `resources/views/admin/eggs/view.blade.php`
-  - Add `<option value="docker">Docker (Container)</option>` alongside existing options.
-- Update badge/display mapping:
-  - `resources/views/admin/nests/index.blade.php` — include `docker` in badge mapping.
-
-Implementation notes & constraints
----------------------------------
-- Vite static import constraint: avoid fully dynamic imports keyed by arbitrary strings. Use a static registry map where each possible router import is explicit so the bundler can include chunks.
-- DashboardRouterFactory should remain responsible for retrieving server data via `ServerContext` (like it already does).
-- Keep server-scoped API calls and permissions inside the dashboard routers (use `PermissionRoute`).
-- Reuse server components and share helper utilities under `components/server/*` or `components/dashboard/common`.
-
-Phased implementation plan (recommended)
----------------------------------------
-Phase 1 — Backend small changes
-  - Update validators to accept `docker`.
-  - Add blade select options in admin blades.
-  - Confirm admins can save `dashboard_type = docker` for nests/eggs.
-
-Phase 2 — Registry + Factory refactor
-  - Add `dashboardRegistry.ts`.
-  - Update `DashboardRouterFactory.tsx` to use registry.
-  - Ensure existing behavior and fallbacks remain.
-
-Phase 3 — DockerRouter skeleton
-  - Create `DockerRouter.tsx` (copy `DatabaseRouter.tsx` and adapt).
-  - Add `dockerRoutes.ts` that defines route list and component import placeholders.
-  - Add route placeholders that render basic stubs (Overview, Console, Logs, Settings).
-
-Phase 4 — Pages & components
-  - Implement `OverviewContainer`, `LogsContainer`, `SettingsContainer` etc.
-  - Reuse `ServerConsoleContainer.tsx` for console if appropriate.
-  - Wire APIs for container-specific actions (ports, env, volumes) — reuse or create new endpoints as required.
-
-Phase 5 — Testing & polish
-  - Manual testing with a Nest/Egg configured to `dashboard_type = docker`.
-  - Add unit tests for `DashboardRouterFactory` and router components if you have test infra.
-  - Add docs: README/CONTRIBUTING notes for adding new dashboard types.
-
-Testing checklist
-- DashboardRouterFactory renders:
-  - `game-server` for that type
-  - `database` for that type
-  - `docker` for that type
-  - fallback behavior for unknown types
-- Admin UI accepts `docker` for nests/eggs and persists to DB.
-- `DockerRouter` pages load server info via `ServerContext`.
-- Shared components render correctly within the new dashboard.
-
-Risks & mitigations
-- Bundler/runtime import issues:
-  - Use explicit registry imports, not runtime string-based dynamic imports.
-- Permission mismatch between dashboard types:
-  - Use `PermissionRoute` and `Can` guards in routers like `DatabaseRouter` does.
-- UI duplication:
-  - Resist copy-pasting entire components; favor small shared components and composition.
-
-Next steps (pick one)
-- I can implement Phase 2 (dashboard registry + DashboardRouterFactory refactor) first — small, low-risk.
-- Or I can implement Phase 3 (DockerRouter skeleton) with stub pages that you can iterate on.
-- Or I can apply the backend blade & validator updates now.
-
-Tell me which phase you want me to start and I will:
-- create the files,
-- run diagnostics,
-- open a PR-style patch here (or apply changes directly if you prefer).
-
-Notes
+Scope
 -----
-I did not change any code in this step — this file is the plan. If you want, I can proceed to implement any of the phases above.
+- Build a dedicated Databases dashboard (server-scoped) that appears for servers whose egg/nest `dashboard_type` resolves to `database`.
+- Reuse and extend existing database components already in the repo (`resources/scripts/components/server/database-dashboard/*`).
+- Ensure admin/egg seeding and egg metadata (from `database/Seeders/eggs/databases`) drive the behavior/UI where appropriate (e.g., supported features).
+- Keep the change modular and follow existing router/component patterns (`DatabaseRouter.tsx` style).
 
----
+High-level UX & functional requirements
+--------------------------------------
+- Dashboard shows when a server's effective `dashboard_type` is `database`.
+- Sidebar entries: Overview, Databases (list), Tables / Browser, Query Interface, Logs, Settings, Backups (if supported).
+- Overview shows server metadata (image, version, ports, host info), quick credentials, and health/stats.
+- Databases page lists created databases & credentials (with rotate password action).
+- Query interface allows running SELECT queries (read-only by default), with pagination and syntax highlighting.
+- Logs page shows daemon/log tails where available.
+- Settings provide env vars, port mappings and user management actions (rotate credentials).
+- Backup integration: list backups, restore, download (reuse backups UI).
+- Permissions: Actions gated by same `Can`/`PermissionRoute` patterns used elsewhere.
 
-Phases — Detailed breakdown, checklists and acceptance criteria
---------------------------------------------------------------
+Assumptions & repo cues
+-----------------------
+- Eggs for database types live in `database/Seeders/eggs/databases` (these eggs contain metadata & features we can use).
+- The server model already exposes an effective `dashboard_type` via the accessor (see `app/Models/Server.php`).
+- There is already a `DatabaseRouter.tsx` in `resources/scripts/routers/` and `resources/scripts/components/server/database-dashboard/` components — we will iterate on and extend these.
+- Admin blades and request validators already allow `database` as a `dashboard_type`.
 
-Below are the phases split into more detailed tasks with explicit checklists, commands to run for local validation, acceptance criteria, estimated effort, and rollback notes. Use this as a step-by-step playbook while you implement.
+Phases (egg-driven)
+-------------------
 
-Phase 1 — Backend small changes (ETA: 15–30 minutes)
+Phase 0 — Repo & eggs review (ETA: 30–60 min)
+  Goal
+  - Confirm which database eggs exist and what metadata/features they expose (supported features, scripts, ports, env names).
   Tasks
-  - Edit `app/Http/Requests/Admin/Nest/StoreNestFormRequest.php` and ensure `dashboard_type` validation includes `'docker'`.
-  - Edit `app/Http/Requests/Admin/Egg/EggFormRequest.php` and ensure `dashboard_type` validation includes `'docker'`.
-  - Edit blade files to show option:
-    - `resources/views/admin/nests/new.blade.php`
-    - `resources/views/admin/nests/view.blade.php`
-    - `resources/views/admin/eggs/new.blade.php`
-    - `resources/views/admin/eggs/view.blade.php`
-    - Add `<option value="docker">Docker (Container)</option>`
-  - Update badge mapping:
-    - `resources/views/admin/nests/index.blade.php` — include `docker` => display name and class.
-  - Run php linter/validation (optional) and ensure app compiles.
-
-  Commands / local checks
-  - php artisan config:clear
-  - php artisan view:clear
-  - Open admin UI and create/update a Nest/Egg with `docker` selected.
-  - Use tinker to check saved value:
-    - `php artisan tinker`
-    - `\App\Models\Nest::find(<id>)->dashboard_type` (should be `docker`)
+  - Inspect `database/Seeders/eggs/databases` to list eggs and note fields:
+    - `name`, `uuid`, `author`
+    - `features` (e.g., `databases`, `backups`, `remote-access`)
+    - `docker_images` / `startup` hints
+  - Map egg-level features to dashboard capabilities (e.g., if `features` contains `databases`, show Databases page).
+  Deliverable
+  - A short mapping file (or table in this doc) that lists each egg + the UI features it should enable.
   Acceptance criteria
-  - Admin form saves `dashboard_type = docker` without validation errors.
-  - Blade shows option in the dropdown.
-  Rollback
-  - Revert the three edited files if something breaks.
+  - You can answer: "This egg supports X/Y/Z features" for each seeded database egg.
 
-Phase 2 — Registry + DashboardRouterFactory refactor (ETA: 30–60 minutes)
+Phase 1 — Backend: egg metadata & API readiness (ETA: 1–2 hours)
+  Goal
+  - Make sure server API responses contain the egg/nest metadata required by the frontend to render database-specific UI.
   Tasks
-  - Create `resources/scripts/routers/dashboardRegistry.ts` with a static map:
-    - `game-server` -> `lazy(() => import('@/routers/ServerRouter'))`
-    - `database` -> `lazy(() => import('@/routers/DatabaseRouter'))`
-    - `docker` -> `lazy(() => import('@/routers/DockerRouter'))` (router file may not exist yet; keep as placeholder)
-  - Update `resources/scripts/routers/DashboardRouterFactory.tsx`:
-    - Import the registry and use `registry[dashboardType]` to render the router inside `<Suspense>`.
-    - Keep fallback to `ServerRouter` if dashboardType not in registry.
-  - Add small metadata types to the registry for future UI usage (label/icon).
-  - Ensure TypeScript types compile.
-
+  - Ensure the server transformer (`ServerTransformer` or `app/Http/Controllers/Api/Client/Servers/Wings/ServerController::index`) returns:
+    - `egg` and nested `egg.features` or `egg.attributes` required by client.
+    - `server` metadata: port mappings, allocations, env vars (if present).
+  - If not already present, extend the API to expose:
+    - List of DBs on the server (`GET /api/client/servers/:uuid/databases`) — may already exist under `resources/scripts/components/server/databases` features.
+    - Query endpoint for simple SQL execution (`POST /api/client/servers/:uuid/databases/query`) with permission checks and rate limiting.
+    - Credential rotation endpoint (`POST /api/client/servers/:uuid/databases/:name/rotate`).
+  - Ensure API responses are consistent across eggs (return structure should be generic).
   Commands / local checks
-  - npm/yarn dev build: `pnpm run dev` or `npm run dev` (depending on your project)
-  - Inspect compiled client to ensure no missing import errors for `DockerRouter` (if declared as lazy but missing, ensure TypeScript still builds; if it errors at runtime, guard registry entries until file exists).
+  - Use `php artisan tinker` to inspect an egg: `\App\Models\Egg::where('name','like','%mysql%')->first()`.
+  - Curl or Postman the server API endpoints above to verify responses.
   Acceptance criteria
-  - DashboardRouterFactory renders using the registry without behavioral changes.
-  - No runtime import errors for registry entries that exist.
-  Rollback
-  - Restore DashboardRouterFactory.tsx to the previous switch statement.
+  - Required data available to client via existing or new endpoints; errors returned in panel-friendly format.
 
-Phase 3 — DockerRouter skeleton (ETA: 60–120 minutes)
+Phase 2 — Router & routing wiring (ETA: 30–60 minutes)
+  Goal
+  - Ensure Dashboard routing displays database router when `dashboard_type` is `database` and wires pages.
   Tasks
-  - Create `resources/scripts/routers/DockerRouter.tsx`:
-    - Copy `DatabaseRouter.tsx` as a starting point.
-    - Adapt nav items to: Overview, Console, Logs, Settings, (optional) Images, (optional) Backups.
-    - Use `Server
-Context` to fetch server, `PermissionRoute`, `MainSidebar`, `MainWrapper`, and `<Routes>` to mount page components.
-  - Create `resources/scripts/routers/dockerRoutes.ts` with route definitions:
-    - Example:
-      - `/server/:id` -> `OverviewContainer`
-      - `/server/:id/console` -> `ConsoleContainer`
-      - `/server/:id/logs` -> `LogsContainer`
-      - `/server/:id/settings` -> `SettingsContainer`
-  - Add placeholder components under `resources/scripts/components/server/docker-dashboard/` that render simple headings.
-
+  - Confirm `resources/scripts/routers/DashboardRouterFactory.tsx` routes `database` to `DatabaseRouter` (already present).
+  - If using a registry pattern, add a `database` entry to `dashboardRegistry.ts` (if implemented).
+  - Ensure `DatabaseRouter.tsx` mounts routes for:
+    - `/server/:id` (Overview)
+    - `/server/:id/databases` (Databases list)
+    - `/server/:id/tables` (Table Browser)
+    - `/server/:id/query` (Query Interface)
+    - `/server/:id/logs` (Logs)
+    - `/server/:id/settings` (Settings)
+  - Use `PermissionRoute` and `Can` guards for actions.
   Commands / local checks
-  - Rebuild frontend: `pnpm run build` or run dev server.
-  - Visit `/server/<uuid>` for a server configured with `dashboard_type = docker`. Confirm the skeleton loads and nav items highlight.
+  - Build and visit `/server/<uuid>` for servers whose egg is in `database/Seeders/eggs/databases`.
   Acceptance criteria
-  - `DockerRouter` loads without errors and renders stub pages.
-  - Navigation links are functional and switch routes inside the router.
-  Rollback
-  - Remove DockerRouter.tsx and dockerRoutes.ts and revert DashboardRegistry if necessary.
+  - The router renders and sub-routes are reachable; 404s only for missing pages.
 
-Phase 4 — Pages & components (ETA: variable; small MVP 2–6 hours)
+Phase 3 — Pages & components (ETA: 4–8 hours; incremental rollout recommended)
+  Goal
+  - Implement and polish pages specific to database management, reusing existing components where possible.
+  Tasks & notes
+  - Overview (`OverviewContainer.tsx`)
+    - Show server metadata (name, image, port, version), quick actions (Open console, open backups), and recent activity/statistics (re-use `StatBlock`/`StatGraphs`).
+    - Show egg-provided hints (e.g., default DB user names, connection strings).
+  - Databases list (`DatabaseListContainer.tsx`)
+    - Show list of databases created on the server with actions:
+      - View credentials (masked)
+      - Rotate password (with confirmation)
+      - Delete DB (with safety prompts)
+    - Reuse existing components in `resources/scripts/components/server/databases/*`.
+  - Table browser (`TableBrowserContainer.tsx`)
+    - Browse tables for a selected database, show column types, row counts.
+    - Use pagination and lightweight preview (not full export).
+  - Query interface (`QueryInterfaceContainer.tsx`)
+    - Text editor with syntax highlighting (reuse existing monaco/codemirror integrations if present).
+    - Allow read-only queries by default; require explicit permission for writes (or show clear warnings).
+    - Show results table + count + timing.
+  - Logs (`DatabaseLogsContainer.tsx`)
+    - Tail server logs relevant to DB engine if available.
+    - Provide download/clear options if permitted.
+  - Settings (`DatabaseSettingsContainer.tsx`)
+    - Manage environment variables, port mapping, backups settings.
+    - Show connection string templates and quick copy buttons.
+  - Backups integration
+    - Reuse existing backup UI.
+    - Ensure database backups are discoverable and restorable.
+  UI/UX considerations
+  - Use `Can` for feature gating (rotate credentials, delete DBs).
+  - Provide clear warnings for destructive operations.
+  - Respect egg `features` to hide/show actions (e.g., if `backups` feature missing, hide Backups).
+  Commands / local checks
+  - Start frontend dev server and manually exercise all pages.
+  Acceptance criteria
+  - Users can list, query, view tables, and manage DB credentials as allowed by permissions.
+
+Phase 4 — Egg-driven UX: dynamic behavior based on egg features (ETA: 2–4 hours)
+  Goal
+  - Use egg metadata to adapt the UI automatically per egg type (e.g., MySQL vs Postgres vs Redis).
   Tasks
-  - Implement `OverviewContainer.tsx`:
-    - Display server metadata: name, image, ports, volumes, env vars.
-    - Show `StatBlock` usage when relevant.
-  - Implement `ConsoleContainer.tsx`:
-    - Prefer reusing `ServerConsoleContainer.tsx`. If server console endpoints differ, adapt as needed.
-  - Implement `LogsContainer.tsx`:
-    - Reuse existing logs viewer components (if available) or create a thin wrapper for tailing logs.
-  - Implement `SettingsContainer.tsx`:
-    - Allow editing environment variables, port mappings, volumes where applicable.
-    - Add cautionary UI and permission checks.
-  - Wire to backend APIs:
-    - Reuse existing server endpoints (if available) or create new API endpoints in the backend for container-specific features.
-  - Add integration to backups if supported (reuse backup components).
-  - Add tests for pages if you maintain frontend tests.
-
-  Commands / local checks
-  - Start backend + frontend dev servers.
-  - Create/boot a container-backed server and exercise each page: change env vars, open console, view logs, adjust ports.
+  - Parse egg `features` or other metadata loaded into `server.egg` and:
+    - Show connection string templates using the egg's `docker_image` / `startup` hints.
+    - If egg lists supported DB engines/versions, expose the version on the Overview page.
+    - If egg provides custom scripts (install, migrations), show appropriate UI buttons (e.g., run migration, rebuild).
+  - Provide an extension point: per-egg UI fragments (e.g., `components/server/database-dashboard/eggs/<egg-slug>/ExtraSettings.tsx`) that are loaded if present.
   Acceptance criteria
-  - Core features (view metadata, console, logs, basic settings) are functional.
-  - Permissions respected and errors surfaced properly.
-  Rollback
-  - Keep changes behind feature flags or ensure you can revert commits.
+  - Dashboard adapts to egg-level features without code rewiring; badges/hints reflect egg-level metadata.
 
-Phase 5 — Testing, QA & polish (ETA: 1–3 hours)
+Phase 5 — Security, permissions, and rate-limiting (ETA: 2–4 hours)
+  Goal
+  - Make sure database-sensitive operations are gated and protected.
   Tasks
-  - Manual QA cross-browser and mobile.
-  - Add unit / integration tests for factory and router-permissions if possible.
-  - Add documentation:
-    - `resources/scripts/routers/README.md` documenting how to add a new dashboard type (registry + router contract).
-  - Update admin copy, icons, and UX polish (tooltips, labels).
-  - Optional: add admin preview or icon in the nests/eggs list.
-
-  Commands / local checks
-  - Run frontend tests (`pnpm test` / `npm test`) if available.
-  - Run any backend tests.
+  - Backend:
+    - Ensure query endpoint enforces maximum execution time and permissions; optionally disable dangerous statements by default.
+    - Add rate-limiting/CSRF protections for credential rotations and write queries.
+  - Frontend:
+    - Show clear UI warnings and require confirmations for destructive actions.
+    - Mask credentials until revealed (with a reveal and copy control).
   Acceptance criteria
-  - No regressions on existing dashboards.
-  - Documentation present for future contributors.
+  - No privileged action can be performed without proper permission; logs/auditing recorded where available.
 
-Acceptance criteria (global)
+Phase 6 — Tests, QA, and documentation (ETA: 2–6 hours)
+  Goal
+  - Test flows, add docs, and ensure maintainability.
+  Tasks
+  - Manual QA:
+    - Create a server using an egg from `database/Seeders/eggs/databases`.
+    - Walk through Overview → Databases → Table Browser → Query → Backups → Settings.
+  - Automated tests:
+    - Add unit tests for `DatabaseRouter` rendering and permissions (if you have test infra).
+    - Add API integration tests for the database endpoints (query, rotate).
+  - Docs:
+    - Add `resources/scripts/routers/README.md` with the dashboard contract (how to add pages, how egg metadata is used).
+    - Add a short `docs/databases-dashboard.md` describing how egg authors can expose features the dashboard will surface.
+  Acceptance criteria
+  - Tests pass; docs present; behavior consistent across eggs.
+
+Testing checklist (concrete)
 ----------------------------
-- New `docker` dashboard type is selectable in admin UIs and stored correctly.
-- Frontend routing uses a registry and loads dashboard routers by type.
-- DockerRouter loads and provides the core set of pages (Overview, Console, Logs, Settings) with shared component reuse.
-- Permissions and error handling align with existing dashboard patterns.
+- API level:
+  - `GET /api/client/servers/:uuid` returns `egg.features` and server allocations.
+  - `GET /api/client/servers/:uuid/databases` returns list of DBs.
+  - `POST /api/client/servers/:uuid/databases/query` returns results for simple SELECT.
+  - `POST /api/client/servers/:uuid/databases/:name/rotate` rotates password and invalidates old creds.
+- Frontend:
+  - Dashboard shows for `dashboard_type = database`.
+  - Overview shows connection string and quick copy.
+  - Databases list shows DBs and allows rotate/delete where permitted.
+  - Query interface runs queries and shows results; destructive queries are blocked or warned.
+  - Backups UI integrates and shows DB-specific backups.
+- Security:
+  - Only authorized users can run queries or rotate credentials.
+  - Actions are rate-limited and audited/logged.
 
-Developer hints & tips
-----------------------
-- Keep the registry file small and explicit — explicit lazy imports are friendlier to bundlers than dynamic import-by-string patterns.
-- When copying `DatabaseRouter.tsx`, remove database-specific assumptions (DB icons, DB-only nav item checks) and add container-specific nav entries.
-- If you expect many dashboard types in future, consider exporting types & registry helper functions and adding a small README in the routers folder describing the contract.
-
-Rollback plan
--------------
-- Use git branches for each phase. If a released change causes issues, revert the merge commit for that branch.
-- For backend blade/validation changes, revert the PHP files edited.
-- For frontend registry or router changes, revert the JS/TS files and re-run the build.
-
-Questions / decisions for you
+Acceptance criteria (summary)
 -----------------------------
-1. Dashboard key name: should we use `docker` or `container` as the canonical `dashboard_type` key? (Current suggestion: `docker`.)
-2. Do you want WordPress, MySQL, and other stacks mapped to the same `docker` dashboard and then have stack-specific sub-pages (e.g., `wordpress/*`) or do you prefer distinct dashboard types like `wordpress`?
-3. Would you like me to implement Phase 2 now (registry + factory) or jump to Phase 3 (DockerRouter skeleton)? I recommend Phase 2 first.
+- Servers created from eggs in `database/Seeders/eggs/databases` display a rich Databases dashboard.
+- The dashboard supports listing databases, browsing tables, running queries (safely), managing credentials, viewing logs and backups.
+- The UI dynamically adapts based on egg-provided features.
+- Existing server dashboards (game-server, generic database routers) remain unaffected.
 
-If you confirm, I will begin implementing the selected phase and produce a PR-style patch with the exact file diffs for review.
+Developer notes and recommended file map
+---------------------------------------
+- Routers
+  - `resources/scripts/routers/DatabaseRouter.tsx` — ensure routes exist and mount pages
+  - (optional) `resources/scripts/routers/databaseRoutes.ts` — centralize route metadata
+- Components (likely already present; extend as needed)
+  - `resources/scripts/components/server/database-dashboard/OverviewContainer.tsx`
+  - `resources/scripts/components/server/database-dashboard/DatabaseListContainer.tsx`
+  - `resources/scripts/components/server/database-dashboard/TableBrowserContainer.tsx`
+  - `resources/scripts/components/server/database-dashboard/QueryInterfaceContainer.tsx`
+  - `resources/scripts/components/server/database-dashboard/DatabaseLogsContainer.tsx`
+  - `resources/scripts/components/server/database-dashboard/DatabaseSettingsContainer.tsx`
+  - `resources/scripts/components/server/databases/*` — existing helper components (rotate password, row, list)
+- Backend APIs to confirm/implement
+  - `GET /api/client/servers/:uuid` (already used by ServerController)
+  - `GET /api/client/servers/:uuid/databases`
+  - `POST /api/client/servers/:uuid/databases/query`
+  - `POST /api/client/servers/:uuid/databases/:name/rotate`
+  - Backup-related endpoints (reuse existing backup API)
+- Egg/seed source
+  - `database/Seeders/eggs/databases` — authoritative list of supported database eggs and their metadata.
+
+Open questions for you
+----------------------
+1. Do you want each seeded egg to have a distinct "skin" (egg-specific UI) or should the dashboard be a single UI that adapts via egg `features` (recommended)?
+2. Which eggs in `database/Seeders/eggs/databases` require special query behavior (e.g., No-SQL vs SQL engines)?
+3. Do you prefer the Query interface to allow write statements for staff/admins only, or disabled entirely for end users?
+
+Next step suggestion
+--------------------
+If you confirm the egg-driven approach and answer the open questions, I recommend starting Phase 0 (eggs review) and Phase 1 (API readiness). I can then produce a PR-style patch for Phase 2 (routing wiring) or Phase 3 (page skeletons) based on your preference.
