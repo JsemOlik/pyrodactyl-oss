@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 
 import CopyOnClick from '@/components/elements/CopyOnClick';
@@ -11,15 +12,29 @@ interface StatBlockProps {
     children: React.ReactNode;
     className?: string;
     style?: CSSProperties;
+    progress?: number | null;
     onClick?: () => void;
 }
 
-const StatBlock = ({ title, copyOnClick, className, style, children, onClick }: StatBlockProps) => {
+const StatBlock = ({ title, copyOnClick, className, style, progress, children, onClick }: StatBlockProps) => {
+    const progressStyle = useMemo(() => {
+        if (progress === undefined || progress === null) return style;
+
+        const fill = progress.toFixed(2);
+
+        return {
+            ...style,
+            backgroundImage: `linear-gradient(to right, color-mix(in srgb, var(--color-brand) 35%, transparent), color-mix(in srgb, var(--color-brand) 35%, transparent)), linear-gradient(to bottom, #ffffff08, #ffffff05)`,
+            backgroundSize: `${fill}% 100%, 100% 100%`,
+            backgroundRepeat: 'no-repeat',
+        };
+    }, [progress, style]);
+
     return (
         <CopyOnClick text={copyOnClick}>
             <div
                 onClick={onClick}
-                style={style}
+                style={progressStyle}
                 className={clsx(
                     'bg-gradient-to-b from-[#ffffff08] to-[#ffffff05] border-[1px] border-[#ffffff12] rounded-xl p-3 sm:p-4 hover:border-[#ffffff20] transition-all duration-150 group shadow-sm',
                     onClick ? 'cursor-pointer' : 'cursor-default',

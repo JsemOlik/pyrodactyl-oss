@@ -26,19 +26,6 @@ const getUsagePercent = (used: number, limit?: number | null) => {
     return Math.min(100, Math.max(0, (used / limit) * 100));
 };
 
-const getUsageBackground = (percent: number | null) => {
-    if (percent === null) return undefined;
-
-    const fill = percent.toFixed(2);
-
-    return {
-        backgroundImage:
-            'linear-gradient(to right, color-mix(in srgb, var(--color-brand) 35%, transparent), color-mix(in srgb, var(--color-brand) 35%, transparent)), linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.05))',
-        backgroundSize: `${fill}% 100%, 100% 100%`,
-        backgroundRepeat: 'no-repeat',
-    };
-};
-
 const ServerDetailsBlock = ({ className }: { className?: string }) => {
     const [stats, setStats] = useState<Stats>({ memory: 0, cpu: 0, disk: 0, uptime: 0, tx: 0, rx: 0 });
     const [subdomainInfo, setSubdomainInfo] = useState<SubdomainInfo | null>(null);
@@ -187,7 +174,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
             >
                 <StatBlock
                     title={'CPU'}
-                    style={status !== 'offline' ? getUsageBackground(usagePercents.cpu) : undefined}
+                    progress={status !== 'offline' ? usagePercents.cpu : null}
                 >
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
@@ -208,7 +195,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
             >
                 <StatBlock
                     title={'RAM'}
-                    style={status !== 'offline' ? getUsageBackground(usagePercents.memory) : undefined}
+                    progress={status !== 'offline' ? usagePercents.memory : null}
                 >
                     {status === 'offline' ? (
                         <span className={'text-zinc-400'}>Offline</span>
@@ -229,7 +216,7 @@ const ServerDetailsBlock = ({ className }: { className?: string }) => {
             >
                 <StatBlock
                     title={'Storage'}
-                    style={status !== 'offline' ? getUsageBackground(usagePercents.disk) : undefined}
+                    progress={status !== 'offline' ? usagePercents.disk : null}
                 >
                     <Limit
                         limit={textLimits.disk}
