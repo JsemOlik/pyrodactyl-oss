@@ -1,6 +1,8 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { getDashboardEntry } from '@/routers/dashboardRegistry';
+
 import { NotFound, ServerError } from '@/components/elements/ScreenBlock';
 import Spinner from '@/components/elements/Spinner';
 
@@ -9,9 +11,6 @@ import { httpErrorToHuman } from '@/api/http';
 import { ServerContext } from '@/state/server';
 
 const ServerRouter = lazy(() => import('@/routers/ServerRouter'));
-const DatabaseRouter = lazy(() => import('@/routers/DatabaseRouter'));
-// const WebsiteRouter = lazy(() => import('@/routers/WebsiteRouter'));
-// const S3StorageRouter = lazy(() => import('@/routers/S3StorageRouter'));
 
 /**
  * DashboardRouterFactory determines which dashboard router to render
@@ -19,6 +18,9 @@ const DatabaseRouter = lazy(() => import('@/routers/DatabaseRouter'));
  *
  * This component loads the server data using ServerContext (same as ServerRouter)
  * and then routes to the appropriate dashboard based on dashboard_type.
+ *
+ * It's been refactored to consult the centralized dashboard registry so that
+ * new dashboard types can be added by registering them in `dashboardRegistry.ts`.
  */
 const DashboardRouterFactory = () => {
     const params = useParams<'id'>();
@@ -69,42 +71,26 @@ const DashboardRouterFactory = () => {
         });
     }
 
-    // Map dashboard types to their respective router components
-    const renderRouter = () => {
-        switch (dashboardType) {
-            case 'game-server':
-                return (
-                    <Suspense fallback={<Spinner />}>
-                        <ServerRouter />
-                    </Suspense>
-                );
+    // Look up a registry entry for this dashboard type and render it if present.
+    const entry = getDashboardEntry(dashboardType);
 
-            case 'database':
-                return (
-                    <Suspense fallback={<Spinner />}>
-                        <DatabaseRouter />
-                    </Suspense>
-                );
+    if (entry && entry.router) {
+        const RouterComponent = entry.router;
+        return (
+            <Suspense fallback={<Spinner />}>
+                <RouterComponent />
+            </Suspense>
+        );
+    }
 
-            case 'website':
-                // TODO: Implement WebsiteRouter in future phase
-                return <NotFound />;
-
-            case 's3-storage':
-                // TODO: Implement S3StorageRouter in future phase
-                return <NotFound />;
-
-            default:
-                // Default to game-server dashboard for unknown types
-                return (
-                    <Suspense fallback={<Spinner />}>
-                        <ServerRouter />
-                    </Suspense>
-                );
-        }
-    };
-
-    return <>{renderRouter()}</>;
+    // Fallback behavior for unknown dashboard types:
+    // keep existing behavior of rendering the game-server router so legacy servers continue to work.
+    // If you prefer a NotFound, change this behavior.
+    return (
+        <Suspense fallback={<Spinner />}>
+            <ServerRouter />
+        </Suspense>
+    );
 };
 
 export default DashboardRouterFactory;

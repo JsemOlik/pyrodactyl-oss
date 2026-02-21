@@ -65,24 +65,40 @@ Phase 1 — Backend: egg metadata & API readiness (ETA: 1–2 hours)
   Acceptance criteria
   - Required data available to client via existing or new endpoints; errors returned in panel-friendly format.
 
-Phase 2 — Router & routing wiring (ETA: 30–60 minutes)
+Phase 2 — Router & routing wiring (ETA: 30–60 minutes) — IN PROGRESS / PARTIALLY COMPLETED
   Goal
-  - Ensure Dashboard routing displays database router when `dashboard_type` is `database` and wires pages.
-  Tasks
-  - Confirm `resources/scripts/routers/DashboardRouterFactory.tsx` routes `database` to `DatabaseRouter` (already present).
-  - If using a registry pattern, add a `database` entry to `dashboardRegistry.ts` (if implemented).
-  - Ensure `DatabaseRouter.tsx` mounts routes for:
-    - `/server/:id` (Overview)
-    - `/server/:id/databases` (Databases list)
-    - `/server/:id/tables` (Table Browser)
-    - `/server/:id/query` (Query Interface)
-    - `/server/:id/logs` (Logs)
-    - `/server/:id/settings` (Settings)
-  - Use `PermissionRoute` and `Can` guards for actions.
-  Commands / local checks
-  - Build and visit `/server/<uuid>` for servers whose egg is in `database/Seeders/eggs/databases`.
-  Acceptance criteria
-  - The router renders and sub-routes are reachable; 404s only for missing pages.
+  - Ensure Dashboard routing displays the appropriate router for `dashboard_type` (e.g., `database`) using a centralized registry, and wire pages for the Database dashboard.
+  Tasks (completed)
+  - Added a centralized registry: `resources/scripts/routers/dashboardRegistry.ts` with explicit lazy imports for `game-server`, `database` and a placeholder `docker`.
+  - Refactored `resources/scripts/routers/DashboardRouterFactory.tsx` to consult the registry via `getDashboardEntry()` and render the registered router. The previous switch-based logic was replaced by registry lookup while preserving fallback behavior to `ServerRouter` for unknown types.
+  - Registered `database` in the registry so `DatabaseRouter` is loadable via the new registry mechanism.
+  Files created / changed
+  - Created: `resources/scripts/routers/dashboardRegistry.ts`
+  - Modified: `resources/scripts/routers/DashboardRouterFactory.tsx` — now uses the registry
+  - Note: `resources/scripts/routers/DatabaseRouter.tsx` already exists in the repo and is now picked up via the registry entry.
+  Tasks (remaining)
+  - Verify client-side navigation for all database sub-routes (Overview, Databases, Tables, Query, Logs, Settings) renders correctly when a server with `dashboard_type=database` is loaded.
+  - Run a dev build and test route loading (see Commands / local checks).
+  - (Optional) Add metadata (icons) to registry entries for improved admin UX.
+  Commands / local checks (what to run now)
+  - Start frontend dev server: `pnpm run dev` or `npm run dev` (project-specific).
+  - Visit a server page with `dashboard_type = database`:
+    - Confirm that the DashboardRouterFactory loads the `DatabaseRouter` (network tab shows chunk for `DatabaseRouter`).
+    - Confirm subroutes load:
+      - `/server/<uuid>` (Overview)
+      - `/server/<uuid>/databases`
+      - `/server/<uuid>/tables`
+      - `/server/<uuid>/query`
+      - `/server/<uuid>/logs`
+      - `/server/<uuid>/settings`
+  Acceptance criteria (updated)
+  - Registry exists and is used by `DashboardRouterFactory`.
+  - `DatabaseRouter` is lazy-loaded via the registry entry and renders as before.
+  - No regressions: game-server dashboards still render (fallback preserved).
+  Next steps
+  - Complete verification of all Database sub-routes against the running backend/daemon (Phase 1 continuation).
+  - If any route payload shapes differ from frontend expectations, normalize via frontend API adapters under `resources/scripts/api/` or add a backend shim.
+  - Once routing is fully verified, proceed to Phase 3 (Pages & components) to improve UX and implement any missing pages.
 
 Phase 3 — Pages & components (ETA: 4–8 hours; incremental rollout recommended)
   Goal
