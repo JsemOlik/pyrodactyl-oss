@@ -7,22 +7,6 @@ import { bytesToString, ip } from '@/lib/formatters';
 import { Server } from '@/api/server/getServer';
 import getServerResourceUsage, { ServerPowerState, ServerStats } from '@/api/server/getServerResourceUsage';
 
-// If you already have a power helper, import it and remove the fallback below:
-// import { sendPowerSignal } from '@/api/server/power';
-
-// Minimal fallback helper (replace with your real one)
-async function sendPowerSignal(uuid: string, signal: 'start' | 'stop' | 'restart' | 'kill') {
-    const res = await fetch(`/api/client/servers/${uuid}/power`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signal }),
-    });
-    if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Power action failed: ${res.status} ${text}`);
-    }
-}
-
 // Determines if the current value is in an alarm threshold so we can show it in red rather
 // than the more faded default style.
 const isAlarmState = (current: number, limit: number): boolean => limit > 0 && current / (limit * 1024 * 1024) >= 0.9;
@@ -99,7 +83,6 @@ const ServerRow = ({
     const [stats, setStats] = useState<ServerStats | null>(null);
 
     const [copied, setCopied] = useState(false);
-    const [isStarting, setIsStarting] = useState(false);
 
     const getStats = () =>
         getServerResourceUsage(server.uuid)
@@ -166,25 +149,6 @@ const ServerRow = ({
     const isOffline =
         (stats?.status && stats.status === 'offline') ||
         (!stats && (server.status === 'offline' || server.status === null));
-
-    const handleStart = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (isStarting) return;
-
-        try {
-            setIsStarting(true);
-            await sendPowerSignal(server.uuid, 'start');
-            // Optimistic refresh
-            setTimeout(() => {
-                getStats().catch(() => undefined);
-            }, 1000);
-        } catch (err) {
-            console.error('Failed to start server:', err);
-        } finally {
-            setIsStarting(false);
-        }
-    };
 
     // Shared card styles: keep width consistent
     // We emulate the width resources would take with a min-width.
@@ -258,37 +222,8 @@ const ServerRow = ({
                         </span>
                     </div>
                 ) : isOffline ? (
-                    <div className='flex items-center justify-between w-full gap-4'>
-                        <span className='text-xs text-zinc-300'>Server is offline</span>
-                        <button
-                            onClick={handleStart}
-                            disabled={isStarting}
-                            className='inline-flex items-center gap-2 rounded-full bg-[#3f3f46] hover:bg-[#52525b] disabled:opacity-70 disabled:cursor-not-allowed text-white px-3 py-1.5 text-xs font-semibold transition-colors'
-                        >
-                            {isStarting && (
-                                <svg
-                                    className='animate-spin h-3.5 w-3.5'
-                                    xmlns='http://www.w3.org/2000/svg'
-                                    viewBox='0 0 24 24'
-                                    fill='none'
-                                >
-                                    <circle
-                                        className='opacity-25'
-                                        cx='12'
-                                        cy='12'
-                                        r='10'
-                                        stroke='currentColor'
-                                        strokeWidth='4'
-                                    />
-                                    <path
-                                        className='opacity-75'
-                                        fill='currentColor'
-                                        d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z'
-                                    />
-                                </svg>
-                            )}
-                            Start
-                        </button>
+                    <div className='flex-1 text-center'>
+                        <span className='text-zinc-100 text-xs'>Offline</span>
                     </div>
                 ) : !stats || isInstalling ? (
                     server.isTransferring || server.status ? (
