@@ -399,10 +399,57 @@ Acceptance Criteria (Phase 0)
 - [x] Multi-port requirements identified (RethinkDB)
 - [x] Special cases noted (MongoDB multi-image, RethinkDB auto-password)
 
-Next: Phase 1 — Backend API Readiness
--------------------------------------
-With this mapping complete, Phase 1 should:
-1. Ensure API returns egg metadata (especially `variables`, `docker_images`, `features`)
-2. Verify database endpoints work for all engine types
-3. Add query endpoint that adapts SQL vs NoSQL based on egg type
-4. Handle multi-port allocations (RethinkDB) in connection info
+Next: Phase 1 — Backend API Readiness (IN PROGRESS)
+---------------------------------------------------
+With Phase 0 complete, Phase 1 work has started. Summary of verification performed so far and remaining tasks:
+
+1. Ensure API returns egg metadata (especially `variables`, `docker_images`, `features`) — Verified
+   - `app/Transformers/Api/Client/ServerTransformer.php` includes `includeEgg` and exposes `egg_features` and `docker_image`.
+   - The server API response for a server includes egg information (egg UUID via `egg` include and egg data via the Egg transformer), and `feature_limits` / allocations are included.
+   - Action: No change required for the transformer; frontend can consume egg attributes already returned.
+
+2. Verify database endpoints work for all engine types — Partially verified / manual tests needed
+   - Routes exist in `routes/api-client.php` under `/servers/{server}`:
+     - `Route::group(['prefix' => '/databases'], ...)` for the standard database list/create/rotate/delete endpoints.
+     - `Route::group(['prefix' => '/database'], ...)` for the richer per-server DB endpoints (connection, databases, tables, query, logs, settings).
+   - `app/Http/Controllers/Api/Client/Servers/DatabaseController.php` proxies calls to the daemon controller (index/store/rotate/delete) and forwards other calls to the daemon via `__call`.
+   - Frontend wrappers exist:
+     - `resources/scripts/api/server/databases/*` (getServerDatabases, createServerDatabase, rotate)
+     - UI components under `resources/scripts/components/server/databases` and `resources/scripts/components/server/database-dashboard`
+   - Next: run live daemon-backed API checks for each egg (Postgres, MariaDB, MongoDB, RethinkDB) to confirm data shape and behavior (host/port, password inclusion when requested, tables/collections endpoints).
+
+3. Add query endpoint that adapts SQL vs NoSQL based on egg type — Exists (proxied), needs daemon & safety review
+   - The route `POST /api/client/servers/{server}/database/query` is defined and proxied to the daemon (see routes and DatabaseController proxy behavior).
+   - Action items:
+     - Verify daemon implements `executeQuery` semantics for each engine and returns consistent structures.
+     - Add/verify server-side protections: max execution time, statement restrictions, permission checks, and rate limits.
+     - Ensure the client UI distinguishes SQL vs NoSQL editors and result renderers.
+
+4. Handle multi-port allocations (RethinkDB) in connection info — Needs verification
+   - `ServerTransformer` includes allocations via the `includeAllocations` method; allocations are available in the server payload.
+   - RethinkDB requires mapping of cluster/driver/HTTP ports to meaningful labels in the frontend connection UI.
+   - Next: confirm actual allocation records for RethinkDB servers include the three ports and adapt frontend connection-string assembly (or a small mapping helper) to present driver/HTTP/cluster endpoints.
+
+Progress log
+- [2026-02-21 00:00] Phase 0 completed: egg mapping document created for all eggs in `database/Seeders/eggs/databases` (Postgres 14/16, MariaDB 10.3, MongoDB, RethinkDB).
+- [2026-02-21 00:05] Verified `ServerTransformer` exposes `egg`, `egg_features`, and `docker_image`.
+- [2026-02-21 00:10] Verified API route definitions exist for database operations and query endpoints; `DatabaseController` proxies to daemon.
+- [2026-02-21 00:15] Identified next validation steps: live API checks against daemon for each egg type; ensure daemon implements `query` and `tables` endpoints and that multi-port allocations are present for RethinkDB.
+
+Immediate next actions (Phase 1 continued)
+- Execute live API checks for each seeded egg:
+  - Create or use an existing server for each egg (Postgres14, Postgres16, MariaDB, MongoDB, RethinkDB).
+  - Call:
+    - `GET /api/client/servers/{server}` — confirm `egg` and `allocations` payloads.
+    - `GET /api/client/servers/{server}/database/databases` and `GET /api/client/servers/{server}/database/tables` — confirm formats.
+    - `POST /api/client/servers/{server}/database/query` — verify query execution and safety handling.
+- If daemon responses differ from frontend expectations, follow up with:
+  - Adjust frontend transformers (`resources/scripts/api/...`) to normalize the shape, or
+  - Add a small backend transformer/controller shim to present consistent shapes.
+- Harden query execution on the backend:
+  - Add max execution time, statement filtering or blocking (if required), and rate-limiting.
+  - Ensure audit logging for query and credential rotation actions.
+
+Planned next phase
+- After live API verification and any required backend adjustments, proceed to Phase 2: Router & routing wiring (frontend registry + DashboardRouterFactory refactor) and initial DatabaseRouter wiring.
+

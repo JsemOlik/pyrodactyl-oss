@@ -21,6 +21,8 @@ class EggTransformer extends BaseClientTransformer
             'uuid' => $egg->uuid,
             'name' => $egg->name,
             'description' => $egg->description,
+            'dashboard_type' => $egg->dashboard_type,
+            'features' => $egg->features,
         ];
     }
 }
