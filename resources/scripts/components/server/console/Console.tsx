@@ -411,7 +411,7 @@ const Console = () => {
                 </div>
                 {canSendCommands && (
                     <div className='relative border-t-[1px] border-[#ffffff11] bg-[#0f0f0f]'>
-                        <div className='flex items-center gap-1.5 px-2.5 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm text-zinc-100'>
+                        <div className='flex items-center gap-1.5 px-1 py-2 sm:px-3 sm:py-2 text-xs sm:text-sm text-zinc-100'>
                             <span className='inline-flex h-7 w-7 items-center justify-center text-zinc-200'>
                                 <TerminalIcon width={18} height={18} />
                             </span>
