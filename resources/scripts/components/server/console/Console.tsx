@@ -57,6 +57,7 @@ const terminalProps: ITerminalOptions = {
     fontSize: window.innerWidth < 640 ? 11 : 12,
     fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
     theme: theme,
+    scrollback: 10000,
 };
 
 const Console = () => {
@@ -66,7 +67,7 @@ const Console = () => {
         () =>
             new Terminal({
                 ...terminalProps,
-                rows: window.innerWidth < 640 ? 40 : 50,
+                rows: window.innerWidth < 640 ? 20 : 25,
             }),
         [],
     );
